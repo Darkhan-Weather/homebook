@@ -56,6 +56,13 @@ input,select{font-family:inherit;font-size:15px}
 .btn-google:hover{background:var(--surface-2)}
 .note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:1rem;line-height:1.5}
 
+/* ── Home / Login background + лого зураг ── */
+#home-screen,#login-screen{
+  background:url('Background.jpg') center/cover no-repeat;
+}
+.logo-img{width:96px;height:96px;border-radius:18px;object-fit:cover;
+  display:block;margin:0 auto 1rem;box-shadow:var(--shadow)}
+
 /* ── App каркас ── */
 #app{max-width:640px;margin:0 auto;padding:0 1rem 6rem}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem}
@@ -156,7 +163,7 @@ input,select{font-family:inherit;font-size:15px}
 <div id="home-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
-      <div class="logo"><i class="ti ti-home-2"></i></div>
+      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
       <h1>HomeBook</h1>
       <p class="sub">Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор</p>
       <div class="feat"><i class="ti ti-wallet"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Тоолуур, тогтмол, хувьсах</div></div></div>
@@ -173,7 +180,7 @@ input,select{font-family:inherit;font-size:15px}
 <div id="login-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
-      <div class="logo"><i class="ti ti-home-2"></i></div>
+      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
       <h1>Тавтай морил</h1>
       <p class="sub">Үргэлжлүүлэхийн тулд Google хаягаараа нэвтэрнэ үү</p>
       <button class="btn-google" onclick="login()"><i class="ti ti-brand-google"></i> Google-ээр нэвтрэх</button>
