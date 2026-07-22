@@ -52,7 +52,32 @@ input,select{font-family:inherit;font-size:15px}
   display:block;margin:0 auto 1rem;box-shadow:var(--shadow)}
 
 /* App */
-#app{max-width:640px;margin:0 auto;padding:0 1rem 6rem}
+#app{max-width:640px;margin:0 auto;padding:0 1rem 150px}
+.view{display:none}
+.view.active{display:block}
+/* Доод навигаци */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
+  display:flex;justify-content:center;gap:8px;padding:6px 8px;z-index:60}
+.nav-btn{flex:1;max-width:130px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+  color:var(--text-muted);border-radius:10px;font-size:11px;font-weight:500}
+.nav-btn i{font-size:22px}
+.nav-btn.active{color:var(--accent-text)}
+.nav-btn.active i{color:var(--accent)}
+/* Хураангуй — стат карт, панел */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1rem;box-shadow:var(--shadow)}
+.stat .sl{font-size:12px;color:var(--text-2);margin-bottom:6px}
+.stat .sv{font-size:22px;font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.panel h4{font-size:14px;font-weight:600;margin-bottom:.5rem}
+.act-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-row .ad{font-size:12px;color:var(--text-2);width:82px;flex-shrink:0}
+.act-row .am{flex:1;font-size:14px}
+.act-row .av{font-size:14px;font-weight:500}
+.hint-box{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius);
+  padding:1rem 1.2rem;font-size:13px;color:var(--text-2);line-height:1.5}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem}
 .topbar h2{font-size:18px;font-weight:600}
 .topbar .month{font-size:13px;color:var(--text-2);margin-top:2px}
@@ -152,7 +177,7 @@ input,select{font-family:inherit;font-size:15px}
 .tag.note{background:#fef3c7;color:#92400e}
 .empty-line{font-size:13px;color:var(--text-muted);padding:10px 0}
 
-.fab{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;width:min(608px,calc(100% - 2rem))}
+.fab{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);z-index:55;width:min(608px,calc(100% - 2rem))}
 .fab button{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);color:#fff;
   font-size:15px;font-weight:500;box-shadow:0 4px 12px rgba(13,148,136,.35);
   display:flex;align-items:center;justify-content:center;gap:6px}
@@ -210,9 +235,18 @@ input,select{font-family:inherit;font-size:15px}
         <div class="avatar" id="avatar" onclick="logout()" title="Гарах">Т</div>
       </div>
     </div>
-    <div id="meters-list"></div>
+    <!-- Хураангуй -->
+    <div id="view-home" class="view"></div>
+    <!-- Тоолуур -->
+    <div id="view-meters" class="view active">
+      <div id="meters-list"></div>
+    </div>
   </div>
-  <div class="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
+  <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
+    <button class="nav-btn active" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
+  </nav>
 </div>
 
 <!-- MODAL: тоолуур нэмэх/засах -->
@@ -392,6 +426,8 @@ async function saveToDrive(){
     await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
       method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
     setSync('Синктэй','#0f766e');
+    // Нөөц — 5 минутанд нэгээс олонгүй
+    if(Date.now()-lastBackupAt>5*60*1000)doBackup();
   }catch(e){ console.error('Drive хадгалах алдаа:',e); setSync('Хадгалагдаагүй','#dc2626'); }
 }
 async function loadFromDrive(){
@@ -410,7 +446,62 @@ async function loadFromDrive(){
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
+    if(!sessionBackupDone){ sessionBackupDone=true; doBackup(); }
   }catch(e){ console.error('Drive уншах алдаа:',e); setSync('Уншигдаагүй','#dc2626'); }
+}
+
+/* ═══ Backup — Drive дээр өдрийн нөөц (сүүлийн 14) ═══ */
+let backupFolderId=null, lastBackupAt=0, sessionBackupDone=false;
+const MAX_BACKUPS=14;
+async function findFileInFolder(name,folderId){
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(name)}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  return res.files&&res.files.length>0?res.files[0].id:null;
+}
+async function getBackupFolder(parentId){
+  if(backupFolderId)return backupFolderId;
+  let id=await findFileInFolder('backups',parentId);
+  if(!id){
+    const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({name:'backups',mimeType:'application/vnd.google-apps.folder',parents:[parentId]})
+    }).then(r=>r.json());
+    id=meta.id;
+  }
+  backupFolderId=id; return id;
+}
+async function doBackup(){
+  if(!accessToken)return;
+  try{
+    const folderId=await getOrCreateFolder();
+    const bf=await getBackupFolder(folderId);
+    const today=new Date().toISOString().slice(0,10);
+    const name='backup_'+today+'.json';
+    let fid=await findFileInFolder(name,bf);
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes})],{type:'application/json'});
+    if(!fid){
+      const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({name,mimeType:'application/json',parents:[bf]})
+      }).then(r=>r.json());
+      fid=meta.id;
+    }
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
+      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
+    lastBackupAt=Date.now();
+    cleanupBackups(bf);
+  }catch(e){ console.error('Backup алдаа:',e); }
+}
+async function cleanupBackups(bf){
+  try{
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
+      {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+    if(res.files&&res.files.length>MAX_BACKUPS){
+      for(const f of res.files.slice(MAX_BACKUPS)){
+        await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}});
+      }
+    }
+  }catch(e){ console.error('Backup цэвэрлэх алдаа:',e); }
 }
 function mergeById(local, remote){
   const byId={};
@@ -608,8 +699,63 @@ function deleteNote(id){
   persist(); renderNotes(histMeterId); render();
 }
 
-/* ═══ Render — карт ═══ */
-function render(){
+/* ═══ Навигаци ═══ */
+let currentView='meters';
+function showView(name){
+  currentView=name;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  // FAB зөвхөн Тоолуур дэлгэцэд
+  document.getElementById('fab').style.display=(name==='meters')?'block':'none';
+  render();
+}
+
+/* ═══ Render — бүх дэлгэц ═══ */
+function render(){ renderMeters(); renderHome(); }
+
+/* ═══ Хураангуй дэлгэц ═══ */
+function renderHome(){
+  const wrap=document.getElementById('view-home');
+  const meterCount=data.meters.length;
+  const totalReadings=data.readings.length;
+  const ym=new Date().toISOString().slice(0,7);
+  const thisMonth=data.readings.filter(r=>r.date&&r.date.slice(0,7)===ym).length;
+  // Сүүлийн үйл ажиллагаа (бүх тоолуурын заалт, шинэ нь дээр)
+  const all=[...data.readings].sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0)).slice(0,6);
+  let acts='';
+  if(all.length===0){ acts='<div class="empty-line">Заалт хараахан алга</div>'; }
+  else{
+    acts=all.map(r=>{
+      const m=data.meters.find(x=>x.id===r.meterId);
+      const mrs=readingsOf(r.meterId);
+      const pos=mrs.findIndex(x=>x.id===r.id);
+      const prev=pos>0?mrs[pos-1]:null;
+      const use=prev?(r.value-prev.value):null;
+      return `<div class="act-row">
+        <span class="ad num">${r.date}</span>
+        <span class="am">${m?escapeHtml(m.name):'—'}</span>
+        <span class="av num">${use!==null?fmt(use)+' м³':'эхлэл'}</span>
+      </div>`;
+    }).join('');
+  }
+  wrap.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
+      <div class="stat"><div class="sl">Энэ сарын заалт</div><div class="sv num">${thisMonth}</div></div>
+      <div class="stat"><div class="sl">Нийт заалт</div><div class="sv num">${totalReadings}</div></div>
+    </div>
+    <div class="panel">
+      <h4>Сүүлийн үйл ажиллагаа</h4>
+      ${acts}
+    </div>
+    <div class="hint-box">
+      <b>Орлого, зардлын нэгтгэл</b> энд гарч ирнэ — тогтмол зардал, орлого модуль нэмэгдэхэд нийт орлого, зардал, үлдэгдэл харагдана.
+    </div>`;
+}
+
+/* ═══ Render — тоолуурын карт ═══ */
+function renderMeters(){
   const wrap=document.getElementById('meters-list');
   if(data.meters.length===0){
     wrap.innerHTML=`<div class="empty-state">
