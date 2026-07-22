@@ -188,6 +188,33 @@ input,select{font-family:inherit;font-size:15px}
   background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;
   opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
+
+/* ── Тогтмол зардал ── */
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.month-nav button{padding:6px 12px;border-radius:8px;color:var(--text-2);font-size:20px}
+.month-nav button:hover{background:var(--surface-2)}
+.month-nav .mlabel{font-size:15px;font-weight:600}
+.fx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+.fx-icon{width:36px;height:36px;border-radius:9px;background:var(--accent-bg);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.fx-icon i{font-size:18px;color:var(--accent-text)}
+.fx-main{flex:1;min-width:0;cursor:pointer}
+.fx-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-type{font-size:11px;color:var(--text-muted)}
+.fx-amt{font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
+.fx-amt-input{width:96px;padding:7px 8px;border:1px solid var(--border-strong);border-radius:8px;
+  text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.paid-btn{padding:6px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--text-2);white-space:nowrap;flex-shrink:0}
+.paid-btn.on{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+.fx-total{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin:12px 0;box-shadow:var(--shadow)}
+.fx-total .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;color:var(--text-2)}
+.fx-total .tr .num{color:var(--text);font-weight:500}
+.fx-total .tr.big{font-size:17px;font-weight:600;color:var(--text);border-top:1px solid var(--border);
+  margin-top:6px;padding-top:11px}
+.fx-total .tr.big .num{font-weight:600}
 </style>
 </head>
 <body>
@@ -241,11 +268,14 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-meters" class="view active">
       <div id="meters-list"></div>
     </div>
+    <!-- Тогтмол зардал -->
+    <div id="view-fixed" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
     <button class="nav-btn" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
     <button class="nav-btn active" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
+    <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
   </nav>
 </div>
 
@@ -320,6 +350,34 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: тогтмол зардлын зүйл нэмэх/засах -->
+<div class="modal-bg" id="fixed-modal">
+  <div class="modal">
+    <h3 id="fx-modal-title">Зардлын зүйл нэмэх</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input type="text" id="fx-name" placeholder="Жишээ: Интернэт, СӨХ, Ус суваг">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="fx-type" onchange="fxTypeChanged()">
+        <option value="togtmol">Тогтмол дүн (интернэт, СӨХ, хог)</option>
+        <option value="helbelzeh">Хэлбэлзэх дүн (ус, дулаан)</option>
+      </select>
+    </div>
+    <div class="field" id="fx-amt-field">
+      <label>Сарын дүн (₮)</label>
+      <input type="number" id="fx-amount" inputmode="decimal" placeholder="Жишээ: 35000">
+      <div class="hint">Хэлбэлзэх зардлын дүнг сар бүр жагсаалтад бичнэ</div>
+    </div>
+    <div class="modal-actions" id="fx-modal-actions">
+      <button class="btn" onclick="closeModal('fixed-modal')">Болих</button>
+      <button class="btn acc" onclick="saveFixedItem()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="fx-delete-wrap"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -333,9 +391,11 @@ const DATA_FILE='homebook_data.json';
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
+let editingFixedId=null;
+let fixedMonth=new Date().toISOString().slice(0,7);   // 'YYYY-MM'
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -414,7 +474,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -443,6 +503,8 @@ async function loadFromDrive(){
       data.meters=mergeById(data.meters, remote.meters||[]);
       data.readings=mergeById(data.readings, remote.readings||[]);
       data.notes=mergeById(data.notes, remote.notes||[]);
+      data.fixedItems=mergeById(data.fixedItems, remote.fixedItems||[]);
+      data.payments=mergeById(data.payments, remote.payments||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -478,7 +540,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -519,6 +581,7 @@ function loadLocal(){
   const s=localStorage.getItem('hb_data');
   if(s){ try{ data=JSON.parse(s); }catch(e){} }
   if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -527,6 +590,7 @@ function migrate(){
     if(!m.tariffs){ m.tariffs = (m.tariff!=null)?[{date:'2000-01-01',price:m.tariff}]:[]; }
   });
   if(!data.notes)data.notes=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -712,7 +776,143 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); }
+
+/* ═══ Тогтмол зардал ═══ */
+function fxMonthLabel(ym){
+  const [y,m]=ym.split('-');
+  return y+' оны '+parseInt(m)+'-р сар';
+}
+function changeFixedMonth(delta){
+  const [y,m]=fixedMonth.split('-').map(Number);
+  const d=new Date(y, m-1+delta, 1);
+  fixedMonth=d.toISOString().slice(0,7);
+  renderFixed();
+}
+function getPayment(itemId, month){ return data.payments.find(p=>p.itemId===itemId&&p.month===month)||null; }
+function setPayment(itemId, month, patch){
+  let p=getPayment(itemId, month);
+  if(!p){ p={ id:'p'+Date.now()+Math.floor(Math.random()*1000), itemId, month, paid:false }; data.payments.push(p); }
+  Object.assign(p, patch); p.updatedAt=Date.now();
+  return p;
+}
+function monthAmount(item, month){
+  if(item.type==='helbelzeh'){ const p=getPayment(item.id, month); return p&&p.amount!=null?p.amount:0; }
+  return item.amount||0;   // тогтмол
+}
+function isPaid(item, month){ const p=getPayment(item.id, month); return p?!!p.paid:false; }
+function togglePaid(itemId){
+  const item=data.fixedItems.find(x=>x.id===itemId);
+  const cur=isPaid(item, fixedMonth);
+  setPayment(itemId, fixedMonth, {paid:!cur});
+  persist(); renderFixed(); renderHome();
+}
+function setHelbelzehAmount(itemId, val){
+  const amount=parseFloat(val); 
+  setPayment(itemId, fixedMonth, {amount:isNaN(amount)?0:amount});
+  persist(); renderFixedTotals(); renderHome();
+}
+function renderFixed(){
+  const wrap=document.getElementById('view-fixed');
+  const items=data.fixedItems;
+  let rows='';
+  if(items.length===0){
+    rows=`<div class="empty-state" style="padding:2rem 1rem">
+      <i class="ti ti-receipt"></i><h3>Зардлын зүйл алга</h3>
+      <p>Интернэт, СӨХ, хог, ус, дулаан зэргээ нэмээд сар бүр төлбөрөө хөтөлнө.</p>
+    </div>`;
+  }else{
+    rows=items.map(it=>{
+      const paid=isPaid(it, fixedMonth);
+      const amt=monthAmount(it, fixedMonth);
+      const amtCell = it.type==='helbelzeh'
+        ? `<input class="fx-amt-input num" type="number" inputmode="decimal" value="${amt||''}" placeholder="0" onchange="setHelbelzehAmount('${it.id}',this.value)">`
+        : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
+      return `<div class="fx-row">
+        <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
+        <div class="fx-main" onclick="openFixedModal('${it.id}')">
+          <div class="fx-name">${escapeHtml(it.name)}</div>
+          <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
+        </div>
+        ${amtCell}
+        <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
+      </div>`;
+    }).join('');
+  }
+  wrap.innerHTML=`
+    <div class="month-nav">
+      <button onclick="changeFixedMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="mlabel">${fxMonthLabel(fixedMonth)}</span>
+      <button onclick="changeFixedMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${rows}
+    <div id="fx-totals"></div>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openFixedModal()"><i class="ti ti-plus"></i> Зардлын зүйл нэмэх</button>
+  `;
+  renderFixedTotals();
+}
+function renderFixedTotals(){
+  const el=document.getElementById('fx-totals');
+  if(!el)return;
+  const items=data.fixedItems;
+  if(items.length===0){ el.innerHTML=''; return; }
+  let total=0, paidSum=0;
+  items.forEach(it=>{ const a=monthAmount(it, fixedMonth); total+=a; if(isPaid(it, fixedMonth))paidSum+=a; });
+  const remain=total-paidSum;
+  el.innerHTML=`<div class="fx-total">
+    <div class="tr"><span>Төлсөн</span><span class="num">${fmt(paidSum)}₮</span></div>
+    <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(remain)}₮</span></div>
+    <div class="tr big"><span>Сарын нийт</span><span class="num">${fmt(total)}₮</span></div>
+  </div>`;
+}
+
+/* ── Зардлын зүйл модал ── */
+function fxTypeChanged(){
+  const t=document.getElementById('fx-type').value;
+  document.getElementById('fx-amt-field').style.display=(t==='helbelzeh')?'none':'block';
+}
+function openFixedModal(editId){
+  editingFixedId=editId||null;
+  const delWrap=document.getElementById('fx-delete-wrap');
+  if(editingFixedId){
+    const it=data.fixedItems.find(x=>x.id===editingFixedId);
+    document.getElementById('fx-modal-title').textContent='Зардлын зүйл засах';
+    document.getElementById('fx-name').value=it.name;
+    document.getElementById('fx-type').value=it.type;
+    document.getElementById('fx-amount').value=it.amount||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteFixedItem('${it.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('fx-modal-title').textContent='Зардлын зүйл нэмэх';
+    document.getElementById('fx-name').value='';
+    document.getElementById('fx-type').value='togtmol';
+    document.getElementById('fx-amount').value='';
+    delWrap.innerHTML='';
+  }
+  fxTypeChanged();
+  openModal('fixed-modal');
+}
+function saveFixedItem(){
+  const name=document.getElementById('fx-name').value.trim();
+  const type=document.getElementById('fx-type').value;
+  const amount=parseFloat(document.getElementById('fx-amount').value)||0;
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(editingFixedId){
+    const it=data.fixedItems.find(x=>x.id===editingFixedId);
+    it.name=name; it.type=type; it.amount=amount; it.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.fixedItems.push({ id:'f'+Date.now(), name, type, amount, updatedAt:Date.now() });
+    toast('Нэмэгдлээ');
+  }
+  persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
+}
+function deleteFixedItem(id){
+  const it=data.fixedItems.find(x=>x.id===id);
+  if(!confirm('"'+it.name+'"-г устгах уу? Төлбөрийн түүх нь бас устана.'))return;
+  data.fixedItems=data.fixedItems.filter(x=>x.id!==id);
+  data.payments=data.payments.filter(p=>p.itemId!==id);
+  persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
+}
 
 /* ═══ Хураангуй дэлгэц ═══ */
 function renderHome(){
@@ -739,18 +939,30 @@ function renderHome(){
       </div>`;
     }).join('');
   }
+  // Энэ сарын тогтмол зардал
+  let fxTotal=0, fxPaid=0;
+  data.fixedItems.forEach(it=>{ const a=monthAmount(it, ym); fxTotal+=a; if(isPaid(it, ym))fxPaid+=a; });
+  const fxRemain=fxTotal-fxPaid;
+  const moneyCard = data.fixedItems.length>0
+    ? `<div class="panel">
+        <h4>Энэ сарын тогтмол зардал</h4>
+        <div class="fx-total" style="margin:0;border:none;box-shadow:none;padding:0">
+          <div class="tr"><span>Төлсөн</span><span class="num">${fmt(fxPaid)}₮</span></div>
+          <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxRemain)}₮</span></div>
+          <div class="tr big"><span>Нийт</span><span class="num">${fmt(fxTotal)}₮</span></div>
+        </div>
+       </div>`
+    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол таб дээр зардлын зүйл нэмэхэд энэ сарын нийт зардал энд гарч ирнэ.</div>`;
   wrap.innerHTML=`
     <div class="stat-grid">
       <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
       <div class="stat"><div class="sl">Энэ сарын заалт</div><div class="sv num">${thisMonth}</div></div>
       <div class="stat"><div class="sl">Нийт заалт</div><div class="sv num">${totalReadings}</div></div>
     </div>
+    ${moneyCard}
     <div class="panel">
       <h4>Сүүлийн үйл ажиллагаа</h4>
       ${acts}
-    </div>
-    <div class="hint-box">
-      <b>Орлого, зардлын нэгтгэл</b> энд гарч ирнэ — тогтмол зардал, орлого модуль нэмэгдэхэд нийт орлого, зардал, үлдэгдэл харагдана.
     </div>`;
 }
 
