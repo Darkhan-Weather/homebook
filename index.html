@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>HomeBook</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --accent:#0d9488; --accent-hover:#0f766e; --accent-bg:#ccfbf1; --accent-text:#0f766e;
@@ -57,7 +58,22 @@ input,select{font-family:inherit;font-size:15px}
 .view.active{display:block}
 /* Доод навигаци */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
-  display:flex;justify-content:flex-start;gap:4px;padding:6px 8px;z-index:60;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  display:flex;justify-content:flex-start;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:60;overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* Дашбоард — график, задаргаа */
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.chart-panel h4{font-size:14px;font-weight:600;margin-bottom:.25rem}
+.chart-legend{display:flex;gap:16px;font-size:12px;color:var(--text-2);margin-bottom:.75rem}
+.chart-legend .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+.brk-row{margin-bottom:11px}
+.brk-row:last-child{margin-bottom:0}
+.brk-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.brk-head .num{color:var(--text-2)}
+.brk-bar{height:7px;border-radius:4px;min-width:3px}
+.mom{font-size:12px;font-weight:500;margin-top:4px}
+.mom.up{color:var(--danger)} .mom.down{color:var(--success)}
+.export-row{display:flex;gap:10px;margin:14px 0}
+.export-row .btn{flex:1;justify-content:center;padding:12px}
 .bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
@@ -2160,6 +2176,96 @@ function deleteFixedItem(id){
 }
 
 /* ═══ Хураангуй дэлгэц ═══ */
+/* ═══ Дашбоард — сарын тооцоо, график, экспорт ═══ */
+function monthlyTotals(ym){
+  const income=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
+  let fixed=0; data.fixedItems.forEach(it=>fixed+=monthAmount(it,ym));
+  const variable=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
+  const repairs=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0);
+  const treats=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
+  return { income, fixed, variable, repairs, treats, expense:fixed+variable+repairs+treats };
+}
+function lastNMonths(n){
+  const arr=[]; const d=new Date(); d.setDate(1);
+  for(let i=n-1;i>=0;i--){ const x=new Date(d.getFullYear(),d.getMonth()-i,1); arr.push(x.toISOString().slice(0,7)); }
+  return arr;
+}
+function buildMonthChart(){
+  const months=lastNMonths(6);
+  const rows=months.map(ym=>({ ym, ...monthlyTotals(ym) }));
+  const mx=Math.max(1,...rows.map(r=>Math.max(r.income,r.expense)));
+  const W=320,H=120,pad=20,bw=14,gap=6;
+  const groupW=(W-pad*2)/6;
+  let bars='';
+  rows.forEach((r,i)=>{
+    const cx=pad+groupW*i+groupW/2;
+    const ih=Math.round(r.income/mx*(H-30));
+    const eh=Math.round(r.expense/mx*(H-30));
+    bars+=`<rect x="${cx-bw-gap/2}" y="${H-20-ih}" width="${bw}" height="${ih}" rx="2" fill="#16a34a"/>`;
+    bars+=`<rect x="${cx+gap/2}" y="${H-20-eh}" width="${bw}" height="${eh}" rx="2" fill="#dc2626"/>`;
+    bars+=`<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="#78716c">${parseInt(r.ym.slice(5))}-р</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${bars}</svg>`;
+}
+function buildBreakdown(ym){
+  const t=monthlyTotals(ym);
+  const items=[['Тогтмол',t.fixed,'#0d9488'],['Хувьсах',t.variable,'#f59e0b'],['Машин',t.repairs,'#4338ca'],['Эрүүл мэнд',t.treats,'#be185d']].filter(x=>x[1]>0);
+  if(items.length===0)return '';
+  const mx=Math.max(...items.map(x=>x[1]));
+  return `<div class="chart-panel"><h4>Зардлын задаргаа (энэ сар)</h4>`+
+    items.map(([n,v,c])=>`<div class="brk-row">
+      <div class="brk-head"><span>${n}</span><span class="num">${fmt(v)}₮</span></div>
+      <div class="brk-bar" style="width:${Math.max(3,Math.round(v/mx*100))}%;background:${c}"></div>
+    </div>`).join('')+`</div>`;
+}
+
+/* ── Excel экспорт (SheetJS) ── */
+function exportExcel(){
+  if(!window.XLSX){ toast('Excel сан ачаалагдаагүй байна, түр хүлээгээд дахин оролдоно уу'); return; }
+  const wb=XLSX.utils.book_new();
+  const add=(name,rows)=>{ if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name); };
+  add('Орлого', data.income.map(i=>({Огноо:i.date,Төрөл:i.type,Тайлбар:i.note||'',Дүн:i.amount})));
+  const fxRows=[];
+  data.payments.forEach(p=>{ const it=data.fixedItems.find(x=>x.id===p.itemId); if(it)fxRows.push({Сар:p.month,Зүйл:it.name,Дүн:monthAmount(it,p.month),Төлсөн:p.paid?'Тийм':'Үгүй'}); });
+  add('Тогтмол зардал', fxRows);
+  add('Хувьсах зардал', data.variable.map(v=>({Огноо:v.date,Ангилал:catName(v.categoryId),Тайлбар:v.note||'',Дүн:v.amount})));
+  add('Машин засвар', data.repairs.map(r=>({Огноо:r.date,Машин:(data.vehicles.find(x=>x.id===r.vehicleId)||{}).name||'',Засвар:r.desc||'',Дүн:r.amount})));
+  add('Эрүүл мэнд', data.treatments.map(t=>({Огноо:t.date,Гишүүн:(data.members.find(x=>x.id===t.memberId)||{}).name||'',Эмчилгээ:t.desc||'',Дүн:t.amount})));
+  add('Тоолуур заалт', data.readings.map(r=>({Огноо:r.date,Тоолуур:(data.meters.find(x=>x.id===r.meterId)||{}).name||'',Заалт:r.value})));
+  if(wb.SheetNames.length===0){ toast('Экспортлох өгөгдөл алга'); return; }
+  XLSX.writeFile(wb,'HomeBook_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Excel татагдлаа');
+}
+
+/* ── Сарын тайлан (Word/.doc) ── */
+function exportReport(){
+  const ym=new Date().toISOString().slice(0,7);
+  const t=monthlyTotals(ym);
+  const balance=t.income-t.expense;
+  const incList=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym);
+  const varList=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym);
+  const row=(a,b)=>`<tr><td style="padding:6px 10px;border:1px solid #ddd">${a}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:right">${b}</td></tr>`;
+  let html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body style="font-family:Calibri,sans-serif">
+    <h1>HomeBook — Сарын тайлан</h1>
+    <h2>${fxMonthLabel(ym)}</h2>
+    <table style="border-collapse:collapse;margin:12px 0">
+      ${row('<b>Нийт орлого</b>','<b>'+fmt(t.income)+'₮</b>')}
+      ${row('Тогтмол зардал',fmt(t.fixed)+'₮')}
+      ${row('Хувьсах зардал',fmt(t.variable)+'₮')}
+      ${row('Машины засвар',fmt(t.repairs)+'₮')}
+      ${row('Эрүүл мэнд',fmt(t.treats)+'₮')}
+      ${row('<b>Нийт зардал</b>','<b>'+fmt(t.expense)+'₮</b>')}
+      ${row('<b>Үлдэгдэл</b>','<b>'+fmt(balance)+'₮</b>')}
+    </table>`;
+  if(incList.length){ html+='<h3>Орлого</h3><table style="border-collapse:collapse;width:100%">'+incList.map(i=>row(i.date+' · '+i.type+(i.note?' · '+i.note:''),fmt(i.amount)+'₮')).join('')+'</table>'; }
+  if(varList.length){ html+='<h3>Хувьсах зардал</h3><table style="border-collapse:collapse;width:100%">'+varList.map(v=>row(v.date+' · '+catName(v.categoryId)+(v.note?' · '+v.note:''),fmt(v.amount)+'₮')).join('')+'</table>'; }
+  html+='</body></html>';
+  const blob=new Blob(['\ufeff'+html],{type:'application/msword'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='HomeBook_тайлан_'+ym+'.doc'; a.click(); URL.revokeObjectURL(url);
+  toast('Тайлан татагдлаа');
+}
+
 function renderHome(){
   const wrap=document.getElementById('view-home');
   const meterCount=data.meters.length;
@@ -2193,19 +2299,31 @@ function renderHome(){
   const treatTotal=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
   const expenseTotal=fxTotal+varTotal+repairTotal+treatTotal;   // тогтмол + хувьсах + машин + эрүүл мэнд
   const balance=incomeTotal-expenseTotal;
+  // Өнгөрсөн сартай харьцуулах
+  const prevYm=(()=>{ const d=new Date(); return new Date(d.getFullYear(),d.getMonth()-1,1).toISOString().slice(0,7); })();
+  const prevExp=monthlyTotals(prevYm).expense;
+  let momHtml='';
+  if(prevExp>0){
+    const pct=Math.round((expenseTotal-prevExp)/prevExp*100);
+    if(pct!==0)momHtml=`<div class="mom ${pct>0?'up':'down'}">${pct>0?'▲':'▼'} өнгөрсөн сараас ${Math.abs(pct)}% ${pct>0?'их':'бага'} зардал</div>`;
+  }
   const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
   const moneyCard = hasMoney
     ? `<div class="money-grid">
         <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
         <div class="mc"><div class="ml">Зардал</div><div class="mv neg">${fmt(expenseTotal)}₮</div></div>
         <div class="mc"><div class="ml">Үлдэгдэл</div><div class="mv ${balance>=0?'pos':'neg'}">${fmt(balance)}₮</div></div>
-       </div>
-       ${fxTotal>0?`<div class="panel"><h4>Тогтмол зардал (энэ сар)</h4>
-        <div class="fx-total" style="margin:0;border:none;box-shadow:none;padding:0">
-          <div class="tr"><span>Төлсөн</span><span class="num">${fmt(fxPaid)}₮</span></div>
-          <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxTotal-fxPaid)}₮</span></div>
-        </div></div>`:''}`
+       </div>${momHtml}`
     : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
+  // 6 сарын график
+  const chartPanel = hasMoney ? `<div class="chart-panel"><h4>Сүүлийн 6 сар</h4>
+    <div class="chart-legend"><span><span class="dot" style="background:#16a34a"></span>Орлого</span><span><span class="dot" style="background:#dc2626"></span>Зардал</span></div>
+    ${buildMonthChart()}</div>` : '';
+  const breakdownPanel = hasMoney ? buildBreakdown(ym) : '';
+  const exportRow = hasMoney ? `<div class="export-row">
+    <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+    <button class="btn" onclick="exportReport()"><i class="ti ti-file-text"></i> Сарын тайлан</button>
+  </div>` : '';
   // Удахгүй болох сануулга (анхаарах шаардлагатай)
   const upcoming=data.reminders.filter(r=>{ const s=reminderStatus(r); return s==='soon'||s==='over'; })
     .sort((a,b)=>daysLeft(a.date)-daysLeft(b.date));
@@ -2225,10 +2343,13 @@ function renderHome(){
     </div>
     ${moneyCard}
     ${remPanel}
+    ${chartPanel}
+    ${breakdownPanel}
     <div class="panel">
       <h4>Сүүлийн үйл ажиллагаа</h4>
       ${acts}
-    </div>`;
+    </div>
+    ${exportRow}`;
 }
 
 /* ═══ Render — тоолуурын карт ═══ */
