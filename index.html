@@ -276,6 +276,23 @@ input,select{font-family:inherit;font-size:15px}
 /* ── Эрүүл мэнд (машинтай ижил бүтэц) ── */
 .mem-icon{background:#fce7f3 !important}
 .mem-icon i{color:#be185d !important}
+
+/* ── Санхүү: зээл, хуримтлал ── */
+.sec-title{font-size:15px;font-weight:600;margin:1.25rem 0 .75rem;display:flex;align-items:center;gap:8px}
+.sec-title:first-child{margin-top:.25rem}
+.fin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.1rem;margin-bottom:10px;box-shadow:var(--shadow)}
+.fin-head{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.fin-name{font-size:15px;font-weight:600;flex:1}
+.fin-line{font-size:13px;color:var(--text-2);margin-bottom:2px}
+.fin-line b{color:var(--text);font-weight:600}
+.progress{height:9px;border-radius:5px;background:var(--surface-2);overflow:hidden;margin:9px 0 7px;border:1px solid var(--border)}
+.progress .fill{height:100%;background:var(--accent)}
+.progress .fill.sv{background:var(--success)}
+.fin-actions{display:flex;gap:8px;margin-top:10px}
+.fin-actions .btn{flex:1;justify-content:center;padding:8px}
+.fin-empty{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius);
+  padding:1.25rem;text-align:center;font-size:13px;color:var(--text-2);margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -339,6 +356,8 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-vehicles" class="view"></div>
     <!-- Эрүүл мэнд -->
     <div id="view-health" class="view"></div>
+    <!-- Санхүү: зээл + хуримтлал -->
+    <div id="view-finance" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
@@ -349,6 +368,7 @@ input,select{font-family:inherit;font-size:15px}
     <button class="nav-btn" data-view="variable" onclick="showView('variable')"><i class="ti ti-basket"></i><span>Хувьсах</span></button>
     <button class="nav-btn" data-view="vehicles" onclick="showView('vehicles')"><i class="ti ti-car"></i><span>Машин</span></button>
     <button class="nav-btn" data-view="health" onclick="showView('health')"><i class="ti ti-heartbeat"></i><span>Эрүүл мэнд</span></button>
+    <button class="nav-btn" data-view="finance" onclick="showView('finance')"><i class="ti ti-credit-card"></i><span>Санхүү</span></button>
   </nav>
 </div>
 
@@ -646,6 +666,61 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: зээл нэмэх/засах -->
+<div class="modal-bg" id="loan-modal">
+  <div class="modal">
+    <h3 id="ln-modal-title">Зээл нэмэх</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input type="text" id="ln-name" placeholder="Жишээ: Storepay — утас">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="ln-type" onchange="lnTypeChanged()">
+        <option value="zeel">Зээл (сарын төлбөртэй)</option>
+        <option value="heseglen">Хэсэгчлэн төлөх (хуваасан)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Нийт дүн (₮)</label>
+      <input type="number" id="ln-total" inputmode="decimal" placeholder="Нийт зээлийн дүн">
+    </div>
+    <!-- зээл -->
+    <div id="ln-zeel-fields">
+      <div class="field"><label>Сарын төлбөр (₮)</label><input type="number" id="ln-monthly" inputmode="decimal"></div>
+      <div class="field"><label>Дуусах огноо</label><input type="date" id="ln-due"></div>
+    </div>
+    <!-- хэсэгчлэн -->
+    <div id="ln-hes-fields" style="display:none">
+      <div class="field"><label>Хэдэн хуваасан</label><input type="number" id="ln-parts" inputmode="numeric" placeholder="Жишээ: 4"></div>
+      <div class="field"><label>Нэг хэсгийн дүн (₮)</label><input type="number" id="ln-partamt" inputmode="decimal"></div>
+      <div class="field"><label>Төлсөн хэсэг</label><input type="number" id="ln-paid" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="field"><label>Дараагийн төлөх огноо</label><input type="date" id="ln-next"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('loan-modal')">Болих</button>
+      <button class="btn acc" onclick="saveLoan()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="ln-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: хуримтлал нэмэх/засах -->
+<div class="modal-bg" id="saving-modal">
+  <div class="modal">
+    <h3 id="sv-modal-title">Хуримтлал нэмэх</h3>
+    <div class="field"><label>Нэр</label><input type="text" id="sv-name" placeholder="Жишээ: Зуны аялал"></div>
+    <div class="field"><label>Зорилтот дүн (₮)</label><input type="number" id="sv-target" inputmode="decimal"></div>
+    <div class="field"><label>Одоо цугларсан (₮)</label><input type="number" id="sv-current" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Зорилтот огноо (заавал биш)</label><input type="date" id="sv-date"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('saving-modal')">Болих</button>
+      <button class="btn acc" onclick="saveSaving()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="sv-delete-wrap"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -659,7 +734,7 @@ const DATA_FILE='homebook_data.json';
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -670,6 +745,7 @@ let variableMonth=new Date().toISOString().slice(0,7);
 let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
+let editingLoanId=null, editingSavingId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -748,7 +824,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -786,6 +862,8 @@ async function loadFromDrive(){
       data.repairs=mergeById(data.repairs, remote.repairs||[]);
       data.members=mergeById(data.members, remote.members||[]);
       data.treatments=mergeById(data.treatments, remote.treatments||[]);
+      data.loans=mergeById(data.loans, remote.loans||[]);
+      data.savings=mergeById(data.savings, remote.savings||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -821,7 +899,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -866,6 +944,7 @@ function loadLocal(){
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
+  if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -878,6 +957,7 @@ function migrate(){
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
+  if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -1063,7 +1143,158 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); renderHealth(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); renderHealth(); renderFinance(); }
+
+/* ═══ Санхүү: зээл + хуримтлал ═══ */
+function renderFinance(){
+  const wrap=document.getElementById('view-finance');
+  // ── Зээл ──
+  let loanHtml='';
+  if(data.loans.length===0){
+    loanHtml='<div class="fin-empty">Зээл, өр алга</div>';
+  }else{
+    loanHtml=data.loans.map(l=>{
+      if(l.type==='heseglen'){
+        const parts=l.parts||0, paid=l.paidParts||0;
+        const pct=parts?Math.min(100,Math.round(paid/parts*100)):0;
+        const remain=(parts-paid)*(l.partAmount||0);
+        const done=paid>=parts&&parts>0;
+        return `<div class="fin-card">
+          <div class="fin-head"><span class="fin-name">${escapeHtml(l.name)}</span>
+            <span class="card-actions"><span class="ic" onclick="openLoanModal('${l.id}')"><i class="ti ti-pencil"></i></span>
+            <span class="ic" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i></span></span></div>
+          <div class="progress"><div class="fill" style="width:${pct}%"></div></div>
+          <div class="fin-line"><b class="num">${paid}/${parts}</b> хэсэг төлөгдсөн · Үлдсэн: <b class="num">${fmt(remain)}₮</b></div>
+          ${l.next&&!done?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b> (${fmt(l.partAmount)}₮)</div>`:''}
+          ${done?'<div class="fin-line" style="color:var(--success)">✓ Төлж дууссан</div>':
+            `<div class="fin-actions"><button class="btn acc" onclick="payPart('${l.id}')"><i class="ti ti-check"></i> Хэсэг төлсөн</button></div>`}
+        </div>`;
+      }else{
+        return `<div class="fin-card">
+          <div class="fin-head"><span class="fin-name">${escapeHtml(l.name)}</span>
+            <span class="card-actions"><span class="ic" onclick="openLoanModal('${l.id}')"><i class="ti ti-pencil"></i></span>
+            <span class="ic" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i></span></span></div>
+          <div class="fin-line">Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
+          ${l.next?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b></div>`:''}
+          ${l.due?`<div class="fin-line">Дуусах: <b class="num">${l.due}</b></div>`:''}
+        </div>`;
+      }
+    }).join('');
+  }
+  // ── Хуримтлал ──
+  let svHtml='';
+  if(data.savings.length===0){
+    svHtml='<div class="fin-empty">Хуримтлал алга</div>';
+  }else{
+    svHtml=data.savings.map(s=>{
+      const target=s.target||0, cur=s.current||0;
+      const pct=target?Math.min(100,Math.round(cur/target*100)):0;
+      const remain=Math.max(0,target-cur);
+      return `<div class="fin-card">
+        <div class="fin-head"><span class="fin-name">${escapeHtml(s.name)}</span>
+          <span class="card-actions"><span class="ic" onclick="openSavingModal('${s.id}')"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteSaving('${s.id}')"><i class="ti ti-trash"></i></span></span></div>
+        <div class="progress"><div class="fill sv" style="width:${pct}%"></div></div>
+        <div class="fin-line"><b class="num">${fmt(cur)}₮</b> / ${fmt(target)}₮ &nbsp;(<b>${pct}%</b>) · Үлдсэн: <b class="num">${fmt(remain)}₮</b></div>
+        ${s.date?`<div class="fin-line">Зорилтот огноо: <b class="num">${s.date}</b></div>`:''}
+      </div>`;
+    }).join('');
+  }
+  wrap.innerHTML=`
+    <div class="sec-title"><i class="ti ti-credit-card"></i> Зээл / өр</div>
+    ${loanHtml}
+    <button class="btn" style="width:100%;justify-content:center" onclick="openLoanModal()"><i class="ti ti-plus"></i> Зээл нэмэх</button>
+    <div class="sec-title"><i class="ti ti-target"></i> Хуримтлал</div>
+    ${svHtml}
+    <button class="btn" style="width:100%;justify-content:center" onclick="openSavingModal()"><i class="ti ti-plus"></i> Хуримтлал нэмэх</button>
+  `;
+}
+
+/* ── Зээл ── */
+function lnTypeChanged(){
+  const t=document.getElementById('ln-type').value;
+  document.getElementById('ln-zeel-fields').style.display=(t==='zeel')?'block':'none';
+  document.getElementById('ln-hes-fields').style.display=(t==='heseglen')?'block':'none';
+}
+function openLoanModal(editId){
+  editingLoanId=editId||null;
+  const delWrap=document.getElementById('ln-delete-wrap');
+  const g=id=>document.getElementById(id);
+  if(editingLoanId){
+    const l=data.loans.find(x=>x.id===editingLoanId);
+    g('ln-modal-title').textContent='Зээл засах';
+    g('ln-name').value=l.name; g('ln-type').value=l.type||'zeel';
+    g('ln-total').value=l.total||''; g('ln-monthly').value=l.monthly||''; g('ln-due').value=l.due||'';
+    g('ln-parts').value=l.parts||''; g('ln-partamt').value=l.partAmount||''; g('ln-paid').value=l.paidParts||0;
+    g('ln-next').value=l.next||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    g('ln-modal-title').textContent='Зээл нэмэх';
+    ['ln-name','ln-total','ln-monthly','ln-due','ln-parts','ln-partamt','ln-next'].forEach(i=>g(i).value='');
+    g('ln-type').value='zeel'; g('ln-paid').value='0';
+    delWrap.innerHTML='';
+  }
+  lnTypeChanged(); openModal('loan-modal');
+}
+function saveLoan(){
+  const g=id=>document.getElementById(id);
+  const name=g('ln-name').value.trim();
+  const type=g('ln-type').value;
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  const obj={ name, type, total:parseFloat(g('ln-total').value)||0, next:g('ln-next').value,
+    monthly:parseFloat(g('ln-monthly').value)||0, due:g('ln-due').value,
+    parts:parseInt(g('ln-parts').value)||0, partAmount:parseFloat(g('ln-partamt').value)||0,
+    paidParts:parseInt(g('ln-paid').value)||0, updatedAt:Date.now() };
+  if(editingLoanId){ Object.assign(data.loans.find(x=>x.id===editingLoanId), obj); toast('Засагдлаа'); }
+  else{ obj.id='ln'+Date.now(); data.loans.push(obj); toast('Зээл нэмэгдлээ'); }
+  persist(); closeModal('loan-modal'); renderFinance();
+}
+function deleteLoan(id){
+  if(!confirm('Энэ зээлийг устгах уу?'))return;
+  data.loans=data.loans.filter(x=>x.id!==id);
+  persist(); closeModal('loan-modal'); renderFinance();
+}
+function payPart(id){
+  const l=data.loans.find(x=>x.id===id);
+  if(l.paidParts<l.parts){
+    l.paidParts=(l.paidParts||0)+1;
+    if(l.next){ const [y,m,d]=l.next.split('-').map(Number); l.next=new Date(y,m,d).toISOString().slice(0,10); }
+    l.updatedAt=Date.now(); persist(); renderFinance(); toast('Хэсэг төлөгдлөө');
+  }
+}
+
+/* ── Хуримтлал ── */
+function openSavingModal(editId){
+  editingSavingId=editId||null;
+  const g=id=>document.getElementById(id);
+  const delWrap=document.getElementById('sv-delete-wrap');
+  if(editingSavingId){
+    const s=data.savings.find(x=>x.id===editingSavingId);
+    g('sv-modal-title').textContent='Хуримтлал засах';
+    g('sv-name').value=s.name; g('sv-target').value=s.target||''; g('sv-current').value=s.current||0; g('sv-date').value=s.date||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteSaving('${s.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    g('sv-modal-title').textContent='Хуримтлал нэмэх';
+    g('sv-name').value=''; g('sv-target').value=''; g('sv-current').value=''; g('sv-date').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('saving-modal');
+}
+function saveSaving(){
+  const g=id=>document.getElementById(id);
+  const name=g('sv-name').value.trim();
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  const obj={ name, target:parseFloat(g('sv-target').value)||0, current:parseFloat(g('sv-current').value)||0,
+    date:g('sv-date').value, updatedAt:Date.now() };
+  if(editingSavingId){ Object.assign(data.savings.find(x=>x.id===editingSavingId), obj); toast('Засагдлаа'); }
+  else{ obj.id='sv'+Date.now(); data.savings.push(obj); toast('Хуримтлал нэмэгдлээ'); }
+  persist(); closeModal('saving-modal'); renderFinance();
+}
+function deleteSaving(id){
+  if(!confirm('Энэ хуримтлалыг устгах уу?'))return;
+  data.savings=data.savings.filter(x=>x.id!==id);
+  persist(); closeModal('saving-modal'); renderFinance();
+}
 
 /* ═══ Эрүүл мэнд (гишүүн + эмчилгээ) ═══ */
 function treatsOf(memberId){ return data.treatments.filter(t=>t.memberId===memberId).sort((a,b)=>b.date.localeCompare(a.date)); }
