@@ -36,7 +36,8 @@ input,select{font-family:inherit;font-size:15px}
 /* ── Home / Login (голлуулсан карт) ── */
 .center-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
 .card-box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:2rem 1.5rem 1.5rem;box-shadow:var(--shadow)}
+  border-radius:16px;padding:2rem 1.5rem 1.5rem;
+  box-shadow:0 12px 40px rgba(70,55,110,.20), 0 3px 10px rgba(0,0,0,.06)}
 .logo{width:60px;height:60px;border-radius:16px;background:var(--accent-bg);
   display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
 .logo i{font-size:30px;color:var(--accent-text)}
@@ -58,7 +59,8 @@ input,select{font-family:inherit;font-size:15px}
 
 /* ── Home / Login background + лого зураг ── */
 #home-screen,#login-screen{
-  background:url('Background.jpg') center/cover no-repeat;
+  background:linear-gradient(rgba(60,50,90,.04),rgba(60,50,90,.10)),
+             url('Background.jpg') center/cover no-repeat;
 }
 .logo-img{width:96px;height:96px;border-radius:18px;object-fit:cover;
   display:block;margin:0 auto 1rem;box-shadow:var(--shadow)}
