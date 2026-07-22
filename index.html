@@ -272,6 +272,10 @@ input,select{font-family:inherit;font-size:15px}
 .veh-total .l{font-size:14px;color:var(--text-2)}
 .veh-total .v{font-size:18px;font-weight:600}
 .veh-empty{font-size:13px;color:var(--text-muted);padding:4px 0 1rem}
+
+/* ── Эрүүл мэнд (машинтай ижил бүтэц) ── */
+.mem-icon{background:#fce7f3 !important}
+.mem-icon i{color:#be185d !important}
 </style>
 </head>
 <body>
@@ -333,6 +337,8 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-variable" class="view"></div>
     <!-- Машин -->
     <div id="view-vehicles" class="view"></div>
+    <!-- Эрүүл мэнд -->
+    <div id="view-health" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
@@ -342,6 +348,7 @@ input,select{font-family:inherit;font-size:15px}
     <button class="nav-btn" data-view="income" onclick="showView('income')"><i class="ti ti-coin"></i><span>Орлого</span></button>
     <button class="nav-btn" data-view="variable" onclick="showView('variable')"><i class="ti ti-basket"></i><span>Хувьсах</span></button>
     <button class="nav-btn" data-view="vehicles" onclick="showView('vehicles')"><i class="ti ti-car"></i><span>Машин</span></button>
+    <button class="nav-btn" data-view="health" onclick="showView('health')"><i class="ti ti-heartbeat"></i><span>Эрүүл мэнд</span></button>
   </nav>
 </div>
 
@@ -579,6 +586,66 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: гишүүн нэмэх/засах -->
+<div class="modal-bg" id="member-modal">
+  <div class="modal">
+    <h3 id="mb-modal-title">Гишүүн нэмэх</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input type="text" id="mb-name" placeholder="Жишээ: Болд">
+    </div>
+    <div class="field">
+      <label>Төрсөн огноо (заавал биш)</label>
+      <input type="date" id="mb-birth">
+    </div>
+    <div class="field">
+      <label>Нэмэлт тэмдэглэл (заавал биш)</label>
+      <input type="text" id="mb-note" placeholder="Жишээ: цусны бүлэг, харшил">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('member-modal')">Болих</button>
+      <button class="btn acc" onclick="saveMember()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="mb-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: эмчилгээ нэмэх/засах -->
+<div class="modal-bg" id="treat-modal">
+  <div class="modal">
+    <h3 id="tr-modal-title">Эмчилгээ нэмэх</h3>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="tr-date">
+    </div>
+    <div class="field">
+      <label>Онош / эмчилгээ / эм</label>
+      <input type="text" id="tr-desc" placeholder="Жишээ: Ханиад — антибиотик уусан">
+    </div>
+    <div class="field">
+      <label>Дүн (₮)</label>
+      <input type="number" id="tr-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('treat-modal')">Болих</button>
+      <button class="btn acc" onclick="saveTreat()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="tr-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: эмчилгээний түүх -->
+<div class="modal-bg" id="treats-modal">
+  <div class="modal">
+    <h3 id="trs-title">Эмчилгээний түүх</h3>
+    <div id="trs-list"></div>
+    <button class="add-reading-btn" id="trs-add"><i class="ti ti-plus"></i> Эмчилгээ нэмэх</button>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('treats-modal')">Хаах</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -592,7 +659,7 @@ const DATA_FILE='homebook_data.json';
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -602,6 +669,7 @@ let editingIncomeId=null;
 let variableMonth=new Date().toISOString().slice(0,7);
 let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
+let editingMemberId=null, editingTreatId=null, treatMemberId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -680,7 +748,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -716,6 +784,8 @@ async function loadFromDrive(){
       data.variable=mergeById(data.variable, remote.variable||[]);
       data.vehicles=mergeById(data.vehicles, remote.vehicles||[]);
       data.repairs=mergeById(data.repairs, remote.repairs||[]);
+      data.members=mergeById(data.members, remote.members||[]);
+      data.treatments=mergeById(data.treatments, remote.treatments||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -751,7 +821,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -795,6 +865,7 @@ function loadLocal(){
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
+  if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -806,6 +877,7 @@ function migrate(){
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
+  if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -991,7 +1063,150 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); renderHealth(); }
+
+/* ═══ Эрүүл мэнд (гишүүн + эмчилгээ) ═══ */
+function treatsOf(memberId){ return data.treatments.filter(t=>t.memberId===memberId).sort((a,b)=>b.date.localeCompare(a.date)); }
+function memberTotal(memberId){ return treatsOf(memberId).reduce((s,t)=>s+(t.amount||0),0); }
+function renderHealth(){
+  const wrap=document.getElementById('view-health');
+  if(data.members.length===0){
+    wrap.innerHTML=`<div class="empty-state" style="padding:2.5rem 1rem">
+      <i class="ti ti-heartbeat"></i><h3>Гишүүн алга</h3>
+      <p>Гэр бүлийн гишүүдээ нэмээд эмчилгээ, зардлынх нь түүхийг хөтөлнө.</p>
+      <button class="btn acc" onclick="openMemberModal()"><i class="ti ti-plus"></i> Гишүүн нэмэх</button>
+    </div>`;
+    return;
+  }
+  let html='';
+  data.members.forEach(mb=>{
+    const ts=treatsOf(mb.id);
+    const total=memberTotal(mb.id);
+    html+=`<div class="veh-card">
+      <div class="veh-head">
+        <div class="veh-icon mem-icon"><i class="ti ti-user-heart"></i></div>
+        <div style="flex:1"><div class="veh-title">${escapeHtml(mb.name)}</div>
+          <div class="veh-sub">${mb.birth?'Төрсөн: '+mb.birth:''}${mb.note?(mb.birth?' · ':'')+escapeHtml(mb.note):''}</div></div>
+        <span class="card-actions">
+          <span class="ic" onclick="openMemberModal('${mb.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteMember('${mb.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+        </span>
+      </div>
+      <div class="veh-total"><span class="l">Нийт зардал (${ts.length} эмчилгээ)</span><span class="v num">${fmt(total)}₮</span></div>
+      ${ts.length?ts.slice(0,3).map(t=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+        <span><span class="num" style="color:var(--text-2)">${t.date}</span> · ${escapeHtml(t.desc||'')}</span>
+        <span class="num" style="font-weight:500">${fmt(t.amount)}₮</span></div>`).join(''):'<div class="veh-empty">Эмчилгээ хараахан алга</div>'}
+      ${ts.length>3?`<div style="font-size:12px;color:var(--text-muted);padding:2px 0 6px">+${ts.length-3} эмчилгээ...</div>`:''}
+      <button class="add-reading-btn" onclick="openTreatsModal('${mb.id}')"><i class="ti ti-history"></i> Эмчилгээний түүх</button>
+    </div>`;
+  });
+  html+=`<button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openMemberModal()"><i class="ti ti-plus"></i> Гишүүн нэмэх</button>`;
+  wrap.innerHTML=html;
+}
+function openMemberModal(editId){
+  editingMemberId=editId||null;
+  const delWrap=document.getElementById('mb-delete-wrap');
+  if(editingMemberId){
+    const mb=data.members.find(x=>x.id===editingMemberId);
+    document.getElementById('mb-modal-title').textContent='Гишүүн засах';
+    document.getElementById('mb-name').value=mb.name;
+    document.getElementById('mb-birth').value=mb.birth||'';
+    document.getElementById('mb-note').value=mb.note||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteMember('${mb.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('mb-modal-title').textContent='Гишүүн нэмэх';
+    document.getElementById('mb-name').value='';
+    document.getElementById('mb-birth').value='';
+    document.getElementById('mb-note').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('member-modal');
+}
+function saveMember(){
+  const name=document.getElementById('mb-name').value.trim();
+  const birth=document.getElementById('mb-birth').value;
+  const note=document.getElementById('mb-note').value.trim();
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(editingMemberId){
+    const mb=data.members.find(x=>x.id===editingMemberId);
+    mb.name=name; mb.birth=birth; mb.note=note; mb.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.members.push({ id:'mem'+Date.now(), name, birth, note, updatedAt:Date.now() });
+    toast('Гишүүн нэмэгдлээ');
+  }
+  persist(); closeModal('member-modal'); renderHealth();
+}
+function deleteMember(id){
+  const mb=data.members.find(x=>x.id===id);
+  if(!confirm('"'+mb.name+'"-г устгах уу? Эмчилгээний түүх нь бас устана.'))return;
+  data.members=data.members.filter(x=>x.id!==id);
+  data.treatments=data.treatments.filter(t=>t.memberId!==id);
+  persist(); closeModal('member-modal'); render();
+}
+
+/* ── Эмчилгээ ── */
+function openTreatsModal(memberId){
+  treatMemberId=memberId;
+  const mb=data.members.find(x=>x.id===memberId);
+  document.getElementById('trs-title').textContent=mb.name+' — эмчилгээ';
+  document.getElementById('trs-add').onclick=()=>openTreatModal();
+  const ts=treatsOf(memberId);
+  const wrap=document.getElementById('trs-list');
+  if(ts.length===0){ wrap.innerHTML='<div class="empty-line">Эмчилгээ алга</div>'; }
+  else{
+    wrap.innerHTML=ts.map(t=>`<div class="hist-row">
+      <span class="hd num">${t.date}</span>
+      <span class="hmain">${escapeHtml(t.desc||'')} <span class="hsub num">${fmt(t.amount)}₮</span></span>
+      <span class="hacts">
+        <span class="ic" onclick="openTreatModal('${t.id}')"><i class="ti ti-pencil"></i></span>
+        <span class="ic" onclick="deleteTreat('${t.id}')"><i class="ti ti-trash"></i></span>
+      </span></div>`).join('');
+  }
+  openModal('treats-modal');
+}
+function openTreatModal(editId){
+  editingTreatId=editId||null;
+  const delWrap=document.getElementById('tr-delete-wrap');
+  if(editingTreatId){
+    const t=data.treatments.find(x=>x.id===editingTreatId);
+    document.getElementById('tr-modal-title').textContent='Эмчилгээ засах';
+    document.getElementById('tr-date').value=t.date;
+    document.getElementById('tr-desc').value=t.desc||'';
+    document.getElementById('tr-amount').value=t.amount;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteTreat('${t.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('tr-modal-title').textContent='Эмчилгээ нэмэх';
+    document.getElementById('tr-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('tr-desc').value='';
+    document.getElementById('tr-amount').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('treat-modal');
+}
+function saveTreat(){
+  const date=document.getElementById('tr-date').value;
+  const desc=document.getElementById('tr-desc').value.trim();
+  const amount=parseFloat(document.getElementById('tr-amount').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  if(editingTreatId){
+    const t=data.treatments.find(x=>x.id===editingTreatId);
+    t.date=date; t.desc=desc; t.amount=amount; t.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.treatments.push({ id:'trt'+Date.now(), memberId:treatMemberId, date, desc, amount, updatedAt:Date.now() });
+    toast('Эмчилгээ нэмэгдлээ');
+  }
+  persist(); closeModal('treat-modal'); render();
+  if(document.getElementById('treats-modal').classList.contains('show'))openTreatsModal(treatMemberId);
+}
+function deleteTreat(id){
+  if(!confirm('Энэ эмчилгээг устгах уу?'))return;
+  data.treatments=data.treatments.filter(x=>x.id!==id);
+  persist(); render();
+  if(document.getElementById('treats-modal').classList.contains('show'))openTreatsModal(treatMemberId);
+}
 
 /* ═══ Машин ═══ */
 function repairsOf(vehicleId){ return data.repairs.filter(r=>r.vehicleId===vehicleId).sort((a,b)=>b.date.localeCompare(a.date)); }
@@ -1529,9 +1744,10 @@ function renderHome(){
   const incomeTotal=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
   const varTotal=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
   const repairTotal=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0);
-  const expenseTotal=fxTotal+varTotal+repairTotal;   // тогтмол + хувьсах + машины засвар
+  const treatTotal=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
+  const expenseTotal=fxTotal+varTotal+repairTotal+treatTotal;   // тогтмол + хувьсах + машин + эрүүл мэнд
   const balance=incomeTotal-expenseTotal;
-  const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0;
+  const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
   const moneyCard = hasMoney
     ? `<div class="money-grid">
         <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
