@@ -6,10 +6,6 @@
 <title>HomeBook</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
 <style>
-/* ═══════════════════════════════════════════════════════════
-   HomeBook — өнгө, суурь загвар
-   Нэг accent (teal), tabular тоо, цэвэр зай — ярьсан зарчмаар
-   ═══════════════════════════════════════════════════════════ */
 :root{
   --accent:#0d9488; --accent-hover:#0f766e; --accent-bg:#ccfbf1; --accent-text:#0f766e;
   --success:#15803d; --danger:#dc2626;
@@ -20,27 +16,20 @@
   --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  background:var(--bg);color:var(--text);line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
 .num{font-variant-numeric:tabular-nums}
 button{font-family:inherit;cursor:pointer;border:none;background:none}
 input,select{font-family:inherit;font-size:15px}
 
-/* ── Дэлгэц солих ── */
 .screen{display:none;min-height:100vh}
 .screen.active{display:block}
 
-/* ── Home / Login (голлуулсан карт) ── */
+/* Home / Login */
 .center-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
 .card-box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);
   border-radius:16px;padding:2rem 1.5rem 1.5rem;
   box-shadow:0 12px 40px rgba(70,55,110,.20), 0 3px 10px rgba(0,0,0,.06)}
-.logo{width:60px;height:60px;border-radius:16px;background:var(--accent-bg);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
-.logo i{font-size:30px;color:var(--accent-text)}
 .card-box h1{font-size:20px;font-weight:600;text-align:center;margin-bottom:6px}
 .card-box .sub{font-size:14px;color:var(--text-2);text-align:center;margin-bottom:1.5rem;line-height:1.5}
 .feat{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface-2);
@@ -56,25 +45,22 @@ input,select{font-family:inherit;font-size:15px}
   display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s}
 .btn-google:hover{background:var(--surface-2)}
 .note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:1rem;line-height:1.5}
-
-/* ── Home / Login background + лого зураг ── */
 #home-screen,#login-screen{
   background:linear-gradient(rgba(60,50,90,.04),rgba(60,50,90,.10)),
-             url('Background.jpg') center/cover no-repeat;
-}
+             url('Background.jpg') center/cover no-repeat;}
 .logo-img{width:96px;height:96px;border-radius:18px;object-fit:cover;
   display:block;margin:0 auto 1rem;box-shadow:var(--shadow)}
 
-/* ── App каркас ── */
+/* App */
 #app{max-width:640px;margin:0 auto;padding:0 1rem 6rem}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem}
 .topbar h2{font-size:18px;font-weight:600}
 .topbar .month{font-size:13px;color:var(--text-2);margin-top:2px}
 .avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);
-  display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+  display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer}
 .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 
-/* ── Тоолуурын карт ── */
+/* Тоолуурын карт */
 .meter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:1.1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
 .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
@@ -84,41 +70,41 @@ input,select{font-family:inherit;font-size:15px}
 .mc-icon.hot{background:#fee2e2}.mc-icon.hot i{color:#dc2626}
 .mc-title{font-size:15px;font-weight:500}
 .mc-date{font-size:12px;color:var(--text-2)}
-.mc-menu{margin-left:auto;color:var(--text-muted);font-size:18px;padding:4px}
+.card-actions{margin-left:auto;display:flex;gap:1px}
+.card-actions .ic{color:var(--text-muted);font-size:17px;padding:6px}
+.card-actions .ic:hover{color:var(--text)}
 .mc-usage{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
 .mc-usage .big{font-size:32px;font-weight:600;line-height:1}
 .mc-usage .u{font-size:14px;color:var(--text-2)}
 .mc-sub{font-size:13px;color:var(--text-2);margin-bottom:1rem}
-.mc-bars{display:flex;align-items:flex-end;gap:5px;height:48px;margin-bottom:5px}
+.mc-bars{display:flex;align-items:flex-end;gap:5px;height:48px;margin-bottom:1rem}
 .mc-bars .bar{flex:1;background:var(--accent-bg);border-radius:3px;min-height:4px}
 .mc-bars .bar.last{background:var(--accent)}
-.mc-barlabel{font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:1rem}
 .mc-foot{display:flex;justify-content:space-between;align-items:center;
   padding-top:10px;border-top:1px solid var(--border)}
 .mc-foot .l{font-size:14px;color:var(--text-2)}
 .mc-foot .v{font-size:17px;font-weight:600}
 .mc-empty{font-size:13px;color:var(--text-muted);padding:6px 0 1rem}
 
-/* ── Товч, FAB ── */
 .btn{padding:9px 14px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;
   border:1px solid var(--border-strong);background:var(--surface);color:var(--text);
   display:inline-flex;align-items:center;gap:6px;transition:background .15s}
 .btn:hover{background:var(--surface-2)}
 .btn.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn.acc:hover{background:var(--accent-hover)}
-.btn.sm{padding:6px 10px;font-size:13px}
+.btn.danger{color:var(--danger);border-color:#fecaca}
+.btn.danger:hover{background:#fef2f2}
 .add-reading-btn{width:100%;margin-top:8px;padding:10px;border-radius:var(--radius-sm);
   border:1px dashed var(--border-strong);background:transparent;color:var(--accent-text);
   font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}
 .add-reading-btn:hover{background:var(--accent-bg)}
 
-/* ── Хоосон төлөв ── */
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--text-2)}
 .empty-state i{font-size:48px;color:var(--border-strong);margin-bottom:1rem;display:block}
 .empty-state h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
 .empty-state p{font-size:14px;margin-bottom:1.25rem;line-height:1.5}
 
-/* ── Modal ── */
+/* Modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
   align-items:flex-end;justify-content:center}
 .modal-bg.show{display:flex}
@@ -140,19 +126,39 @@ input,select{font-family:inherit;font-size:15px}
 .modal-actions{display:flex;gap:10px;margin-top:1.25rem}
 .modal-actions .btn{flex:1;justify-content:center;padding:12px}
 
-/* ── FAB (нэмэх) ── */
-.fab{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;
-  width:min(608px,calc(100% - 2rem))}
-.fab button{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);
-  color:#fff;font-size:15px;font-weight:500;box-shadow:0 4px 12px rgba(13,148,136,.35);
-  display:flex;align-items:center;justify-content:center;gap:6px}
+/* Тариф түүх засварлагч */
+.section-label{font-size:13px;font-weight:600;margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:6px}
+.tariff-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tariff-row .tr-date{font-size:13px;color:var(--text-2);width:100px}
+.tariff-row .tr-price{flex:1;font-size:14px;font-weight:500}
+.tariff-row .ic{color:var(--text-muted);font-size:16px;padding:4px}
+.tariff-row .ic:hover{color:var(--danger)}
+.mini-add{display:flex;gap:8px;margin-top:6px}
+.mini-add input{flex:1;padding:9px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)}
+.mini-add .add-ic{padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--accent-text)}
+.mini-add .add-ic:hover{background:var(--accent-bg)}
 
-/* ── Sync badge ── */
+/* Түүх (заалт + тэмдэглэгээ) */
+.hist-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-row .hd{font-size:12px;color:var(--text-2);width:82px;flex-shrink:0}
+.hist-row .hmain{flex:1;font-size:14px}
+.hist-row .hmain .hsub{font-size:12px;color:var(--text-2)}
+.hist-row .hacts{display:flex;gap:2px}
+.hist-row .hacts .ic{color:var(--text-muted);font-size:16px;padding:5px}
+.hist-row .hacts .ic:hover{color:var(--text)}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-text)}
+.tag.note{background:#fef3c7;color:#92400e}
+.empty-line{font-size:13px;color:var(--text-muted);padding:10px 0}
+
+.fab{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;width:min(608px,calc(100% - 2rem))}
+.fab button{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);color:#fff;
+  font-size:15px;font-weight:500;box-shadow:0 4px 12px rgba(13,148,136,.35);
+  display:flex;align-items:center;justify-content:center;gap:6px}
 .sync-badge{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--surface-2);
   color:var(--text-2);display:inline-flex;align-items:center;gap:5px}
 .sync-badge i{font-size:13px}
-
-/* ── Toast ── */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;
   background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;
   opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
@@ -161,7 +167,7 @@ input,select{font-family:inherit;font-size:15px}
 </head>
 <body>
 
-<!-- ═══════════ HOME ═══════════ -->
+<!-- HOME -->
 <div id="home-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
@@ -178,7 +184,7 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
-<!-- ═══════════ LOGIN ═══════════ -->
+<!-- LOGIN -->
 <div id="login-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
@@ -191,7 +197,7 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
-<!-- ═══════════ APP (dashboard) ═══════════ -->
+<!-- APP -->
 <div id="app-screen" class="screen">
   <div id="app">
     <div class="topbar">
@@ -209,35 +215,10 @@ input,select{font-family:inherit;font-size:15px}
   <div class="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
 </div>
 
-<!-- ═══════════ MODAL: заалт нэмэх ═══════════ -->
-<div class="modal-bg" id="reading-modal">
-  <div class="modal">
-    <h3>Шинэ заалт нэмэх</h3>
-    <div class="field">
-      <label>Тоолуур</label>
-      <select id="rd-meter" onchange="updatePreview()"></select>
-    </div>
-    <div class="field">
-      <label>Огноо</label>
-      <input type="date" id="rd-date" onchange="updatePreview()">
-    </div>
-    <div class="field">
-      <label>Шинэ заалт</label>
-      <input type="number" id="rd-value" inputmode="decimal" placeholder="Тоолуур дээрх тоо" oninput="updatePreview()">
-      <div class="hint" id="rd-last"></div>
-    </div>
-    <div class="preview" id="rd-preview"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal('reading-modal')">Болих</button>
-      <button class="btn acc" onclick="saveReading()">Хадгалах</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ MODAL: тоолуур нэмэх ═══════════ -->
+<!-- MODAL: тоолуур нэмэх/засах -->
 <div class="modal-bg" id="meter-modal">
   <div class="modal">
-    <h3>Тоолуур нэмэх</h3>
+    <h3 id="mt-modal-title">Тоолуур нэмэх</h3>
     <div class="field">
       <label>Нэр</label>
       <input type="text" id="mt-name" placeholder="Жишээ: Гал тогоо — халуун ус">
@@ -249,14 +230,76 @@ input,select{font-family:inherit;font-size:15px}
         <option value="haluun">Халуун ус</option>
       </select>
     </div>
-    <div class="field">
+
+    <!-- Add mode: энгийн тариф -->
+    <div class="field" id="mt-simple-tariff">
       <label>Нэгжийн тариф (₮)</label>
       <input type="number" id="mt-tariff" inputmode="decimal" placeholder="1 м³-ийн үнэ">
-      <div class="hint">Дараа тохиргооноос өөрчилж болно</div>
+      <div class="hint">Дараа тариф өөрчлөгдвөл засах хэсгээс түүх нэмж болно</div>
     </div>
+
+    <!-- Edit mode: тариф түүх -->
+    <div id="mt-tariff-history" style="display:none">
+      <div class="section-label"><i class="ti ti-history"></i> Тарифын түүх</div>
+      <div id="tariff-list"></div>
+      <div class="mini-add">
+        <input type="date" id="tf-date" title="Эхлэх огноо">
+        <input type="number" id="tf-price" inputmode="decimal" placeholder="Шинэ тариф ₮">
+        <button class="add-ic" onclick="addTariff()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div class="hint" style="margin-top:6px">Тухайн огнооноос эхлэн шинэ тариф үйлчилнэ. Хуучин сарын тооцоо хэвээр зөв.</div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('meter-modal')">Болих</button>
-      <button class="btn acc" onclick="saveMeter()">Нэмэх</button>
+      <button class="btn acc" onclick="saveMeter()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: заалт нэмэх/засах -->
+<div class="modal-bg" id="reading-modal">
+  <div class="modal">
+    <h3 id="rd-modal-title">Шинэ заалт нэмэх</h3>
+    <div class="field">
+      <label>Тоолуур</label>
+      <select id="rd-meter" onchange="updatePreview()"></select>
+    </div>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="rd-date" onchange="updatePreview()">
+    </div>
+    <div class="field">
+      <label>Заалт</label>
+      <input type="number" id="rd-value" inputmode="decimal" placeholder="Тоолуур дээрх тоо" oninput="updatePreview()">
+      <div class="hint" id="rd-last"></div>
+    </div>
+    <div class="preview" id="rd-preview"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('reading-modal')">Болих</button>
+      <button class="btn acc" onclick="saveReading()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: түүх (заалт + тэмдэглэгээ) -->
+<div class="modal-bg" id="hist-modal">
+  <div class="modal">
+    <h3 id="hist-title">Түүх</h3>
+    <div class="section-label"><i class="ti ti-gauge"></i> Заалтууд</div>
+    <div id="hist-readings"></div>
+    <button class="add-reading-btn" id="hist-add-reading"><i class="ti ti-plus"></i> Заалт нэмэх</button>
+
+    <div class="section-label"><i class="ti ti-note"></i> Тэмдэглэгээ</div>
+    <div id="hist-notes"></div>
+    <div class="mini-add">
+      <input type="date" id="nt-date" title="Огноо">
+      <input type="text" id="nt-text" placeholder="Жишээ: нойлын засвар хийсэн">
+      <button class="add-ic" onclick="addNote()"><i class="ti ti-plus"></i></button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('hist-modal')">Хаах</button>
     </div>
   </div>
 </div>
@@ -265,31 +308,26 @@ input,select{font-family:inherit;font-size:15px}
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-/* ═══════════════════════════════════════════════════════════
-   HomeBook v1 — тохиргоо
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Тохиргоо ═══ */
 const CLIENT_ID='381344772393-3i8bb6flqqonu5qgmjngsma2031r0biv.apps.googleusercontent.com';
 const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
 const FOLDER_NAME='HomeBook';
 const DATA_FILE='homebook_data.json';
 
-/* ── Төлөв ── */
+/* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[] };   // өгөгдлийн загвар (v1: тоолуур + заалт)
+let data={ meters:[], readings:[], notes:[] };
 let saveTimer=null;
+let editingMeterId=null, editingReadingId=null, editTariffs=[], histMeterId=null;
 
-/* ═══════════════════════════════════════════════════════════
-   Дэлгэц солих
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Дэлгэц ═══ */
 function goScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Нэвтрэлт (GIS token client — ажлын системтэй ижил хэв маяг)
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Нэвтрэлт ═══ */
 function initGSI(){
   if(tokenClient||!window.google||!google.accounts)return;
   tokenClient=google.accounts.oauth2.initTokenClient({
@@ -306,14 +344,13 @@ function initGSI(){
           {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
         currentUser=info; localStorage.setItem('hb_usr',JSON.stringify(info));
       }catch(e){ currentUser={name:'Хэрэглэгч'}; }
-      enterApp();
-      await loadFromDrive();
+      enterApp(); await loadFromDrive();
     }
   });
 }
 function login(){
   initGSI();
-  if(!tokenClient){ alert('Google сервис ачаалж дуусаагүй байна. Түр хүлээгээд дахин дарна уу.'); return; }
+  if(!tokenClient){ alert('Google сервис ачаалж дуусаагүй. Түр хүлээгээд дахин дарна уу.'); return; }
   tokenClient.requestAccessToken();
 }
 function logout(){
@@ -322,28 +359,20 @@ function logout(){
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
   goScreen('home-screen');
 }
-
-/* ═══════════════════════════════════════════════════════════
-   App руу орох
-   ═══════════════════════════════════════════════════════════ */
 function enterApp(){
   goScreen('app-screen');
-  // Мэндчилгээ + сар
   const name=currentUser&&currentUser.name?currentUser.name.split(' ')[0]:'';
   document.getElementById('greeting').textContent='Сайн байна уу'+(name?', '+name:'');
   const months=['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
   const now=new Date();
   document.getElementById('month-label').textContent=now.getFullYear()+' оны '+months[now.getMonth()];
-  // Аватар
   const av=document.getElementById('avatar');
   if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
   else{ av.textContent=name?name[0].toUpperCase():'Т'; }
   render();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Drive sync
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Drive sync ═══ */
 async function getOrCreateFolder(){
   if(driveFolderId)return driveFolderId;
   const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
@@ -369,7 +398,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -379,8 +408,7 @@ async function saveToDrive(){
       driveDataFileId=meta.id;
     }
     await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
-      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob
-    });
+      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
     setSync('Синктэй','#0f766e');
   }catch(e){ console.error('Drive хадгалах алдаа:',e); setSync('Хадгалагдаагүй','#dc2626'); }
 }
@@ -394,104 +422,167 @@ async function loadFromDrive(){
       const text=await fetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
         {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
       const remote=JSON.parse(text);
-      // ── merge: id + updatedAt-аар сүүлд өөрчилсөн нь давамгайлна ──
       data.meters=mergeById(data.meters, remote.meters||[]);
       data.readings=mergeById(data.readings, remote.readings||[]);
-      saveLocal();
+      data.notes=mergeById(data.notes, remote.notes||[]);
+      migrate(); saveLocal();
     }
-    setSync('Синктэй','#0f766e');
-    render();
+    setSync('Синктэй','#0f766e'); render();
   }catch(e){ console.error('Drive уншах алдаа:',e); setSync('Уншигдаагүй','#dc2626'); }
 }
 function mergeById(local, remote){
   const byId={};
   local.forEach(x=>byId[x.id]=x);
-  remote.forEach(r=>{
-    const l=byId[r.id];
-    if(!l || (r.updatedAt||0)>(l.updatedAt||0)) byId[r.id]=r;
-  });
+  remote.forEach(r=>{ const l=byId[r.id]; if(!l||(r.updatedAt||0)>(l.updatedAt||0))byId[r.id]=r; });
   return Object.values(byId).filter(x=>!x.deleted);
 }
 function setSync(text,color){
   const b=document.getElementById('sync-badge');
-  b.querySelector('span').textContent=text;
-  b.style.color=color;
+  b.querySelector('span').textContent=text; b.style.color=color;
 }
-/* Өөрчлөлт болсны дараа: локалд шууд, Drive-д хойшлуулж хадгална */
-function persist(){
-  saveLocal();
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(saveToDrive,1200);
-}
+function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
 function saveLocal(){ localStorage.setItem('hb_data',JSON.stringify(data)); }
 function loadLocal(){
   const s=localStorage.getItem('hb_data');
   if(s){ try{ data=JSON.parse(s); }catch(e){} }
-  if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[];
+  if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
+  migrate();
+}
+/* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
+function migrate(){
+  (data.meters||[]).forEach(m=>{
+    if(!m.tariffs){ m.tariffs = (m.tariff!=null)?[{date:'2000-01-01',price:m.tariff}]:[]; }
+  });
+  if(!data.notes)data.notes=[];
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Тоолуур
-   ═══════════════════════════════════════════════════════════ */
-function openMeterModal(){ 
-  document.getElementById('mt-name').value='';
-  document.getElementById('mt-tariff').value='';
-  openModal('meter-modal'); 
+/* ═══ Тариф — тухайн огнооны үйлчлэх тариф ═══ */
+function tariffAt(meter, dateStr){
+  const ts=(meter.tariffs||[]).filter(t=>t.date<=dateStr).sort((a,b)=>b.date.localeCompare(a.date));
+  if(ts.length)return ts[0].price;
+  if(meter.tariffs&&meter.tariffs.length)
+    return [...meter.tariffs].sort((a,b)=>a.date.localeCompare(b.date))[0].price;
+  return meter.tariff||0;
 }
+
+/* ═══ Тоолуур нэмэх/засах ═══ */
+function openMeterModal(editId){
+  editingMeterId=editId||null;
+  const simple=document.getElementById('mt-simple-tariff');
+  const hist=document.getElementById('mt-tariff-history');
+  if(editingMeterId){
+    const m=data.meters.find(x=>x.id===editingMeterId);
+    document.getElementById('mt-modal-title').textContent='Тоолуур засах';
+    document.getElementById('mt-name').value=m.name;
+    document.getElementById('mt-type').value=m.type;
+    editTariffs=JSON.parse(JSON.stringify(m.tariffs||[]));
+    simple.style.display='none'; hist.style.display='block';
+    document.getElementById('tf-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('tf-price').value='';
+    renderTariffList();
+  }else{
+    document.getElementById('mt-modal-title').textContent='Тоолуур нэмэх';
+    document.getElementById('mt-name').value='';
+    document.getElementById('mt-type').value='huiten';
+    document.getElementById('mt-tariff').value='';
+    simple.style.display='block'; hist.style.display='none';
+  }
+  openModal('meter-modal');
+}
+function renderTariffList(){
+  const wrap=document.getElementById('tariff-list');
+  const sorted=[...editTariffs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(sorted.length===0){ wrap.innerHTML='<div class="empty-line">Тариф оруулаагүй байна</div>'; return; }
+  wrap.innerHTML=sorted.map(t=>`<div class="tariff-row">
+    <span class="tr-date num">${t.date}</span>
+    <span class="tr-price num">${fmt(t.price)}₮</span>
+    <span class="ic" onclick="removeTariff('${t.date}')"><i class="ti ti-trash"></i></span>
+  </div>`).join('');
+}
+function addTariff(){
+  const date=document.getElementById('tf-date').value;
+  const price=parseFloat(document.getElementById('tf-price').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(price)){ toast('Тариф оруулна уу'); return; }
+  editTariffs=editTariffs.filter(t=>t.date!==date); // ижил огноо байвал дарж бичих
+  editTariffs.push({date, price});
+  document.getElementById('tf-price').value='';
+  renderTariffList();
+}
+function removeTariff(date){ editTariffs=editTariffs.filter(t=>t.date!==date); renderTariffList(); }
 function saveMeter(){
   const name=document.getElementById('mt-name').value.trim();
   const type=document.getElementById('mt-type').value;
-  const tariff=parseFloat(document.getElementById('mt-tariff').value)||0;
   if(!name){ toast('Нэр оруулна уу'); return; }
-  data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³', tariff, updatedAt:Date.now() });
+  if(editingMeterId){
+    const m=data.meters.find(x=>x.id===editingMeterId);
+    m.name=name; m.type=type; m.tariffs=editTariffs; m.updatedAt=Date.now();
+    toast('Тоолуур засагдлаа');
+  }else{
+    const tariff=parseFloat(document.getElementById('mt-tariff').value)||0;
+    data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³',
+      tariffs:[{date:'2000-01-01', price:tariff}], updatedAt:Date.now() });
+    toast('Тоолуур нэмэгдлээ');
+  }
   persist(); closeModal('meter-modal'); render();
-  toast('Тоолуур нэмэгдлээ');
 }
 function deleteMeter(id){
   const m=data.meters.find(x=>x.id===id);
   if(!m)return;
-  if(!confirm('"'+m.name+'" тоолуурыг устгах уу? Заалтууд нь бас устана.'))return;
-  m.deleted=true; m.updatedAt=Date.now();
-  data.readings.filter(r=>r.meterId===id).forEach(r=>{r.deleted=true;r.updatedAt=Date.now();});
-  data.meters=data.meters.filter(x=>!x.deleted);
-  data.readings=data.readings.filter(x=>!x.deleted);
-  persist(); render();
+  if(!confirm('"'+m.name+'" тоолуурыг устгах уу? Заалт, тэмдэглэгээ нь бас устана.'))return;
+  data.meters=data.meters.filter(x=>x.id!==id);
+  data.readings=data.readings.filter(r=>r.meterId!==id);
+  data.notes=data.notes.filter(n=>n.meterId!==id);
+  m.deleted=true; m.updatedAt=Date.now(); data.meters.push(m); // tombstone sync-д
+  persist(); saveLocal(); data.meters=data.meters.filter(x=>!x.deleted); render();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Заалт
-   ═══════════════════════════════════════════════════════════ */
-function lastReadingOf(meterId){
-  const rs=data.readings.filter(r=>r.meterId===meterId).sort((a,b)=>b.date.localeCompare(a.date));
-  return rs[0]||null;
-}
-function openReadingModal(preMeterId){
+/* ═══ Заалт ═══ */
+function readingsOf(meterId){ return data.readings.filter(r=>r.meterId===meterId).sort((a,b)=>a.date.localeCompare(b.date)); }
+function lastReadingOf(meterId){ const rs=readingsOf(meterId); return rs[rs.length-1]||null; }
+
+function openReadingModal(preMeterId, editId){
   if(data.meters.length===0){ toast('Эхлээд тоолуур нэмнэ үү'); openMeterModal(); return; }
+  editingReadingId=editId||null;
   const sel=document.getElementById('rd-meter');
   sel.innerHTML=data.meters.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
-  if(preMeterId)sel.value=preMeterId;
-  document.getElementById('rd-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('rd-value').value='';
-  updatePreview();
-  openModal('reading-modal');
+  if(editingReadingId){
+    const r=data.readings.find(x=>x.id===editingReadingId);
+    document.getElementById('rd-modal-title').textContent='Заалт засах';
+    sel.value=r.meterId; sel.disabled=true;
+    document.getElementById('rd-date').value=r.date;
+    document.getElementById('rd-value').value=r.value;
+  }else{
+    document.getElementById('rd-modal-title').textContent='Шинэ заалт нэмэх';
+    sel.disabled=false;
+    if(preMeterId)sel.value=preMeterId;
+    document.getElementById('rd-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('rd-value').value='';
+  }
+  updatePreview(); openModal('reading-modal');
 }
 function updatePreview(){
   const meterId=document.getElementById('rd-meter').value;
+  const date=document.getElementById('rd-date').value;
   const val=parseFloat(document.getElementById('rd-value').value);
   const m=data.meters.find(x=>x.id===meterId);
-  const last=lastReadingOf(meterId);
+  // засварлаж байгаа бол өмнөх заалт = засаж буйгаас өмнөх огнооных
+  let rs=readingsOf(meterId);
+  if(editingReadingId)rs=rs.filter(r=>r.id!==editingReadingId);
+  const prevR=[...rs].filter(r=>r.date<=(date||'9999')).sort((a,b)=>b.date.localeCompare(a.date))[0];
   const lastEl=document.getElementById('rd-last');
-  lastEl.textContent=last?('Сүүлийн заалт: '+last.value+' ('+last.date+')'):'Энэ тоолуурын анхны заалт';
+  lastEl.textContent=prevR?('Өмнөх заалт: '+prevR.value+' ('+prevR.date+')'):'Энэ тоолуурын анхны заалт';
   const pv=document.getElementById('rd-preview');
   if(isNaN(val)||!m){ pv.classList.remove('show'); return; }
-  const prev=last?last.value:0;
+  const prev=prevR?prevR.value:0;
   const diff=val-prev;
   if(diff<0){
-    pv.innerHTML='<span class="warn"><i class="ti ti-alert-triangle"></i> Шинэ заалт өмнөхөөс бага байна. Тоолуур солигдсон эсэхээ шалгана уу.</span>';
+    pv.innerHTML='<span class="warn"><i class="ti ti-alert-triangle"></i> Заалт өмнөхөөс бага байна. Тоолуур солигдсон эсэхээ шалгана уу.</span>';
     pv.classList.add('show'); return;
   }
-  const cost=Math.round(diff*(m.tariff||0));
-  pv.innerHTML=`Зөрүү: <b>${fmt(diff)} ${m.unit}</b>`+(m.tariff?` &nbsp;·&nbsp; Төлбөр: <b>${fmt(cost)}₮</b>`:' &nbsp;·&nbsp; <span style="color:var(--text-muted)">тариф оруулаагүй</span>');
+  const tf=tariffAt(m, date||new Date().toISOString().slice(0,10));
+  const cost=Math.round(diff*tf);
+  pv.innerHTML=`Зөрүү: <b>${fmt(diff)} ${m.unit}</b>`+(tf?` &nbsp;·&nbsp; Төлбөр: <b>${fmt(cost)}₮</b> (тариф ${fmt(tf)}₮)`:' &nbsp;·&nbsp; <span style="color:var(--text-muted)">тариф оруулаагүй</span>');
   pv.classList.add('show');
 }
 function saveReading(){
@@ -500,24 +591,85 @@ function saveReading(){
   const val=parseFloat(document.getElementById('rd-value').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
   if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
-  const last=lastReadingOf(meterId);
-  if(last && val<last.value){
-    if(!confirm('Шинэ заалт ('+val+') өмнөхөөс ('+last.value+') бага байна. Ямар ч байсан хадгалах уу?'))return;
+  if(editingReadingId){
+    const r=data.readings.find(x=>x.id===editingReadingId);
+    r.date=date; r.value=val; r.updatedAt=Date.now();
+    toast('Заалт засагдлаа');
+  }else{
+    data.readings.push({ id:'r'+Date.now(), meterId, date, value:val, updatedAt:Date.now() });
+    toast('Заалт хадгалагдлаа');
   }
-  data.readings.push({ id:'r'+Date.now(), meterId, date, value:val, updatedAt:Date.now() });
   persist(); closeModal('reading-modal'); render();
-  toast('Заалт хадгалагдлаа');
+  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
+}
+function deleteReading(id){
+  if(!confirm('Энэ заалтыг устгах уу?'))return;
+  data.readings=data.readings.filter(r=>r.id!==id);
+  persist(); render();
+  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Render — тоолуурын картууд
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Тэмдэглэгээ ═══ */
+function openHistory(meterId){
+  histMeterId=meterId;
+  const m=data.meters.find(x=>x.id===meterId);
+  document.getElementById('hist-title').textContent=m.name;
+  document.getElementById('hist-add-reading').onclick=()=>openReadingModal(meterId);
+  document.getElementById('nt-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('nt-text').value='';
+  // Заалтууд (шинэ нь дээр)
+  const rs=[...readingsOf(meterId)].reverse();
+  const rWrap=document.getElementById('hist-readings');
+  if(rs.length===0){ rWrap.innerHTML='<div class="empty-line">Заалт алга</div>'; }
+  else{
+    rWrap.innerHTML=rs.map((r,i)=>{
+      const idx=rs.length-1-i; const all=readingsOf(meterId);
+      const pos=all.findIndex(x=>x.id===r.id);
+      const prev=pos>0?all[pos-1]:null;
+      const diff=prev?(r.value-prev.value):r.value;
+      return `<div class="hist-row">
+        <span class="hd num">${r.date}</span>
+        <span class="hmain"><b class="num">${r.value}</b> <span class="hsub num">(зөрүү ${fmt(diff)} ${m.unit})</span></span>
+        <span class="hacts">
+          <span class="ic" onclick="openReadingModal(null,'${r.id}')"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteReading('${r.id}')"><i class="ti ti-trash"></i></span>
+        </span></div>`;
+    }).join('');
+  }
+  // Тэмдэглэгээ
+  renderNotes(meterId);
+  openModal('hist-modal');
+}
+function renderNotes(meterId){
+  const ns=data.notes.filter(n=>n.meterId===meterId).sort((a,b)=>b.date.localeCompare(a.date));
+  const wrap=document.getElementById('hist-notes');
+  if(ns.length===0){ wrap.innerHTML='<div class="empty-line">Тэмдэглэгээ алга</div>'; return; }
+  wrap.innerHTML=ns.map(n=>`<div class="hist-row">
+    <span class="hd num">${n.date}</span>
+    <span class="hmain">${escapeHtml(n.text)}</span>
+    <span class="hacts"><span class="ic" onclick="deleteNote('${n.id}')"><i class="ti ti-trash"></i></span></span>
+  </div>`).join('');
+}
+function addNote(){
+  const date=document.getElementById('nt-date').value;
+  const text=document.getElementById('nt-text').value.trim();
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(!text){ toast('Тэмдэглэл бичнэ үү'); return; }
+  data.notes.push({ id:'n'+Date.now(), meterId:histMeterId, date, text, updatedAt:Date.now() });
+  document.getElementById('nt-text').value='';
+  persist(); renderNotes(histMeterId); render(); toast('Тэмдэглэгээ нэмэгдлээ');
+}
+function deleteNote(id){
+  data.notes=data.notes.filter(n=>n.id!==id);
+  persist(); renderNotes(histMeterId); render();
+}
+
+/* ═══ Render — карт ═══ */
 function render(){
   const wrap=document.getElementById('meters-list');
   if(data.meters.length===0){
     wrap.innerHTML=`<div class="empty-state">
-      <i class="ti ti-gauge"></i>
-      <h3>Тоолуур алга</h3>
+      <i class="ti ti-gauge"></i><h3>Тоолуур алга</h3>
       <p>Ус, дулааны тоолуураа нэмээд заалт хөтөлж эхэлээрэй.</p>
       <button class="btn acc" onclick="openMeterModal()"><i class="ti ti-plus"></i> Тоолуур нэмэх</button>
     </div>`;
@@ -525,35 +677,37 @@ function render(){
   }
   let html='';
   data.meters.forEach(m=>{
-    const rs=data.readings.filter(r=>r.meterId===m.id).sort((a,b)=>a.date.localeCompare(b.date));
+    const rs=readingsOf(m.id);
     const last=rs[rs.length-1], prev=rs[rs.length-2];
     const hot=m.type==='haluun';
-    // зөрүү + төлбөр
-    let usage='—', costLine='', sub='Заалт хараахан алга';
+    const noteCount=data.notes.filter(n=>n.meterId===m.id).length;
+    let usage='—', costLine='', sub='Заалт хараахан алга', bars='';
     if(last){
       const d=prev?(last.value-prev.value):last.value;
       usage=fmt(d);
-      const cost=Math.round(d*(m.tariff||0));
-      sub=`заалт ${prev?prev.value+' → '+last.value:last.value} ${m.tariff?'· тариф '+fmt(m.tariff)+'₮':''}`;
-      costLine=`<div class="mc-foot"><span class="l">Сүүлийн төлбөр</span><span class="v num">${m.tariff?fmt(cost)+'₮':'—'}</span></div>`;
-    }
-    // мини багана (сүүлийн 6 зөрүү)
-    const diffs=[];
-    for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
-    const recent=diffs.slice(-6);
-    const mx=Math.max(...recent,1);
-    let bars='';
-    if(recent.length){
-      bars='<div class="mc-bars">'+recent.map((d,i)=>{
-        const h=Math.max(4,Math.round(d/mx*44));
-        return `<div class="bar${i===recent.length-1?' last':''}" style="height:${h}px"></div>`;
-      }).join('')+'</div>';
+      const tf=tariffAt(m,last.date);
+      const cost=Math.round(d*tf);
+      sub=`заалт ${prev?prev.value+' → '+last.value:last.value}${tf?' · тариф '+fmt(tf)+'₮':''}`;
+      costLine=`<div class="mc-foot"><span class="l">Сүүлийн төлбөр</span><span class="v num">${tf?fmt(cost)+'₮':'—'}</span></div>`;
+      const diffs=[];
+      for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
+      const recent=diffs.slice(-6); const mx=Math.max(...recent,1);
+      if(recent.length){
+        bars='<div class="mc-bars">'+recent.map((d2,i)=>{
+          const h=Math.max(4,Math.round(d2/mx*44));
+          return `<div class="bar${i===recent.length-1?' last':''}" style="height:${h}px"></div>`;
+        }).join('')+'</div>';
+      }
     }
     html+=`<div class="meter-card">
       <div class="mc-head">
         <div class="mc-icon${hot?' hot':''}"><i class="ti ti-droplet"></i></div>
-        <div><div class="mc-title">${m.name}</div><div class="mc-date">${last?last.date:''}</div></div>
-        <span class="mc-menu" onclick="deleteMeter('${m.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+        <div><div class="mc-title">${escapeHtml(m.name)}</div><div class="mc-date">${last?last.date:''}${noteCount?' · '+noteCount+' тэмдэглэгээ':''}</div></div>
+        <span class="card-actions">
+          <span class="ic" onclick="openHistory('${m.id}')" title="Түүх"><i class="ti ti-history"></i></span>
+          <span class="ic" onclick="openMeterModal('${m.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteMeter('${m.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+        </span>
       </div>
       ${last?`<div class="mc-usage"><span class="big num">${usage}</span><span class="u">${m.unit} хэрэглээ</span></div>
       <div class="mc-sub num">${sub}</div>${bars}`
@@ -562,15 +716,13 @@ function render(){
       <button class="add-reading-btn" onclick="openReadingModal('${m.id}')"><i class="ti ti-plus"></i> Заалт нэмэх</button>
     </div>`;
   });
-  // Тоолуур нэмэх товч (доор)
   html+=`<button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openMeterModal()"><i class="ti ti-plus"></i> Тоолуур нэмэх</button>`;
   wrap.innerHTML=html;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Туслах функцүүд
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Туслах ═══ */
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('en-US'); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 let toastTimer=null;
@@ -579,31 +731,23 @@ function toast(msg){
   t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-// Modal гадуур дарахад хаах
 document.querySelectorAll('.modal-bg').forEach(bg=>{
   bg.addEventListener('click',e=>{ if(e.target===bg)bg.classList.remove('show'); });
 });
 
-/* ═══════════════════════════════════════════════════════════
-   Эхлэл — нэвтэрсэн эсэхээс хамаарч дэлгэц сонгох
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ Эхлэл ═══ */
 window.addEventListener('load',()=>{
   loadLocal();
   const tok=localStorage.getItem('hb_tok');
   const exp=parseInt(localStorage.getItem('hb_tok_exp')||'0');
   const usr=localStorage.getItem('hb_usr');
   if(tok && exp>Date.now()){
-    // Өмнө нэвтэрсэн, token хүчинтэй → шууд app
     accessToken=tok; tokenExpiresAt=exp;
     if(usr){ try{currentUser=JSON.parse(usr);}catch(e){} }
     enterApp();
-    // Google сервис ачаалахаар хүлээгээд Drive-аас шинэчлэх
     const tryLoad=setInterval(()=>{ if(window.google&&google.accounts){ clearInterval(tryLoad); initGSI(); loadFromDrive(); } },300);
     setTimeout(()=>clearInterval(tryLoad),6000);
-  }else{
-    // Шинэ хэрэглэгч → home
-    goScreen('home-screen');
-  }
+  }else{ goScreen('home-screen'); }
 });
 </script>
 </body>
