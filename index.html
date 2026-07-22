@@ -1,304 +1,1422 @@
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HomeBook</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
 <style>
-  :root{
-    --ink:#16302B;
-    --paper:#EEF1EC;
-    --surface:#FFFFFF;
-    --line:#DCE2DA;
-    --muted:#6B7A72;
-    --accent:#2F9E77;
-    --amber:#E0A458;
-    --c-huns:#2F9E77;
-    --c-teever:#4A80C4;
-    --c-ayalal:#E0A458;
-    --c-huuhed:#D26A7C;
-    --c-ajil:#8069B8;
-    --shadow:0 1px 2px rgba(22,48,43,.06),0 8px 24px rgba(22,48,43,.06);
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    background:var(--paper);color:var(--ink);
-    padding:16px;line-height:1.4;-webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:440px;margin:0 auto}
+:root{
+  --accent:#0d9488; --accent-hover:#0f766e; --accent-bg:#ccfbf1; --accent-text:#0f766e;
+  --success:#15803d; --danger:#dc2626;
+  --bg:#f5f5f4; --surface:#ffffff; --surface-2:#fafaf9;
+  --text:#1c1917; --text-2:#57534e; --text-muted:#a8a29e;
+  --border:#e7e5e4; --border-strong:#d6d3d1;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select{font-family:inherit;font-size:15px}
 
-  header{margin-bottom:18px}
-  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
-  h1{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
 
-  .monthbar{
-    display:flex;align-items:center;justify-content:space-between;
-    background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    padding:8px 10px;margin:14px 0;box-shadow:var(--shadow);
-  }
-  .monthbar button{
-    border:none;background:var(--paper);color:var(--ink);
-    width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;transition:.15s;
-  }
-  .monthbar button:hover{background:var(--line)}
-  .monthbar .mlabel{font-weight:700;font-size:15px}
+/* Home / Login */
+.center-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card-box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:2rem 1.5rem 1.5rem;
+  box-shadow:0 12px 40px rgba(70,55,110,.20), 0 3px 10px rgba(0,0,0,.06)}
+.card-box h1{font-size:20px;font-weight:600;text-align:center;margin-bottom:6px}
+.card-box .sub{font-size:14px;color:var(--text-2);text-align:center;margin-bottom:1.5rem;line-height:1.5}
+.feat{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface-2);
+  border-radius:var(--radius-sm);margin-bottom:8px}
+.feat i{font-size:22px;color:var(--accent-text);width:24px;text-align:center}
+.feat .ft{font-size:14px;font-weight:500}
+.feat .fs{font-size:12px;color:var(--text-2)}
+.btn-primary{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);
+  color:#fff;font-size:16px;font-weight:500;transition:background .15s}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-google{width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--text);font-size:15px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s}
+.btn-google:hover{background:var(--surface-2)}
+.note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:1rem;line-height:1.5}
+#home-screen,#login-screen{
+  background:linear-gradient(rgba(60,50,90,.04),rgba(60,50,90,.10)),
+             url('Background.jpg') center/cover no-repeat;}
+.logo-img{width:96px;height:96px;border-radius:18px;object-fit:cover;
+  display:block;margin:0 auto 1rem;box-shadow:var(--shadow)}
 
-  .total{
-    background:var(--ink);color:#fff;border-radius:16px;padding:16px 18px;
-    margin-bottom:14px;box-shadow:var(--shadow);
-  }
-  .total .lbl{font-size:12px;color:#B4C6BE;letter-spacing:.04em}
-  .total .amt{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
-  .total .amt span{font-size:18px;font-weight:700;color:#8FB3A8;margin-left:2px}
+/* App */
+#app{max-width:640px;margin:0 auto;padding:0 1rem 150px}
+.view{display:none}
+.view.active{display:block}
+/* Доод навигаци */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
+  display:flex;justify-content:center;gap:8px;padding:6px 8px;z-index:60}
+.nav-btn{flex:1;max-width:130px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+  color:var(--text-muted);border-radius:10px;font-size:11px;font-weight:500}
+.nav-btn i{font-size:22px}
+.nav-btn.active{color:var(--accent-text)}
+.nav-btn.active i{color:var(--accent)}
+/* Хураангуй — стат карт, панел */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1rem;box-shadow:var(--shadow)}
+.stat .sl{font-size:12px;color:var(--text-2);margin-bottom:6px}
+.stat .sv{font-size:22px;font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.panel h4{font-size:14px;font-weight:600;margin-bottom:.5rem}
+.act-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-row .ad{font-size:12px;color:var(--text-2);width:82px;flex-shrink:0}
+.act-row .am{flex:1;font-size:14px}
+.act-row .av{font-size:14px;font-weight:500}
+.hint-box{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius);
+  padding:1rem 1.2rem;font-size:13px;color:var(--text-2);line-height:1.5}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem}
+.topbar h2{font-size:18px;font-weight:600}
+.topbar .month{font-size:13px;color:var(--text-2);margin-top:2px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);
+  display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer}
+.avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 
-  .split{display:flex;height:12px;border-radius:8px;overflow:hidden;margin-top:14px;background:#22463F}
-  .split i{display:block;height:100%}
+/* Тоолуурын карт */
+.meter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.mc-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.mc-icon{width:38px;height:38px;border-radius:10px;background:var(--accent-bg);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-icon i{font-size:20px;color:var(--accent-text)}
+.mc-icon.hot{background:#fee2e2}.mc-icon.hot i{color:#dc2626}
+.mc-title{font-size:15px;font-weight:500}
+.mc-date{font-size:12px;color:var(--text-2)}
+.card-actions{margin-left:auto;display:flex;gap:1px}
+.card-actions .ic{color:var(--text-muted);font-size:17px;padding:6px}
+.card-actions .ic:hover{color:var(--text)}
+.mc-usage{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.mc-usage .big{font-size:32px;font-weight:600;line-height:1}
+.mc-usage .u{font-size:14px;color:var(--text-2)}
+.mc-sub{font-size:13px;color:var(--text-2);margin-bottom:1rem}
+.mc-bars{display:flex;align-items:flex-end;gap:5px;height:48px;margin-bottom:1rem}
+.mc-bars .bar{flex:1;background:var(--accent-bg);border-radius:3px;min-height:4px}
+.mc-bars .bar.last{background:var(--accent)}
+.mc-foot{display:flex;justify-content:space-between;align-items:center;
+  padding-top:10px;border-top:1px solid var(--border)}
+.mc-foot .l{font-size:14px;color:var(--text-2)}
+.mc-foot .v{font-size:17px;font-weight:600}
+.mc-empty{font-size:13px;color:var(--text-muted);padding:6px 0 1rem}
 
-  .card{
-    background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
-  }
-  .card h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:700}
+.btn{padding:9px 14px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text);
+  display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+.btn:hover{background:var(--surface-2)}
+.btn.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.acc:hover{background:var(--accent-hover)}
+.btn.danger{color:var(--danger);border-color:#fecaca}
+.btn.danger:hover{background:#fef2f2}
+.add-reading-btn{width:100%;margin-top:8px;padding:10px;border-radius:var(--radius-sm);
+  border:1px dashed var(--border-strong);background:transparent;color:var(--accent-text);
+  font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-reading-btn:hover{background:var(--accent-bg)}
 
-  .field{margin-bottom:11px}
-  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
-  input,select{
-    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;
-    font-size:15px;font-family:inherit;color:var(--ink);background:#fff;
-  }
-  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-2)}
+.empty-state i{font-size:48px;color:var(--border-strong);margin-bottom:1rem;display:block}
+.empty-state h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+.empty-state p{font-size:14px;margin-bottom:1.25rem;line-height:1.5}
 
-  .cats{display:flex;flex-wrap:wrap;gap:7px}
-  .cat{
-    border:1px solid var(--line);background:#fff;border-radius:20px;
-    padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;
-    display:flex;align-items:center;gap:6px;transition:.15s;color:var(--ink);
-  }
-  .cat .dot{width:9px;height:9px;border-radius:50%}
-  .cat.on{color:#fff;border-color:transparent}
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+  align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);width:100%;max-width:460px;border-radius:16px 16px 0 0;
+  padding:1.5rem;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(min-width:520px){.modal-bg{align-items:center}.modal{border-radius:16px}}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:1.25rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:13px;color:var(--text-2);margin-bottom:6px;font-weight:500}
+.field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field .hint{font-size:12px;color:var(--text-muted);margin-top:5px}
+.preview{background:var(--accent-bg);border-radius:var(--radius-sm);padding:12px;
+  font-size:14px;color:var(--accent-text);margin-bottom:1rem;display:none}
+.preview.show{display:block}
+.preview .warn{color:var(--danger)}
+.modal-actions{display:flex;gap:10px;margin-top:1.25rem}
+.modal-actions .btn{flex:1;justify-content:center;padding:12px}
 
-  .addbtn{
-    width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;
-    padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:.15s;
-  }
-  .addbtn:hover{filter:brightness(1.05)}
-  .addbtn:active{transform:scale(.99)}
+/* Тариф түүх засварлагч */
+.section-label{font-size:13px;font-weight:600;margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:6px}
+.tariff-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tariff-row .tr-date{font-size:13px;color:var(--text-2);width:100px}
+.tariff-row .tr-price{flex:1;font-size:14px;font-weight:500}
+.tariff-row .ic{color:var(--text-muted);font-size:16px;padding:4px}
+.tariff-row .ic:hover{color:var(--danger)}
+.mini-add{display:flex;gap:8px;margin-top:6px}
+.mini-add input{flex:1;padding:9px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)}
+.mini-add .add-ic{padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--accent-text)}
+.mini-add .add-ic:hover{background:var(--accent-bg)}
 
-  .sumrow{
-    display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--paper);
-  }
-  .sumrow:last-child{border-bottom:none}
-  .sumrow .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-  .sumrow .nm{font-weight:600;font-size:14px;flex:1}
-  .sumrow .ct{font-size:12px;color:var(--muted);background:var(--paper);padding:2px 8px;border-radius:10px}
-  .sumrow .vl{font-weight:700;font-size:14px}
+/* Түүх (заалт + тэмдэглэгээ) */
+.hist-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-row .hd{font-size:12px;color:var(--text-2);width:82px;flex-shrink:0}
+.hist-row .hmain{flex:1;font-size:14px}
+.hist-row .hmain .hsub{font-size:12px;color:var(--text-2)}
+.hist-row .hacts{display:flex;gap:2px}
+.hist-row .hacts .ic{color:var(--text-muted);font-size:16px;padding:5px}
+.hist-row .hacts .ic:hover{color:var(--text)}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-text)}
+.tag.note{background:#fef3c7;color:#92400e}
+.empty-line{font-size:13px;color:var(--text-muted);padding:10px 0}
 
-  .list .item{
-    display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--paper);
-  }
-  .list .item:last-child{border-bottom:none}
-  .list .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-  .list .meta{flex:1;min-width:0}
-  .list .meta .c{font-weight:600;font-size:14px}
-  .list .meta .d{font-size:12px;color:var(--muted)}
-  .list .v{font-weight:700;font-size:14px;white-space:nowrap}
-  .list .del{
-    border:none;background:none;color:var(--muted);cursor:pointer;font-size:17px;
-    width:26px;height:26px;border-radius:7px;flex-shrink:0;
-  }
-  .list .del:hover{background:#F6E7EA;color:var(--c-huuhed)}
+.fab{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);z-index:55;width:min(608px,calc(100% - 2rem))}
+.fab button{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);color:#fff;
+  font-size:15px;font-weight:500;box-shadow:0 4px 12px rgba(13,148,136,.35);
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.sync-badge{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--surface-2);
+  color:var(--text-2);display:inline-flex;align-items:center;gap:5px}
+.sync-badge i{font-size:13px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;
+  background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;
+  opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+.toast.show{opacity:1}
 
-  .empty{text-align:center;color:var(--muted);font-size:14px;padding:22px 0}
-  .empty .big{font-size:30px;margin-bottom:6px}
+/* ── Тогтмол зардал ── */
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.month-nav button{padding:6px 12px;border-radius:8px;color:var(--text-2);font-size:20px}
+.month-nav button:hover{background:var(--surface-2)}
+.month-nav .mlabel{font-size:15px;font-weight:600}
+.fx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+.fx-icon{width:36px;height:36px;border-radius:9px;background:var(--accent-bg);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.fx-icon i{font-size:18px;color:var(--accent-text)}
+.fx-main{flex:1;min-width:0;cursor:pointer}
+.fx-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-type{font-size:11px;color:var(--text-muted)}
+.fx-amt{font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
+.fx-amt-input{width:96px;padding:7px 8px;border:1px solid var(--border-strong);border-radius:8px;
+  text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.paid-btn{padding:6px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--text-2);white-space:nowrap;flex-shrink:0}
+.paid-btn.on{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+.fx-total{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin:12px 0;box-shadow:var(--shadow)}
+.fx-total .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;color:var(--text-2)}
+.fx-total .tr .num{color:var(--text);font-weight:500}
+.fx-total .tr.big{font-size:17px;font-weight:600;color:var(--text);border-top:1px solid var(--border);
+  margin-top:6px;padding-top:11px}
+.fx-total .tr.big .num{font-weight:600}
+
+/* ── Орлого + мөнгөний нэгтгэл ── */
+.money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.money-grid .mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem .9rem;box-shadow:var(--shadow)}
+.money-grid .ml{font-size:12px;color:var(--text-2);margin-bottom:6px}
+.money-grid .mv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.mv.pos{color:var(--success)} .mv.neg{color:var(--danger)}
+.inc-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+.inc-icon{width:36px;height:36px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.inc-icon i{font-size:18px;color:#15803d}
+.inc-main{flex:1;min-width:0;cursor:pointer}
+.inc-name{font-size:14px;font-weight:500}
+.inc-sub{font-size:12px;color:var(--text-muted)}
+.inc-amt{font-size:15px;font-weight:600;color:var(--success);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ── Хувьсах зардал ── */
+.cat-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.cat-panel h4{font-size:14px;font-weight:600;margin-bottom:.75rem}
+.cat-bar-row{margin-bottom:12px}
+.cat-bar-row:last-child{margin-bottom:0}
+.cat-bar-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.cat-bar-head .num{color:var(--text-2)}
+.cat-bar{height:7px;border-radius:4px;background:var(--accent);min-width:4px}
+.vx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+.vx-icon{width:36px;height:36px;border-radius:9px;background:#fef3c7;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.vx-icon i{font-size:18px;color:#92400e}
+.vx-main{flex:1;min-width:0;cursor:pointer}
+.vx-name{font-size:14px;font-weight:500}
+.vx-sub{font-size:12px;color:var(--text-muted)}
+.vx-amt{font-size:15px;font-weight:600;color:var(--danger);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cat-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;
+  background:var(--surface-2);border:1px solid var(--border);font-size:13px;margin:0 6px 6px 0}
+.cat-chip .ic{color:var(--text-muted);font-size:15px;cursor:pointer}
+.cat-chip .ic:hover{color:var(--danger)}
 </style>
+</head>
+<body>
 
-<div class="wrap">
-  <header>
-    <div class="eyebrow">F · Хувьсах зардал</div>
-    <h1>Зардлын хяналт</h1>
-  </header>
-
-  <div class="monthbar">
-    <button id="prev" aria-label="Өмнөх сар">‹</button>
-    <div class="mlabel" id="mlabel">—</div>
-    <button id="next" aria-label="Дараах сар">›</button>
-  </div>
-
-  <div class="total">
-    <div class="lbl">Энэ сарын нийт зардал</div>
-    <div class="amt" id="totalAmt">0<span>₮</span></div>
-    <div class="split" id="split"></div>
-  </div>
-
-  <div class="card">
-    <h2>Зардал нэмэх</h2>
-    <div class="field">
-      <label for="date">Огноо</label>
-      <input type="date" id="date">
+<!-- HOME -->
+<div id="home-screen" class="screen">
+  <div class="center-wrap">
+    <div class="card-box">
+      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
+      <h1>HomeBook</h1>
+      <p class="sub">Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор</p>
+      <div class="feat"><i class="ti ti-wallet"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Тоолуур, тогтмол, хувьсах</div></div></div>
+      <div class="feat"><i class="ti ti-car"></i><div><div class="ft">Машин</div><div class="fs">Засвар, даатгал, татвар</div></div></div>
+      <div class="feat"><i class="ti ti-heartbeat"></i><div><div class="ft">Эрүүл мэнд</div><div class="fs">Гишүүн бүрийн эмчилгээ</div></div></div>
+      <div class="feat"><i class="ti ti-bell"></i><div><div class="ft">Сануулга</div><div class="fs">Дуусах хугацаа сануулна</div></div></div>
+      <button class="btn-primary" style="margin-top:1.5rem" onclick="goScreen('login-screen')">Эхлэх <i class="ti ti-arrow-right"></i></button>
+      <p class="note"><i class="ti ti-brand-google"></i> Google хаягаар нэвтэрнэ</p>
     </div>
-    <div class="field">
-      <label>Ангилал</label>
-      <div class="cats" id="cats"></div>
-    </div>
-    <div class="field">
-      <label for="amount">Дүн (₮)</label>
-      <input type="number" id="amount" inputmode="numeric" placeholder="0" min="0">
-    </div>
-    <button class="addbtn" id="add">+ Нэмэх</button>
-  </div>
-
-  <div class="card">
-    <h2>Ангиллаар нэгтгэл</h2>
-    <div id="summary"></div>
-  </div>
-
-  <div class="card">
-    <h2>Бичилтүүд</h2>
-    <div class="list" id="list"></div>
   </div>
 </div>
 
+<!-- LOGIN -->
+<div id="login-screen" class="screen">
+  <div class="center-wrap">
+    <div class="card-box">
+      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
+      <h1>Тавтай морил</h1>
+      <p class="sub">Үргэлжлүүлэхийн тулд Google хаягаараа нэвтэрнэ үү</p>
+      <button class="btn-google" onclick="login()"><i class="ti ti-brand-google"></i> Google-ээр нэвтрэх</button>
+      <p class="note">Таны өгөгдөл зөвхөн өөрийн Google Drive-д хадгалагдана</p>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="screen">
+  <div id="app">
+    <div class="topbar">
+      <div>
+        <h2 id="greeting">Сайн байна уу</h2>
+        <div class="month" id="month-label"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="sync-badge" id="sync-badge"><i class="ti ti-cloud"></i> <span>Синктэй</span></span>
+        <div class="avatar" id="avatar" onclick="logout()" title="Гарах">Т</div>
+      </div>
+    </div>
+    <!-- Хураангуй -->
+    <div id="view-home" class="view"></div>
+    <!-- Тоолуур -->
+    <div id="view-meters" class="view active">
+      <div id="meters-list"></div>
+    </div>
+    <!-- Тогтмол зардал -->
+    <div id="view-fixed" class="view"></div>
+    <!-- Орлого -->
+    <div id="view-income" class="view"></div>
+    <!-- Хувьсах зардал -->
+    <div id="view-variable" class="view"></div>
+  </div>
+  <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
+    <button class="nav-btn active" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
+    <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
+    <button class="nav-btn" data-view="income" onclick="showView('income')"><i class="ti ti-coin"></i><span>Орлого</span></button>
+    <button class="nav-btn" data-view="variable" onclick="showView('variable')"><i class="ti ti-basket"></i><span>Хувьсах</span></button>
+  </nav>
+</div>
+
+<!-- MODAL: тоолуур нэмэх/засах -->
+<div class="modal-bg" id="meter-modal">
+  <div class="modal">
+    <h3 id="mt-modal-title">Тоолуур нэмэх</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input type="text" id="mt-name" placeholder="Жишээ: Гал тогоо — халуун ус">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="mt-type">
+        <option value="huiten">Хүйтэн ус</option>
+        <option value="haluun">Халуун ус</option>
+      </select>
+    </div>
+    <div class="hint" style="margin-top:-.5rem;margin-bottom:.5rem">Тоолуур зөвхөн хэрэглээ (м³) хянана. Бодит төлбөрийг тусад нь бүртгэнэ.</div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('meter-modal')">Болих</button>
+      <button class="btn acc" onclick="saveMeter()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: заалт нэмэх/засах -->
+<div class="modal-bg" id="reading-modal">
+  <div class="modal">
+    <h3 id="rd-modal-title">Шинэ заалт нэмэх</h3>
+    <div class="field">
+      <label>Тоолуур</label>
+      <select id="rd-meter" onchange="updatePreview()"></select>
+    </div>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="rd-date" onchange="updatePreview()">
+    </div>
+    <div class="field">
+      <label>Заалт</label>
+      <input type="number" id="rd-value" inputmode="decimal" placeholder="Тоолуур дээрх тоо" oninput="updatePreview()">
+      <div class="hint" id="rd-last"></div>
+    </div>
+    <div class="preview" id="rd-preview"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('reading-modal')">Болих</button>
+      <button class="btn acc" onclick="saveReading()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: түүх (заалт + тэмдэглэгээ) -->
+<div class="modal-bg" id="hist-modal">
+  <div class="modal">
+    <h3 id="hist-title">Түүх</h3>
+    <div class="section-label"><i class="ti ti-gauge"></i> Заалтууд</div>
+    <div id="hist-readings"></div>
+    <button class="add-reading-btn" id="hist-add-reading"><i class="ti ti-plus"></i> Заалт нэмэх</button>
+
+    <div class="section-label"><i class="ti ti-note"></i> Тэмдэглэгээ</div>
+    <div id="hist-notes"></div>
+    <div class="mini-add">
+      <input type="date" id="nt-date" title="Огноо">
+      <input type="text" id="nt-text" placeholder="Жишээ: нойлын засвар хийсэн">
+      <button class="add-ic" onclick="addNote()"><i class="ti ti-plus"></i></button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('hist-modal')">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: тогтмол зардлын зүйл нэмэх/засах -->
+<div class="modal-bg" id="fixed-modal">
+  <div class="modal">
+    <h3 id="fx-modal-title">Зардлын зүйл нэмэх</h3>
+    <div class="field">
+      <label>Нэр</label>
+      <input type="text" id="fx-name" placeholder="Жишээ: Интернэт, СӨХ, Ус суваг">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="fx-type" onchange="fxTypeChanged()">
+        <option value="togtmol">Тогтмол дүн (интернэт, СӨХ, хог)</option>
+        <option value="helbelzeh">Хэлбэлзэх дүн (ус, дулаан)</option>
+      </select>
+    </div>
+    <div class="field" id="fx-amt-field">
+      <label>Сарын дүн (₮)</label>
+      <input type="number" id="fx-amount" inputmode="decimal" placeholder="Жишээ: 35000">
+      <div class="hint">Хэлбэлзэх зардлын дүнг сар бүр жагсаалтад бичнэ</div>
+    </div>
+    <div class="modal-actions" id="fx-modal-actions">
+      <button class="btn" onclick="closeModal('fixed-modal')">Болих</button>
+      <button class="btn acc" onclick="saveFixedItem()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="fx-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: орлого нэмэх/засах -->
+<div class="modal-bg" id="income-modal">
+  <div class="modal">
+    <h3 id="in-modal-title">Орлого нэмэх</h3>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="in-date">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="in-type">
+        <option value="Цалин">Цалин</option>
+        <option value="Нэмэлт">Нэмэлт орлого</option>
+        <option value="Бусад">Бусад</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Тайлбар</label>
+      <input type="text" id="in-note" placeholder="Жишээ: 7-р сар, II хагас">
+    </div>
+    <div class="field">
+      <label>Дүн (₮)</label>
+      <input type="number" id="in-amount" inputmode="decimal" placeholder="Гарт орсон дүн">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('income-modal')">Болих</button>
+      <button class="btn acc" onclick="saveIncome()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="in-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: хувьсах зардал нэмэх/засах -->
+<div class="modal-bg" id="variable-modal">
+  <div class="modal">
+    <h3 id="vx-modal-title">Зардал нэмэх</h3>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="vx-date">
+    </div>
+    <div class="field">
+      <label>Ангилал</label>
+      <select id="vx-cat"></select>
+    </div>
+    <div class="field">
+      <label>Тайлбар</label>
+      <input type="text" id="vx-note" placeholder="Жишээ: Хүнсний дэлгүүр">
+    </div>
+    <div class="field">
+      <label>Дүн (₮)</label>
+      <input type="number" id="vx-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('variable-modal')">Болих</button>
+      <button class="btn acc" onclick="saveVariable()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="vx-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: ангилал удирдах -->
+<div class="modal-bg" id="category-modal">
+  <div class="modal">
+    <h3>Ангилал удирдах</h3>
+    <div id="cat-list" style="margin-bottom:1rem"></div>
+    <div class="mini-add">
+      <input type="text" id="cat-new" placeholder="Шинэ ангилал (жишээ: Эм тариа)">
+      <button class="add-ic" onclick="addCategory()"><i class="ti ti-plus"></i></button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('category-modal')">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const CATS = [
-  {id:'huns',   name:'Хүнс',   color:'var(--c-huns)',   hex:'#2F9E77'},
-  {id:'teever', name:'Тээвэр', color:'var(--c-teever)', hex:'#4A80C4'},
-  {id:'ayalal', name:'Аялал',  color:'var(--c-ayalal)', hex:'#E0A458'},
-  {id:'huuhed', name:'Хүүхэд', color:'var(--c-huuhed)', hex:'#D26A7C'},
-  {id:'ajil',   name:'Ажил',   color:'var(--c-ajil)',   hex:'#8069B8'},
-];
-const MONTHS = ['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+/* ═══ Тохиргоо ═══ */
+const CLIENT_ID='381344772393-3i8bb6flqqonu5qgmjngsma2031r0biv.apps.googleusercontent.com';
+const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+const FOLDER_NAME='HomeBook';
+const DATA_FILE='homebook_data.json';
 
-let expenses = [];
-let selectedCat = 'huns';
-let viewDate = new Date();
+/* ═══ Төлөв ═══ */
+let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
+let driveFolderId=null, driveDataFileId=null;
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[] };
+let saveTimer=null;
+let editingMeterId=null, editingReadingId=null, histMeterId=null;
+let editingFixedId=null;
+let fixedMonth=new Date().toISOString().slice(0,7);   // 'YYYY-MM'
+let incomeMonth=new Date().toISOString().slice(0,7);
+let editingIncomeId=null;
+let variableMonth=new Date().toISOString().slice(0,7);
+let editingVariableId=null;
 
-const catById = id => CATS.find(c => c.id === id) || {name:'?',hex:'#999'};
-const fmt = n => n.toLocaleString('en-US');
-const ym = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-
-async function load(){
-  try{
-    const r = await window.storage.get('expenses');
-    if(r && r.value) expenses = JSON.parse(r.value);
-  }catch(e){ expenses = []; }
-  render();
-}
-async function save(){
-  try{ await window.storage.set('expenses', JSON.stringify(expenses)); }
-  catch(e){ console.error('Хадгалахад алдаа', e); }
+/* ═══ Дэлгэц ═══ */
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-function buildCats(){
-  const wrap = document.getElementById('cats');
-  wrap.innerHTML = '';
-  CATS.forEach(c=>{
-    const b = document.createElement('button');
-    b.className = 'cat' + (c.id===selectedCat?' on':'');
-    b.style.background = c.id===selectedCat ? c.hex : '#fff';
-    b.innerHTML = `<span class="dot" style="background:${c.hex}"></span>${c.name}`;
-    b.onclick = ()=>{ selectedCat = c.id; buildCats(); };
-    wrap.appendChild(b);
+/* ═══ Нэвтрэлт ═══ */
+function initGSI(){
+  if(tokenClient||!window.google||!google.accounts)return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID, scope:SCOPES,
+    callback:async(resp)=>{
+      if(resp.error){ alert('Нэвтрэх алдаа: '+resp.error); return; }
+      accessToken=resp.access_token;
+      const expiresIn=resp.expires_in?parseInt(resp.expires_in):3600;
+      tokenExpiresAt=Date.now()+expiresIn*1000;
+      localStorage.setItem('hb_tok',accessToken);
+      localStorage.setItem('hb_tok_exp',String(tokenExpiresAt));
+      try{
+        const info=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
+          {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+        currentUser=info; localStorage.setItem('hb_usr',JSON.stringify(info));
+      }catch(e){ currentUser={name:'Хэрэглэгч'}; }
+      enterApp(); await loadFromDrive();
+    }
   });
 }
-
-function currentMonthExpenses(){
-  const key = ym(viewDate);
-  return expenses.filter(e => e.date.slice(0,7) === key);
+function login(){
+  initGSI();
+  if(!tokenClient){ alert('Google сервис ачаалж дуусаагүй. Түр хүлээгээд дахин дарна уу.'); return; }
+  tokenClient.requestAccessToken();
 }
-
-function render(){
-  document.getElementById('mlabel').textContent =
-    viewDate.getFullYear()+' · '+MONTHS[viewDate.getMonth()];
-
-  const mine = currentMonthExpenses();
-  const total = mine.reduce((s,e)=>s+e.amount,0);
-  document.getElementById('totalAmt').innerHTML = fmt(total)+'<span>₮</span>';
-
-  // split bar
-  const split = document.getElementById('split');
-  split.innerHTML = '';
-  if(total>0){
-    CATS.forEach(c=>{
-      const sum = mine.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0);
-      if(sum>0){
-        const i = document.createElement('i');
-        i.style.width = (sum/total*100)+'%';
-        i.style.background = c.hex;
-        split.appendChild(i);
-      }
-    });
-  }
-
-  // summary
-  const sum = document.getElementById('summary');
-  sum.innerHTML = '';
-  const totals = CATS.map(c=>({
-    ...c,
-    sum: mine.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0),
-    count: mine.filter(e=>e.category===c.id).length
-  })).sort((a,b)=>b.sum-a.sum);
-
-  if(total===0){
-    sum.innerHTML = '<div class="empty">Энэ сард бичилт алга</div>';
-  } else {
-    totals.filter(t=>t.sum>0).forEach(t=>{
-      const row = document.createElement('div');
-      row.className = 'sumrow';
-      row.innerHTML =
-        `<span class="dot" style="background:${t.hex}"></span>`+
-        `<span class="nm">${t.name}</span>`+
-        `<span class="ct">${t.count}</span>`+
-        `<span class="vl">${fmt(t.sum)}₮</span>`;
-      sum.appendChild(row);
-    });
-  }
-
-  // list
-  const list = document.getElementById('list');
-  list.innerHTML = '';
-  const sorted = [...mine].sort((a,b)=> b.date.localeCompare(a.date) || b.id-a.id);
-  if(sorted.length===0){
-    list.innerHTML = '<div class="empty"><div class="big">🧾</div>Дээрх талбараас зардлаа нэмнэ үү</div>';
-  } else {
-    sorted.forEach(e=>{
-      const c = catById(e.category);
-      const item = document.createElement('div');
-      item.className = 'item';
-      item.innerHTML =
-        `<span class="dot" style="background:${c.hex}"></span>`+
-        `<div class="meta"><div class="c">${c.name}</div><div class="d">${e.date}</div></div>`+
-        `<div class="v">${fmt(e.amount)}₮</div>`+
-        `<button class="del" title="Устгах">×</button>`;
-      item.querySelector('.del').onclick = ()=>{
-        expenses = expenses.filter(x=>x.id!==e.id);
-        save(); render();
-      };
-      list.appendChild(item);
-    });
-  }
+function logout(){
+  if(!confirm('Гарах уу?'))return;
+  accessToken=null; tokenExpiresAt=0; currentUser=null;
+  localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
+  goScreen('home-screen');
 }
-
-document.getElementById('add').onclick = ()=>{
-  const date = document.getElementById('date').value;
-  const amount = parseInt(document.getElementById('amount').value,10);
-  if(!date){ alert('Огноогоо сонгоно уу'); return; }
-  if(!amount || amount<=0){ alert('Дүнгээ оруулна уу'); return; }
-  expenses.push({ id:Date.now(), date, category:selectedCat, amount });
-  document.getElementById('amount').value='';
-  save();
-  // jump view to the month of the added expense
-  const d = new Date(date+'T00:00');
-  viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+function enterApp(){
+  goScreen('app-screen');
+  const name=currentUser&&currentUser.name?currentUser.name.split(' ')[0]:'';
+  document.getElementById('greeting').textContent='Сайн байна уу'+(name?', '+name:'');
+  const months=['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+  const now=new Date();
+  document.getElementById('month-label').textContent=now.getFullYear()+' оны '+months[now.getMonth()];
+  const av=document.getElementById('avatar');
+  if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
+  else{ av.textContent=name?name[0].toUpperCase():'Т'; }
   render();
-};
+}
 
-document.getElementById('prev').onclick = ()=>{
-  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1); render();
-};
-document.getElementById('next').onclick = ()=>{
-  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1); render();
-};
+/* ═══ Drive sync ═══ */
+async function getOrCreateFolder(){
+  if(driveFolderId)return driveFolderId;
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
+    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  if(res.files&&res.files.length>0){ driveFolderId=res.files[0].id; }
+  else{
+    const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({name:FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'})
+    }).then(r=>r.json());
+    driveFolderId=meta.id;
+  }
+  return driveFolderId;
+}
+async function findDataFile(folderId){
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILE}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  return res.files&&res.files.length>0?res.files[0].id:null;
+}
+async function saveToDrive(){
+  if(!accessToken)return;
+  setSync('Хадгалж байна...','#f39c12');
+  try{
+    const folderId=await getOrCreateFolder();
+    if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable };
+    const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+    if(!driveDataFileId){
+      const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({name:DATA_FILE,mimeType:'application/json',parents:[folderId]})
+      }).then(r=>r.json());
+      driveDataFileId=meta.id;
+    }
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
+      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
+    setSync('Синктэй','#0f766e');
+    // Нөөц — 5 минутанд нэгээс олонгүй
+    if(Date.now()-lastBackupAt>5*60*1000)doBackup();
+  }catch(e){ console.error('Drive хадгалах алдаа:',e); setSync('Хадгалагдаагүй','#dc2626'); }
+}
+async function loadFromDrive(){
+  if(!accessToken)return;
+  setSync('Уншиж байна...','#f39c12');
+  try{
+    const folderId=await getOrCreateFolder();
+    if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
+    if(driveDataFileId){
+      const text=await fetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
+        {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
+      const remote=JSON.parse(text);
+      data.meters=mergeById(data.meters, remote.meters||[]);
+      data.readings=mergeById(data.readings, remote.readings||[]);
+      data.notes=mergeById(data.notes, remote.notes||[]);
+      data.fixedItems=mergeById(data.fixedItems, remote.fixedItems||[]);
+      data.payments=mergeById(data.payments, remote.payments||[]);
+      data.income=mergeById(data.income, remote.income||[]);
+      data.categories=mergeById(data.categories, remote.categories||[]);
+      data.variable=mergeById(data.variable, remote.variable||[]);
+      migrate(); saveLocal();
+    }
+    setSync('Синктэй','#0f766e'); render();
+    if(!sessionBackupDone){ sessionBackupDone=true; doBackup(); }
+  }catch(e){ console.error('Drive уншах алдаа:',e); setSync('Уншигдаагүй','#dc2626'); }
+}
 
-// init
-document.getElementById('date').value = new Date().toISOString().slice(0,10);
-buildCats();
-load();
+/* ═══ Backup — Drive дээр өдрийн нөөц (сүүлийн 14) ═══ */
+let backupFolderId=null, lastBackupAt=0, sessionBackupDone=false;
+const MAX_BACKUPS=14;
+async function findFileInFolder(name,folderId){
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(name)}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  return res.files&&res.files.length>0?res.files[0].id:null;
+}
+async function getBackupFolder(parentId){
+  if(backupFolderId)return backupFolderId;
+  let id=await findFileInFolder('backups',parentId);
+  if(!id){
+    const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({name:'backups',mimeType:'application/vnd.google-apps.folder',parents:[parentId]})
+    }).then(r=>r.json());
+    id=meta.id;
+  }
+  backupFolderId=id; return id;
+}
+async function doBackup(){
+  if(!accessToken)return;
+  try{
+    const folderId=await getOrCreateFolder();
+    const bf=await getBackupFolder(folderId);
+    const today=new Date().toISOString().slice(0,10);
+    const name='backup_'+today+'.json';
+    let fid=await findFileInFolder(name,bf);
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable})],{type:'application/json'});
+    if(!fid){
+      const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({name,mimeType:'application/json',parents:[bf]})
+      }).then(r=>r.json());
+      fid=meta.id;
+    }
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
+      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
+    lastBackupAt=Date.now();
+    cleanupBackups(bf);
+  }catch(e){ console.error('Backup алдаа:',e); }
+}
+async function cleanupBackups(bf){
+  try{
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
+      {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+    if(res.files&&res.files.length>MAX_BACKUPS){
+      for(const f of res.files.slice(MAX_BACKUPS)){
+        await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}});
+      }
+    }
+  }catch(e){ console.error('Backup цэвэрлэх алдаа:',e); }
+}
+function mergeById(local, remote){
+  const byId={};
+  local.forEach(x=>byId[x.id]=x);
+  remote.forEach(r=>{ const l=byId[r.id]; if(!l||(r.updatedAt||0)>(l.updatedAt||0))byId[r.id]=r; });
+  return Object.values(byId).filter(x=>!x.deleted);
+}
+function setSync(text,color){
+  const b=document.getElementById('sync-badge');
+  b.querySelector('span').textContent=text; b.style.color=color;
+}
+function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
+function saveLocal(){ localStorage.setItem('hb_data',JSON.stringify(data)); }
+function loadLocal(){
+  const s=localStorage.getItem('hb_data');
+  if(s){ try{ data=JSON.parse(s); }catch(e){} }
+  if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
+  if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
+  migrate();
+}
+/* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
+function migrate(){
+  (data.meters||[]).forEach(m=>{
+    if(!m.tariffs){ m.tariffs = (m.tariff!=null)?[{date:'2000-01-01',price:m.tariff}]:[]; }
+  });
+  if(!data.notes)data.notes=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
+  if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
+}
+
+/* ═══ Тоолуур нэмэх/засах ═══ */
+function openMeterModal(editId){
+  editingMeterId=editId||null;
+  if(editingMeterId){
+    const m=data.meters.find(x=>x.id===editingMeterId);
+    document.getElementById('mt-modal-title').textContent='Тоолуур засах';
+    document.getElementById('mt-name').value=m.name;
+    document.getElementById('mt-type').value=m.type;
+  }else{
+    document.getElementById('mt-modal-title').textContent='Тоолуур нэмэх';
+    document.getElementById('mt-name').value='';
+    document.getElementById('mt-type').value='huiten';
+  }
+  openModal('meter-modal');
+}
+function saveMeter(){
+  const name=document.getElementById('mt-name').value.trim();
+  const type=document.getElementById('mt-type').value;
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(editingMeterId){
+    const m=data.meters.find(x=>x.id===editingMeterId);
+    m.name=name; m.type=type; m.updatedAt=Date.now();
+    toast('Тоолуур засагдлаа');
+  }else{
+    data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³', updatedAt:Date.now() });
+    toast('Тоолуур нэмэгдлээ');
+  }
+  persist(); closeModal('meter-modal'); render();
+}
+function deleteMeter(id){
+  const m=data.meters.find(x=>x.id===id);
+  if(!m)return;
+  if(!confirm('"'+m.name+'" тоолуурыг устгах уу? Заалт, тэмдэглэгээ нь бас устана.'))return;
+  data.meters=data.meters.filter(x=>x.id!==id);
+  data.readings=data.readings.filter(r=>r.meterId!==id);
+  data.notes=data.notes.filter(n=>n.meterId!==id);
+  m.deleted=true; m.updatedAt=Date.now(); data.meters.push(m); // tombstone sync-д
+  persist(); saveLocal(); data.meters=data.meters.filter(x=>!x.deleted); render();
+}
+
+/* ═══ Заалт ═══ */
+function readingsOf(meterId){ return data.readings.filter(r=>r.meterId===meterId).sort((a,b)=>a.date.localeCompare(b.date)); }
+function lastReadingOf(meterId){ const rs=readingsOf(meterId); return rs[rs.length-1]||null; }
+
+function openReadingModal(preMeterId, editId){
+  if(data.meters.length===0){ toast('Эхлээд тоолуур нэмнэ үү'); openMeterModal(); return; }
+  editingReadingId=editId||null;
+  const sel=document.getElementById('rd-meter');
+  sel.innerHTML=data.meters.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  if(editingReadingId){
+    const r=data.readings.find(x=>x.id===editingReadingId);
+    document.getElementById('rd-modal-title').textContent='Заалт засах';
+    sel.value=r.meterId; sel.disabled=true;
+    document.getElementById('rd-date').value=r.date;
+    document.getElementById('rd-value').value=r.value;
+  }else{
+    document.getElementById('rd-modal-title').textContent='Шинэ заалт нэмэх';
+    sel.disabled=false;
+    if(preMeterId)sel.value=preMeterId;
+    document.getElementById('rd-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('rd-value').value='';
+  }
+  updatePreview(); openModal('reading-modal');
+}
+function updatePreview(){
+  const meterId=document.getElementById('rd-meter').value;
+  const date=document.getElementById('rd-date').value;
+  const val=parseFloat(document.getElementById('rd-value').value);
+  const m=data.meters.find(x=>x.id===meterId);
+  // засварлаж байгаа бол өмнөх заалт = засаж буйгаас өмнөх огнооных
+  let rs=readingsOf(meterId);
+  if(editingReadingId)rs=rs.filter(r=>r.id!==editingReadingId);
+  const prevR=[...rs].filter(r=>r.date<=(date||'9999')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const lastEl=document.getElementById('rd-last');
+  lastEl.textContent=prevR?('Өмнөх заалт: '+prevR.value+' ('+prevR.date+')'):'Энэ тоолуурын анхны заалт';
+  const pv=document.getElementById('rd-preview');
+  if(isNaN(val)||!m){ pv.classList.remove('show'); return; }
+  if(!prevR){
+    // Анхны заалт — суурь цэг, төлбөргүй
+    pv.innerHTML='<i class="ti ti-flag"></i> Энэ анхны (суурь) заалт болно. Хэрэглээ дараагийн заалтаас эхэлж бодогдоно.';
+    pv.classList.add('show'); return;
+  }
+  const prev=prevR.value;
+  const diff=val-prev;
+  if(diff<0){
+    pv.innerHTML='<span class="warn"><i class="ti ti-alert-triangle"></i> Заалт өмнөхөөс бага байна. Тоолуур солигдсон эсэхээ шалгана уу.</span>';
+    pv.classList.add('show'); return;
+  }
+  pv.innerHTML=`Хэрэглээ: <b>${fmt(diff)} ${m.unit}</b>`;
+  pv.classList.add('show');
+}
+function saveReading(){
+  const meterId=document.getElementById('rd-meter').value;
+  const date=document.getElementById('rd-date').value;
+  const val=parseFloat(document.getElementById('rd-value').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
+  if(editingReadingId){
+    const r=data.readings.find(x=>x.id===editingReadingId);
+    r.date=date; r.value=val; r.updatedAt=Date.now();
+    toast('Заалт засагдлаа');
+  }else{
+    data.readings.push({ id:'r'+Date.now(), meterId, date, value:val, updatedAt:Date.now() });
+    toast('Заалт хадгалагдлаа');
+  }
+  persist(); closeModal('reading-modal'); render();
+  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
+}
+function deleteReading(id){
+  if(!confirm('Энэ заалтыг устгах уу?'))return;
+  data.readings=data.readings.filter(r=>r.id!==id);
+  persist(); render();
+  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
+}
+
+/* ═══ Тэмдэглэгээ ═══ */
+function openHistory(meterId){
+  histMeterId=meterId;
+  const m=data.meters.find(x=>x.id===meterId);
+  document.getElementById('hist-title').textContent=m.name;
+  document.getElementById('hist-add-reading').onclick=()=>openReadingModal(meterId);
+  document.getElementById('nt-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('nt-text').value='';
+  // Заалтууд (шинэ нь дээр)
+  const rs=[...readingsOf(meterId)].reverse();
+  const rWrap=document.getElementById('hist-readings');
+  if(rs.length===0){ rWrap.innerHTML='<div class="empty-line">Заалт алга</div>'; }
+  else{
+    rWrap.innerHTML=rs.map((r,i)=>{
+      const idx=rs.length-1-i; const all=readingsOf(meterId);
+      const pos=all.findIndex(x=>x.id===r.id);
+      const prev=pos>0?all[pos-1]:null;
+      const label=prev?`<span class="hsub num">(зөрүү ${fmt(r.value-prev.value)} ${m.unit})</span>`:`<span class="hsub">эхлэлийн заалт</span>`;
+      return `<div class="hist-row">
+        <span class="hd num">${r.date}</span>
+        <span class="hmain"><b class="num">${r.value}</b> ${label}</span>
+        <span class="hacts">
+          <span class="ic" onclick="openReadingModal(null,'${r.id}')"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteReading('${r.id}')"><i class="ti ti-trash"></i></span>
+        </span></div>`;
+    }).join('');
+  }
+  // Тэмдэглэгээ
+  renderNotes(meterId);
+  openModal('hist-modal');
+}
+function renderNotes(meterId){
+  const ns=data.notes.filter(n=>n.meterId===meterId).sort((a,b)=>b.date.localeCompare(a.date));
+  const wrap=document.getElementById('hist-notes');
+  if(ns.length===0){ wrap.innerHTML='<div class="empty-line">Тэмдэглэгээ алга</div>'; return; }
+  wrap.innerHTML=ns.map(n=>`<div class="hist-row">
+    <span class="hd num">${n.date}</span>
+    <span class="hmain">${escapeHtml(n.text)}</span>
+    <span class="hacts"><span class="ic" onclick="deleteNote('${n.id}')"><i class="ti ti-trash"></i></span></span>
+  </div>`).join('');
+}
+function addNote(){
+  const date=document.getElementById('nt-date').value;
+  const text=document.getElementById('nt-text').value.trim();
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(!text){ toast('Тэмдэглэл бичнэ үү'); return; }
+  data.notes.push({ id:'n'+Date.now(), meterId:histMeterId, date, text, updatedAt:Date.now() });
+  document.getElementById('nt-text').value='';
+  persist(); renderNotes(histMeterId); render(); toast('Тэмдэглэгээ нэмэгдлээ');
+}
+function deleteNote(id){
+  data.notes=data.notes.filter(n=>n.id!==id);
+  persist(); renderNotes(histMeterId); render();
+}
+
+/* ═══ Навигаци ═══ */
+let currentView='meters';
+function showView(name){
+  currentView=name;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  // FAB зөвхөн Тоолуур дэлгэцэд
+  document.getElementById('fab').style.display=(name==='meters')?'block':'none';
+  render();
+}
+
+/* ═══ Render — бүх дэлгэц ═══ */
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); }
+
+/* ═══ Ангилал ═══ */
+function catName(id){ const c=data.categories.find(x=>x.id===id); return c?c.name:'—'; }
+function openCategoryModal(){ renderCatList(); openModal('category-modal'); }
+function renderCatList(){
+  const wrap=document.getElementById('cat-list');
+  if(data.categories.length===0){ wrap.innerHTML='<div class="empty-line">Ангилал алга. Доор нэмнэ үү.</div>'; return; }
+  wrap.innerHTML=data.categories.map(c=>`<span class="cat-chip">${escapeHtml(c.name)}
+    <span class="ic" onclick="deleteCategory('${c.id}')"><i class="ti ti-x"></i></span></span>`).join('');
+}
+function addCategory(){
+  const name=document.getElementById('cat-new').value.trim();
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  data.categories.push({ id:'c'+Date.now(), name, updatedAt:Date.now() });
+  document.getElementById('cat-new').value='';
+  persist(); renderCatList(); renderVariable();
+}
+function deleteCategory(id){
+  const used=data.variable.filter(v=>v.categoryId===id).length;
+  const c=data.categories.find(x=>x.id===id);
+  if(used>0){ if(!confirm('"'+c.name+'" ангилалд '+used+' зардал байна. Ангиллыг устгавал тэдгээр "ангилалгүй" болно. Үргэлжлүүлэх үү?'))return; }
+  data.categories=data.categories.filter(x=>x.id!==id);
+  persist(); renderCatList(); renderVariable();
+}
+function addDefaultCategories(){
+  ['Хүнс','Тээвэр','Аялал','Хүүхэд','Ажил'].forEach((n,idx)=>{
+    data.categories.push({ id:'c'+(Date.now()+idx), name:n, updatedAt:Date.now() });
+  });
+  persist(); renderVariable();
+  toast('Үндсэн ангилал нэмэгдлээ');
+}
+
+/* ═══ Хувьсах зардал ═══ */
+function changeVariableMonth(delta){
+  const [y,m]=variableMonth.split('-').map(Number);
+  variableMonth=new Date(y, m-1+delta, 1).toISOString().slice(0,7);
+  renderVariable();
+}
+function variableOfMonth(month){
+  return data.variable.filter(v=>v.date&&v.date.slice(0,7)===month)
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0));
+}
+function renderVariable(){
+  const wrap=document.getElementById('view-variable');
+  if(data.categories.length===0 && data.variable.length===0){
+    wrap.innerHTML=`
+      <div class="empty-state" style="padding:2.5rem 1rem">
+        <i class="ti ti-basket"></i><h3>Хувьсах зардал</h3>
+        <p>Хүнс, тээвэр, аялал зэрэг өдөр тутмын зардлаа ангилалтайгаар хөтөлнө.</p>
+        <button class="btn acc" onclick="addDefaultCategories()"><i class="ti ti-plus"></i> Үндсэн ангилал нэмэх</button>
+      </div>`;
+    return;
+  }
+  const list=variableOfMonth(variableMonth);
+  const total=list.reduce((s,v)=>s+(v.amount||0),0);
+  // Ангиллаар нэгтгэх
+  const byCat={};
+  list.forEach(v=>{ byCat[v.categoryId]=(byCat[v.categoryId]||0)+(v.amount||0); });
+  const catRows=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const mx=catRows.length?catRows[0][1]:1;
+  let catPanel='';
+  if(catRows.length){
+    catPanel=`<div class="cat-panel"><h4>Ангиллаар (${fxMonthLabel(variableMonth)})</h4>`+
+      catRows.map(([cid,amt])=>`<div class="cat-bar-row">
+        <div class="cat-bar-head"><span>${escapeHtml(catName(cid))}</span><span class="num">${fmt(amt)}₮</span></div>
+        <div class="cat-bar" style="width:${Math.max(4,Math.round(amt/mx*100))}%"></div>
+      </div>`).join('')+`</div>`;
+  }
+  // Зардлын жагсаалт
+  let rows='';
+  if(list.length===0){ rows='<div class="empty-line" style="padding:1rem 0">Энэ сард зардал алга</div>'; }
+  else{
+    rows=list.map(v=>`<div class="vx-row">
+      <div class="vx-icon"><i class="ti ti-shopping-cart"></i></div>
+      <div class="vx-main" onclick="openVariableModal('${v.id}')">
+        <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}</div>
+        <div class="vx-sub num">${v.date}</div>
+      </div>
+      <span class="vx-amt">${fmt(v.amount)}₮</span>
+    </div>`).join('');
+  }
+  wrap.innerHTML=`
+    <div class="month-nav">
+      <button onclick="changeVariableMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="mlabel">${fxMonthLabel(variableMonth)}</span>
+      <button onclick="changeVariableMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${catPanel}
+    ${rows}
+    ${list.length?`<div class="fx-total"><div class="tr big"><span>Сарын нийт</span><span class="num" style="color:var(--danger)">${fmt(total)}₮</span></div></div>`:''}
+    <button class="btn acc" style="width:100%;justify-content:center;margin-top:6px" onclick="openVariableModal()"><i class="ti ti-plus"></i> Зардал нэмэх</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="openCategoryModal()"><i class="ti ti-tags"></i> Ангилал удирдах</button>
+  `;
+}
+function openVariableModal(editId){
+  if(data.categories.length===0){ toast('Эхлээд ангилал нэмнэ үү'); openCategoryModal(); return; }
+  editingVariableId=editId||null;
+  const sel=document.getElementById('vx-cat');
+  sel.innerHTML=data.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const delWrap=document.getElementById('vx-delete-wrap');
+  if(editingVariableId){
+    const v=data.variable.find(x=>x.id===editingVariableId);
+    document.getElementById('vx-modal-title').textContent='Зардал засах';
+    document.getElementById('vx-date').value=v.date;
+    sel.value=v.categoryId;
+    document.getElementById('vx-note').value=v.note||'';
+    document.getElementById('vx-amount').value=v.amount;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteVariable('${v.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('vx-modal-title').textContent='Зардал нэмэх';
+    document.getElementById('vx-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('vx-note').value='';
+    document.getElementById('vx-amount').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('variable-modal');
+}
+function saveVariable(){
+  const date=document.getElementById('vx-date').value;
+  const categoryId=document.getElementById('vx-cat').value;
+  const note=document.getElementById('vx-note').value.trim();
+  const amount=parseFloat(document.getElementById('vx-amount').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  if(editingVariableId){
+    const v=data.variable.find(x=>x.id===editingVariableId);
+    v.date=date; v.categoryId=categoryId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.variable.push({ id:'v'+Date.now(), date, categoryId, note, amount, updatedAt:Date.now() });
+    toast('Зардал нэмэгдлээ');
+  }
+  variableMonth=date.slice(0,7);
+  persist(); closeModal('variable-modal'); render();
+}
+function deleteVariable(id){
+  if(!confirm('Энэ зардлыг устгах уу?'))return;
+  data.variable=data.variable.filter(x=>x.id!==id);
+  persist(); closeModal('variable-modal'); render();
+}
+
+/* ═══ Орлого ═══ */
+function changeIncomeMonth(delta){
+  const [y,m]=incomeMonth.split('-').map(Number);
+  incomeMonth=new Date(y, m-1+delta, 1).toISOString().slice(0,7);
+  renderIncome();
+}
+function incomeOfMonth(month){
+  return data.income.filter(i=>i.date&&i.date.slice(0,7)===month)
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0));
+}
+function renderIncome(){
+  const wrap=document.getElementById('view-income');
+  const list=incomeOfMonth(incomeMonth);
+  const total=list.reduce((s,i)=>s+(i.amount||0),0);
+  let rows='';
+  if(list.length===0){
+    rows=`<div class="empty-state" style="padding:2rem 1rem">
+      <i class="ti ti-coin"></i><h3>Орлого алга</h3>
+      <p>Цалин болон нэмэлт орлогоо нэмээд сарын орлогоо хөтөлнө.</p>
+    </div>`;
+  }else{
+    rows=list.map(i=>`<div class="inc-row">
+      <div class="inc-icon"><i class="ti ti-${i.type==='Цалин'?'cash':'plus'}"></i></div>
+      <div class="inc-main" onclick="openIncomeModal('${i.id}')">
+        <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}</div>
+        <div class="inc-sub num">${i.date}</div>
+      </div>
+      <span class="inc-amt">+${fmt(i.amount)}₮</span>
+    </div>`).join('');
+  }
+  wrap.innerHTML=`
+    <div class="month-nav">
+      <button onclick="changeIncomeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="mlabel">${fxMonthLabel(incomeMonth)}</span>
+      <button onclick="changeIncomeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${rows}
+    ${list.length?`<div class="fx-total"><div class="tr big"><span>Сарын нийт орлого</span><span class="num" style="color:var(--success)">${fmt(total)}₮</span></div></div>`:''}
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openIncomeModal()"><i class="ti ti-plus"></i> Орлого нэмэх</button>
+  `;
+}
+function openIncomeModal(editId){
+  editingIncomeId=editId||null;
+  const delWrap=document.getElementById('in-delete-wrap');
+  if(editingIncomeId){
+    const i=data.income.find(x=>x.id===editingIncomeId);
+    document.getElementById('in-modal-title').textContent='Орлого засах';
+    document.getElementById('in-date').value=i.date;
+    document.getElementById('in-type').value=i.type;
+    document.getElementById('in-note').value=i.note||'';
+    document.getElementById('in-amount').value=i.amount;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteIncome('${i.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('in-modal-title').textContent='Орлого нэмэх';
+    document.getElementById('in-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('in-type').value='Цалин';
+    document.getElementById('in-note').value='';
+    document.getElementById('in-amount').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('income-modal');
+}
+function saveIncome(){
+  const date=document.getElementById('in-date').value;
+  const type=document.getElementById('in-type').value;
+  const note=document.getElementById('in-note').value.trim();
+  const amount=parseFloat(document.getElementById('in-amount').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  if(editingIncomeId){
+    const i=data.income.find(x=>x.id===editingIncomeId);
+    i.date=date; i.type=type; i.note=note; i.amount=amount; i.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.income.push({ id:'i'+Date.now(), date, type, note, amount, updatedAt:Date.now() });
+    toast('Орлого нэмэгдлээ');
+  }
+  incomeMonth=date.slice(0,7);
+  persist(); closeModal('income-modal'); render();
+}
+function deleteIncome(id){
+  if(!confirm('Энэ орлогыг устгах уу?'))return;
+  data.income=data.income.filter(x=>x.id!==id);
+  persist(); closeModal('income-modal'); render();
+}
+
+/* ═══ Тогтмол зардал ═══ */
+function fxMonthLabel(ym){
+  const [y,m]=ym.split('-');
+  return y+' оны '+parseInt(m)+'-р сар';
+}
+function changeFixedMonth(delta){
+  const [y,m]=fixedMonth.split('-').map(Number);
+  const d=new Date(y, m-1+delta, 1);
+  fixedMonth=d.toISOString().slice(0,7);
+  renderFixed();
+}
+function getPayment(itemId, month){ return data.payments.find(p=>p.itemId===itemId&&p.month===month)||null; }
+function setPayment(itemId, month, patch){
+  let p=getPayment(itemId, month);
+  if(!p){ p={ id:'p'+Date.now()+Math.floor(Math.random()*1000), itemId, month, paid:false }; data.payments.push(p); }
+  Object.assign(p, patch); p.updatedAt=Date.now();
+  return p;
+}
+function monthAmount(item, month){
+  if(item.type==='helbelzeh'){ const p=getPayment(item.id, month); return p&&p.amount!=null?p.amount:0; }
+  return item.amount||0;   // тогтмол
+}
+function isPaid(item, month){ const p=getPayment(item.id, month); return p?!!p.paid:false; }
+function togglePaid(itemId){
+  const item=data.fixedItems.find(x=>x.id===itemId);
+  const cur=isPaid(item, fixedMonth);
+  setPayment(itemId, fixedMonth, {paid:!cur});
+  persist(); renderFixed(); renderHome();
+}
+function setHelbelzehAmount(itemId, val){
+  const amount=parseFloat(val); 
+  setPayment(itemId, fixedMonth, {amount:isNaN(amount)?0:amount});
+  persist(); renderFixedTotals(); renderHome();
+}
+function renderFixed(){
+  const wrap=document.getElementById('view-fixed');
+  const items=data.fixedItems;
+  let rows='';
+  if(items.length===0){
+    rows=`<div class="empty-state" style="padding:2rem 1rem">
+      <i class="ti ti-receipt"></i><h3>Зардлын зүйл алга</h3>
+      <p>Интернэт, СӨХ, хог, ус, дулаан зэргээ нэмээд сар бүр төлбөрөө хөтөлнө.</p>
+    </div>`;
+  }else{
+    rows=items.map(it=>{
+      const paid=isPaid(it, fixedMonth);
+      const amt=monthAmount(it, fixedMonth);
+      const amtCell = it.type==='helbelzeh'
+        ? `<input class="fx-amt-input num" type="number" inputmode="decimal" value="${amt||''}" placeholder="0" onchange="setHelbelzehAmount('${it.id}',this.value)">`
+        : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
+      return `<div class="fx-row">
+        <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
+        <div class="fx-main" onclick="openFixedModal('${it.id}')">
+          <div class="fx-name">${escapeHtml(it.name)}</div>
+          <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
+        </div>
+        ${amtCell}
+        <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
+      </div>`;
+    }).join('');
+  }
+  wrap.innerHTML=`
+    <div class="month-nav">
+      <button onclick="changeFixedMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="mlabel">${fxMonthLabel(fixedMonth)}</span>
+      <button onclick="changeFixedMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${rows}
+    <div id="fx-totals"></div>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openFixedModal()"><i class="ti ti-plus"></i> Зардлын зүйл нэмэх</button>
+  `;
+  renderFixedTotals();
+}
+function renderFixedTotals(){
+  const el=document.getElementById('fx-totals');
+  if(!el)return;
+  const items=data.fixedItems;
+  if(items.length===0){ el.innerHTML=''; return; }
+  let total=0, paidSum=0;
+  items.forEach(it=>{ const a=monthAmount(it, fixedMonth); total+=a; if(isPaid(it, fixedMonth))paidSum+=a; });
+  const remain=total-paidSum;
+  el.innerHTML=`<div class="fx-total">
+    <div class="tr"><span>Төлсөн</span><span class="num">${fmt(paidSum)}₮</span></div>
+    <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(remain)}₮</span></div>
+    <div class="tr big"><span>Сарын нийт</span><span class="num">${fmt(total)}₮</span></div>
+  </div>`;
+}
+
+/* ── Зардлын зүйл модал ── */
+function fxTypeChanged(){
+  const t=document.getElementById('fx-type').value;
+  document.getElementById('fx-amt-field').style.display=(t==='helbelzeh')?'none':'block';
+}
+function openFixedModal(editId){
+  editingFixedId=editId||null;
+  const delWrap=document.getElementById('fx-delete-wrap');
+  if(editingFixedId){
+    const it=data.fixedItems.find(x=>x.id===editingFixedId);
+    document.getElementById('fx-modal-title').textContent='Зардлын зүйл засах';
+    document.getElementById('fx-name').value=it.name;
+    document.getElementById('fx-type').value=it.type;
+    document.getElementById('fx-amount').value=it.amount||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteFixedItem('${it.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('fx-modal-title').textContent='Зардлын зүйл нэмэх';
+    document.getElementById('fx-name').value='';
+    document.getElementById('fx-type').value='togtmol';
+    document.getElementById('fx-amount').value='';
+    delWrap.innerHTML='';
+  }
+  fxTypeChanged();
+  openModal('fixed-modal');
+}
+function saveFixedItem(){
+  const name=document.getElementById('fx-name').value.trim();
+  const type=document.getElementById('fx-type').value;
+  const amount=parseFloat(document.getElementById('fx-amount').value)||0;
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(editingFixedId){
+    const it=data.fixedItems.find(x=>x.id===editingFixedId);
+    it.name=name; it.type=type; it.amount=amount; it.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.fixedItems.push({ id:'f'+Date.now(), name, type, amount, updatedAt:Date.now() });
+    toast('Нэмэгдлээ');
+  }
+  persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
+}
+function deleteFixedItem(id){
+  const it=data.fixedItems.find(x=>x.id===id);
+  if(!confirm('"'+it.name+'"-г устгах уу? Төлбөрийн түүх нь бас устана.'))return;
+  data.fixedItems=data.fixedItems.filter(x=>x.id!==id);
+  data.payments=data.payments.filter(p=>p.itemId!==id);
+  persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
+}
+
+/* ═══ Хураангуй дэлгэц ═══ */
+function renderHome(){
+  const wrap=document.getElementById('view-home');
+  const meterCount=data.meters.length;
+  const totalReadings=data.readings.length;
+  const ym=new Date().toISOString().slice(0,7);
+  const thisMonth=data.readings.filter(r=>r.date&&r.date.slice(0,7)===ym).length;
+  // Сүүлийн үйл ажиллагаа (бүх тоолуурын заалт, шинэ нь дээр)
+  const all=[...data.readings].sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0)).slice(0,6);
+  let acts='';
+  if(all.length===0){ acts='<div class="empty-line">Заалт хараахан алга</div>'; }
+  else{
+    acts=all.map(r=>{
+      const m=data.meters.find(x=>x.id===r.meterId);
+      const mrs=readingsOf(r.meterId);
+      const pos=mrs.findIndex(x=>x.id===r.id);
+      const prev=pos>0?mrs[pos-1]:null;
+      const use=prev?(r.value-prev.value):null;
+      return `<div class="act-row">
+        <span class="ad num">${r.date}</span>
+        <span class="am">${m?escapeHtml(m.name):'—'}</span>
+        <span class="av num">${use!==null?fmt(use)+' м³':'эхлэл'}</span>
+      </div>`;
+    }).join('');
+  }
+  // Энэ сарын мөнгөний нэгтгэл
+  let fxTotal=0, fxPaid=0;
+  data.fixedItems.forEach(it=>{ const a=monthAmount(it, ym); fxTotal+=a; if(isPaid(it, ym))fxPaid+=a; });
+  const incomeTotal=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
+  const varTotal=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
+  const expenseTotal=fxTotal+varTotal;        // тогтмол + хувьсах (дараа машин, эрүүл мэнд нэмэгдэнэ)
+  const balance=incomeTotal-expenseTotal;
+  const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0;
+  const moneyCard = hasMoney
+    ? `<div class="money-grid">
+        <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
+        <div class="mc"><div class="ml">Зардал</div><div class="mv neg">${fmt(expenseTotal)}₮</div></div>
+        <div class="mc"><div class="ml">Үлдэгдэл</div><div class="mv ${balance>=0?'pos':'neg'}">${fmt(balance)}₮</div></div>
+       </div>
+       ${fxTotal>0?`<div class="panel"><h4>Тогтмол зардал (энэ сар)</h4>
+        <div class="fx-total" style="margin:0;border:none;box-shadow:none;padding:0">
+          <div class="tr"><span>Төлсөн</span><span class="num">${fmt(fxPaid)}₮</span></div>
+          <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxTotal-fxPaid)}₮</span></div>
+        </div></div>`:''}`
+    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
+  wrap.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
+      <div class="stat"><div class="sl">Энэ сарын заалт</div><div class="sv num">${thisMonth}</div></div>
+      <div class="stat"><div class="sl">Нийт заалт</div><div class="sv num">${totalReadings}</div></div>
+    </div>
+    ${moneyCard}
+    <div class="panel">
+      <h4>Сүүлийн үйл ажиллагаа</h4>
+      ${acts}
+    </div>`;
+}
+
+/* ═══ Render — тоолуурын карт ═══ */
+function renderMeters(){
+  const wrap=document.getElementById('meters-list');
+  if(data.meters.length===0){
+    wrap.innerHTML=`<div class="empty-state">
+      <i class="ti ti-gauge"></i><h3>Тоолуур алга</h3>
+      <p>Ус, дулааны тоолуураа нэмээд заалт хөтөлж эхэлээрэй.</p>
+      <button class="btn acc" onclick="openMeterModal()"><i class="ti ti-plus"></i> Тоолуур нэмэх</button>
+    </div>`;
+    return;
+  }
+  let html='';
+  data.meters.forEach(m=>{
+    const rs=readingsOf(m.id);
+    const last=rs[rs.length-1], prev=rs[rs.length-2];
+    const hot=m.type==='haluun';
+    const noteCount=data.notes.filter(n=>n.meterId===m.id).length;
+    let body='';
+    if(!last){
+      // Заалт огт алга
+      body=`<div class="mc-empty">Анхны заалтаа нэмнэ үү.</div>`;
+    }else if(!prev){
+      // Зөвхөн нэг (суурь) заалт — хэрэглээ хараахан бодогдохгүй
+      body=`<div class="mc-usage"><span class="big num">${fmt(last.value)}</span><span class="u">эхлэлийн заалт</span></div>
+        <div class="mc-sub">Дараагийн заалт нэмэхэд хэрэглээ бодогдоно</div>`;
+    }else{
+      // 2+ заалт — хэрэглээ = сүүлийн − өмнөх
+      const d=last.value-prev.value;
+      const sub=`заалт ${prev.value} → ${last.value}`;
+      let bars='';
+      const diffs=[];
+      for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
+      const recent=diffs.slice(-6); const mx=Math.max(...recent,1);
+      if(recent.length){
+        bars='<div class="mc-bars">'+recent.map((d2,i)=>{
+          const h=Math.max(4,Math.round(d2/mx*44));
+          return `<div class="bar${i===recent.length-1?' last':''}" style="height:${h}px"></div>`;
+        }).join('')+'</div>';
+      }
+      body=`<div class="mc-usage"><span class="big num">${fmt(d)}</span><span class="u">${m.unit} хэрэглээ</span></div>
+        <div class="mc-sub num">${sub}</div>${bars}`;
+    }
+    html+=`<div class="meter-card">
+      <div class="mc-head">
+        <div class="mc-icon${hot?' hot':''}"><i class="ti ti-droplet"></i></div>
+        <div><div class="mc-title">${escapeHtml(m.name)}</div><div class="mc-date">${last?last.date:''}${noteCount?' · '+noteCount+' тэмдэглэгээ':''}</div></div>
+        <span class="card-actions">
+          <span class="ic" onclick="openHistory('${m.id}')" title="Түүх"><i class="ti ti-history"></i></span>
+          <span class="ic" onclick="openMeterModal('${m.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteMeter('${m.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+        </span>
+      </div>
+      ${body}
+      <button class="add-reading-btn" onclick="openReadingModal('${m.id}')"><i class="ti ti-plus"></i> Заалт нэмэх</button>
+    </div>`;
+  });
+  html+=`<button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openMeterModal()"><i class="ti ti-plus"></i> Тоолуур нэмэх</button>`;
+  wrap.innerHTML=html;
+}
+
+/* ═══ Туслах ═══ */
+function fmt(n){ return (Math.round(n*100)/100).toLocaleString('en-US'); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click',e=>{ if(e.target===bg)bg.classList.remove('show'); });
+});
+
+/* ═══ Эхлэл ═══ */
+window.addEventListener('load',()=>{
+  loadLocal();
+  const tok=localStorage.getItem('hb_tok');
+  const exp=parseInt(localStorage.getItem('hb_tok_exp')||'0');
+  const usr=localStorage.getItem('hb_usr');
+  if(tok && exp>Date.now()){
+    accessToken=tok; tokenExpiresAt=exp;
+    if(usr){ try{currentUser=JSON.parse(usr);}catch(e){} }
+    enterApp();
+    const tryLoad=setInterval(()=>{ if(window.google&&google.accounts){ clearInterval(tryLoad); initGSI(); loadFromDrive(); } },300);
+    setTimeout(()=>clearInterval(tryLoad),6000);
+  }else{ goScreen('home-screen'); }
+});
 </script>
+</body>
+</html>
