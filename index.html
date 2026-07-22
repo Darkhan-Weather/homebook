@@ -293,6 +293,31 @@ input,select{font-family:inherit;font-size:15px}
 .fin-actions .btn{flex:1;justify-content:center;padding:8px}
 .fin-empty{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius);
   padding:1.25rem;text-align:center;font-size:13px;color:var(--text-2);margin-bottom:10px}
+
+/* ── Сануулга ── */
+.rm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.1rem;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--border-strong)}
+.rm-card.soon{border-left-color:#f59e0b}
+.rm-card.over{border-left-color:var(--danger)}
+.rm-card.done{border-left-color:var(--success);opacity:.7}
+.rm-head{display:flex;align-items:center;gap:8px}
+.rm-title{font-size:15px;font-weight:600;flex:1}
+.rm-when{font-size:13px;color:var(--text-2);margin-top:3px}
+.rm-badge{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:var(--surface-2);color:var(--text-2)}
+.rm-badge.soon{background:#fef3c7;color:#92400e}
+.rm-badge.over{background:#fee2e2;color:#b91c1c}
+.rm-days-info{font-size:12px;color:var(--text-muted);margin-top:4px}
+.rm-cal{font-size:12px;margin-top:8px}
+.rm-cal.on{color:var(--success)}
+.day-chips{display:flex;flex-wrap:wrap;gap:8px}
+.day-chips label{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border-strong);
+  border-radius:20px;font-size:13px;cursor:pointer;user-select:none}
+.day-chips input{margin:0}
+.up-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.up-row:last-child{border-bottom:none}
+.up-row .ut{flex:1;font-size:14px}
+.up-row .ub{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap}
+.up-row .ub.over{background:#fee2e2;color:#b91c1c}
 </style>
 </head>
 <body>
@@ -358,6 +383,8 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-health" class="view"></div>
     <!-- Санхүү: зээл + хуримтлал -->
     <div id="view-finance" class="view"></div>
+    <!-- Сануулга -->
+    <div id="view-reminders" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
@@ -369,6 +396,7 @@ input,select{font-family:inherit;font-size:15px}
     <button class="nav-btn" data-view="vehicles" onclick="showView('vehicles')"><i class="ti ti-car"></i><span>Машин</span></button>
     <button class="nav-btn" data-view="health" onclick="showView('health')"><i class="ti ti-heartbeat"></i><span>Эрүүл мэнд</span></button>
     <button class="nav-btn" data-view="finance" onclick="showView('finance')"><i class="ti ti-credit-card"></i><span>Санхүү</span></button>
+    <button class="nav-btn" data-view="reminders" onclick="showView('reminders')"><i class="ti ti-bell"></i><span>Сануулга</span></button>
   </nav>
 </div>
 
@@ -721,20 +749,54 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: сануулга нэмэх/засах -->
+<div class="modal-bg" id="reminder-modal">
+  <div class="modal">
+    <h3 id="rm-modal-title">Сануулга нэмэх</h3>
+    <div class="field">
+      <label>Юуны сануулга</label>
+      <input type="text" id="rm-title" placeholder="Жишээ: Prius даатгал, Болдын вакцин">
+    </div>
+    <div class="field">
+      <label>Дуусах / болох огноо</label>
+      <input type="date" id="rm-date">
+    </div>
+    <div class="field">
+      <label>Хэдэн хоногийн өмнө сануулах</label>
+      <div class="day-chips" id="rm-days">
+        <label><input type="checkbox" value="30" checked> 30 хоног</label>
+        <label><input type="checkbox" value="14" checked> 14 хоног</label>
+        <label><input type="checkbox" value="7"> 7 хоног</label>
+        <label><input type="checkbox" value="3"> 3 хоног</label>
+        <label><input type="checkbox" value="1"> 1 хоног</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Тэмдэглэл (заавал биш)</label>
+      <input type="text" id="rm-note" placeholder="Нэмэлт мэдээлэл">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('reminder-modal')">Болих</button>
+      <button class="btn acc" onclick="saveReminder()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="rm-delete-wrap"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ═══ Тохиргоо ═══ */
 const CLIENT_ID='381344772393-3i8bb6flqqonu5qgmjngsma2031r0biv.apps.googleusercontent.com';
-const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar.events';
 const FOLDER_NAME='HomeBook';
 const DATA_FILE='homebook_data.json';
 
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -746,6 +808,7 @@ let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
 let editingLoanId=null, editingSavingId=null;
+let editingReminderId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -824,7 +887,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -864,6 +927,7 @@ async function loadFromDrive(){
       data.treatments=mergeById(data.treatments, remote.treatments||[]);
       data.loans=mergeById(data.loans, remote.loans||[]);
       data.savings=mergeById(data.savings, remote.savings||[]);
+      data.reminders=mergeById(data.reminders, remote.reminders||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -899,7 +963,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -945,6 +1009,7 @@ function loadLocal(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
+  if(!data.reminders)data.reminders=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -958,6 +1023,7 @@ function migrate(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
+  if(!data.reminders)data.reminders=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -1143,7 +1209,156 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); renderHealth(); renderFinance(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); renderHealth(); renderFinance(); renderReminders(); }
+
+/* ═══ Сануулга ═══ */
+function daysLeft(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr+'T00:00:00');
+  const t=new Date(new Date().toISOString().slice(0,10)+'T00:00:00');
+  return Math.round((d-t)/86400000);
+}
+function dateMinusDays(dateStr, days){
+  const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()-days);
+  return d.toISOString().slice(0,10);
+}
+function reminderStatus(r){
+  const dl=daysLeft(r.date);
+  if(dl===null)return 'none';
+  const maxDay=Math.max(...(r.remindDays||[0]),0);
+  if(dl<0)return 'over';
+  if(dl<=maxDay)return 'soon';
+  return 'none';
+}
+function renderReminders(){
+  const wrap=document.getElementById('view-reminders');
+  if(data.reminders.length===0){
+    wrap.innerHTML=`<div class="empty-state" style="padding:2.5rem 1rem">
+      <i class="ti ti-bell"></i><h3>Сануулга алга</h3>
+      <p>Даатгал, татвар, вакцин зэрэг дуусах хугацааг нэмэхэд ойртоход сануулна.</p>
+      <button class="btn acc" onclick="openReminderModal()"><i class="ti ti-plus"></i> Сануулга нэмэх</button>
+    </div>`;
+    return;
+  }
+  const sorted=[...data.reminders].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  let html=sorted.map(r=>{
+    const dl=daysLeft(r.date);
+    const st=reminderStatus(r);
+    const badge = dl===null?'' : dl<0?`<span class="rm-badge over">${-dl} хоног хэтэрсэн</span>`
+      : dl===0?`<span class="rm-badge over">Өнөөдөр</span>`
+      : `<span class="rm-badge${st==='soon'?' soon':''}">${dl} хоног үлдсэн</span>`;
+    return `<div class="rm-card ${st==='over'?'over':st==='soon'?'soon':''}">
+      <div class="rm-head">
+        <span class="rm-title">${escapeHtml(r.title)}</span>
+        ${badge}
+      </div>
+      <div class="rm-when num">${r.date||''}${r.note?' · '+escapeHtml(r.note):''}</div>
+      <div class="rm-days-info">Сануулах: ${(r.remindDays||[]).join(', ')} хоногийн өмнө</div>
+      ${r.calEvents&&r.calEvents.length?'<div class="rm-cal on"><i class="ti ti-calendar-check"></i> Календарьт нэмэгдсэн</div>':''}
+      <div class="fin-actions">
+        <button class="btn" onclick="addToCalendar('${r.id}')"><i class="ti ti-calendar-plus"></i> Календарьт нэмэх</button>
+        <button class="btn" onclick="openReminderModal('${r.id}')"><i class="ti ti-pencil"></i></button>
+        <button class="btn danger" onclick="deleteReminder('${r.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  html+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:6px" onclick="openReminderModal()"><i class="ti ti-plus"></i> Сануулга нэмэх</button>`;
+  wrap.innerHTML=html;
+}
+function openReminderModal(editId){
+  editingReminderId=editId||null;
+  const g=id=>document.getElementById(id);
+  const checks=document.querySelectorAll('#rm-days input');
+  const delWrap=g('rm-delete-wrap');
+  if(editingReminderId){
+    const r=data.reminders.find(x=>x.id===editingReminderId);
+    g('rm-modal-title').textContent='Сануулга засах';
+    g('rm-title').value=r.title; g('rm-date').value=r.date||''; g('rm-note').value=r.note||'';
+    checks.forEach(c=>c.checked=(r.remindDays||[]).includes(parseInt(c.value)));
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteReminder('${r.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    g('rm-modal-title').textContent='Сануулга нэмэх';
+    g('rm-title').value=''; g('rm-date').value=''; g('rm-note').value='';
+    checks.forEach(c=>c.checked=(c.value==='30'||c.value==='14'));
+    delWrap.innerHTML='';
+  }
+  openModal('reminder-modal');
+}
+function saveReminder(){
+  const g=id=>document.getElementById(id);
+  const title=g('rm-title').value.trim();
+  const date=g('rm-date').value;
+  const note=g('rm-note').value.trim();
+  const remindDays=[...document.querySelectorAll('#rm-days input:checked')].map(c=>parseInt(c.value)).sort((a,b)=>b-a);
+  if(!title){ toast('Юуны сануулга болохыг бичнэ үү'); return; }
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(editingReminderId){
+    const r=data.reminders.find(x=>x.id===editingReminderId);
+    r.title=title; r.date=date; r.note=note; r.remindDays=remindDays; r.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.reminders.push({ id:'rm'+Date.now(), title, date, note, remindDays, calEvents:[], updatedAt:Date.now() });
+    toast('Сануулга нэмэгдлээ');
+  }
+  persist(); closeModal('reminder-modal'); render();
+}
+function deleteReminder(id){
+  if(!confirm('Энэ сануулгыг устгах уу?'))return;
+  data.reminders=data.reminders.filter(x=>x.id!==id);
+  persist(); closeModal('reminder-modal'); render();
+}
+
+/* ── Google Calendar-д нэмэх ── */
+async function addToCalendar(id){
+  const r=data.reminders.find(x=>x.id===id);
+  if(!r||!r.date){ toast('Огноо алга'); return; }
+  if(!accessToken){ toast('Эхлээд нэвтэрнэ үү'); return; }
+  toast('Календарьт нэмж байна...');
+  // Хуучин event-ууд байвал эхлээд устгах (давхцахгүйн тулд)
+  if(r.calEvents&&r.calEvents.length){
+    for(const eid of r.calEvents){
+      try{ await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eid}`,
+        {method:'DELETE',headers:{Authorization:'Bearer '+accessToken}}); }catch(e){}
+    }
+  }
+  const newIds=[];
+  try{
+    for(const d of (r.remindDays||[])){
+      const remindDate=dateMinusDays(r.date, d);
+      const body={
+        summary:'🔔 '+r.title+' — '+d+' хоног үлдсэн',
+        description:(r.note?r.note+'\n':'')+'Болох огноо: '+r.date+'\n(HomeBook сануулга)',
+        start:{ dateTime:remindDate+'T09:00:00', timeZone:'Asia/Ulaanbaatar' },
+        end:{ dateTime:remindDate+'T09:30:00', timeZone:'Asia/Ulaanbaatar' },
+        reminders:{ useDefault:false, overrides:[{method:'popup',minutes:0}] }
+      };
+      const res=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify(body)});
+      if(res.status===401||res.status===403){
+        toast('Календарийн зөвшөөрөл хэрэгтэй — дахин нэвтэрнэ үү');
+        if(tokenClient)tokenClient.requestAccessToken();
+        return;
+      }
+      const ev=await res.json();
+      if(ev.id)newIds.push(ev.id);
+    }
+    // Болох өдөр өөрөө
+    const body2={
+      summary:'📌 '+r.title,
+      description:(r.note?r.note+'\n':'')+'(HomeBook сануулга)',
+      start:{ date:r.date }, end:{ date:r.date },
+      reminders:{ useDefault:false, overrides:[{method:'popup',minutes:540}] }
+    };
+    const res2=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify(body2)});
+    const ev2=await res2.json(); if(ev2.id)newIds.push(ev2.id);
+    r.calEvents=newIds; r.updatedAt=Date.now();
+    persist(); renderReminders();
+    toast('Календарьт нэмэгдлээ ✓');
+  }catch(e){ console.error('Calendar алдаа:',e); toast('Календарьт нэмэхэд алдаа гарлаа'); }
+}
 
 /* ═══ Санхүү: зээл + хуримтлал ═══ */
 function renderFinance(){
@@ -1991,6 +2206,17 @@ function renderHome(){
           <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxTotal-fxPaid)}₮</span></div>
         </div></div>`:''}`
     : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
+  // Удахгүй болох сануулга (анхаарах шаардлагатай)
+  const upcoming=data.reminders.filter(r=>{ const s=reminderStatus(r); return s==='soon'||s==='over'; })
+    .sort((a,b)=>daysLeft(a.date)-daysLeft(b.date));
+  let remPanel='';
+  if(upcoming.length){
+    remPanel=`<div class="panel"><h4><i class="ti ti-bell" style="color:#f59e0b"></i> Удахгүй болох</h4>`+
+      upcoming.map(r=>{ const dl=daysLeft(r.date);
+        const b=dl<0?`<span class="ub over">${-dl} хоног хэтэрсэн</span>`:dl===0?`<span class="ub over">Өнөөдөр</span>`:`<span class="ub">${dl} хоног</span>`;
+        return `<div class="up-row"><span class="ut">${escapeHtml(r.title)}</span>${b}</div>`;
+      }).join('')+`</div>`;
+  }
   wrap.innerHTML=`
     <div class="stat-grid">
       <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
@@ -1998,6 +2224,7 @@ function renderHome(){
       <div class="stat"><div class="sl">Нийт заалт</div><div class="sv num">${totalReadings}</div></div>
     </div>
     ${moneyCard}
+    ${remPanel}
     <div class="panel">
       <h4>Сүүлийн үйл ажиллагаа</h4>
       ${acts}
