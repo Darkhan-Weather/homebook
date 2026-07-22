@@ -215,6 +215,23 @@ input,select{font-family:inherit;font-size:15px}
 .fx-total .tr.big{font-size:17px;font-weight:600;color:var(--text);border-top:1px solid var(--border);
   margin-top:6px;padding-top:11px}
 .fx-total .tr.big .num{font-weight:600}
+
+/* ── Орлого + мөнгөний нэгтгэл ── */
+.money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.money-grid .mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem .9rem;box-shadow:var(--shadow)}
+.money-grid .ml{font-size:12px;color:var(--text-2);margin-bottom:6px}
+.money-grid .mv{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.mv.pos{color:var(--success)} .mv.neg{color:var(--danger)}
+.inc-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+.inc-icon{width:36px;height:36px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.inc-icon i{font-size:18px;color:#15803d}
+.inc-main{flex:1;min-width:0;cursor:pointer}
+.inc-name{font-size:14px;font-weight:500}
+.inc-sub{font-size:12px;color:var(--text-muted)}
+.inc-amt{font-size:15px;font-weight:600;color:var(--success);white-space:nowrap;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -270,12 +287,15 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <!-- Тогтмол зардал -->
     <div id="view-fixed" class="view"></div>
+    <!-- Орлого -->
+    <div id="view-income" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
     <button class="nav-btn" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
     <button class="nav-btn active" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
     <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
+    <button class="nav-btn" data-view="income" onclick="showView('income')"><i class="ti ti-coin"></i><span>Орлого</span></button>
   </nav>
 </div>
 
@@ -378,6 +398,38 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: орлого нэмэх/засах -->
+<div class="modal-bg" id="income-modal">
+  <div class="modal">
+    <h3 id="in-modal-title">Орлого нэмэх</h3>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="in-date">
+    </div>
+    <div class="field">
+      <label>Төрөл</label>
+      <select id="in-type">
+        <option value="Цалин">Цалин</option>
+        <option value="Нэмэлт">Нэмэлт орлого</option>
+        <option value="Бусад">Бусад</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Тайлбар</label>
+      <input type="text" id="in-note" placeholder="Жишээ: 7-р сар, II хагас">
+    </div>
+    <div class="field">
+      <label>Дүн (₮)</label>
+      <input type="number" id="in-amount" inputmode="decimal" placeholder="Гарт орсон дүн">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('income-modal')">Болих</button>
+      <button class="btn acc" onclick="saveIncome()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="in-delete-wrap"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -391,11 +443,13 @@ const DATA_FILE='homebook_data.json';
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
 let fixedMonth=new Date().toISOString().slice(0,7);   // 'YYYY-MM'
+let incomeMonth=new Date().toISOString().slice(0,7);
+let editingIncomeId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -474,7 +528,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -505,6 +559,7 @@ async function loadFromDrive(){
       data.notes=mergeById(data.notes, remote.notes||[]);
       data.fixedItems=mergeById(data.fixedItems, remote.fixedItems||[]);
       data.payments=mergeById(data.payments, remote.payments||[]);
+      data.income=mergeById(data.income, remote.income||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -540,7 +595,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -581,7 +636,7 @@ function loadLocal(){
   const s=localStorage.getItem('hb_data');
   if(s){ try{ data=JSON.parse(s); }catch(e){} }
   if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
-  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -590,7 +645,7 @@ function migrate(){
     if(!m.tariffs){ m.tariffs = (m.tariff!=null)?[{date:'2000-01-01',price:m.tariff}]:[]; }
   });
   if(!data.notes)data.notes=[];
-  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[];
+  if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -776,7 +831,93 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); renderFixed(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); }
+
+/* ═══ Орлого ═══ */
+function changeIncomeMonth(delta){
+  const [y,m]=incomeMonth.split('-').map(Number);
+  incomeMonth=new Date(y, m-1+delta, 1).toISOString().slice(0,7);
+  renderIncome();
+}
+function incomeOfMonth(month){
+  return data.income.filter(i=>i.date&&i.date.slice(0,7)===month)
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0));
+}
+function renderIncome(){
+  const wrap=document.getElementById('view-income');
+  const list=incomeOfMonth(incomeMonth);
+  const total=list.reduce((s,i)=>s+(i.amount||0),0);
+  let rows='';
+  if(list.length===0){
+    rows=`<div class="empty-state" style="padding:2rem 1rem">
+      <i class="ti ti-coin"></i><h3>Орлого алга</h3>
+      <p>Цалин болон нэмэлт орлогоо нэмээд сарын орлогоо хөтөлнө.</p>
+    </div>`;
+  }else{
+    rows=list.map(i=>`<div class="inc-row">
+      <div class="inc-icon"><i class="ti ti-${i.type==='Цалин'?'cash':'plus'}"></i></div>
+      <div class="inc-main" onclick="openIncomeModal('${i.id}')">
+        <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}</div>
+        <div class="inc-sub num">${i.date}</div>
+      </div>
+      <span class="inc-amt">+${fmt(i.amount)}₮</span>
+    </div>`).join('');
+  }
+  wrap.innerHTML=`
+    <div class="month-nav">
+      <button onclick="changeIncomeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="mlabel">${fxMonthLabel(incomeMonth)}</span>
+      <button onclick="changeIncomeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    ${rows}
+    ${list.length?`<div class="fx-total"><div class="tr big"><span>Сарын нийт орлого</span><span class="num" style="color:var(--success)">${fmt(total)}₮</span></div></div>`:''}
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openIncomeModal()"><i class="ti ti-plus"></i> Орлого нэмэх</button>
+  `;
+}
+function openIncomeModal(editId){
+  editingIncomeId=editId||null;
+  const delWrap=document.getElementById('in-delete-wrap');
+  if(editingIncomeId){
+    const i=data.income.find(x=>x.id===editingIncomeId);
+    document.getElementById('in-modal-title').textContent='Орлого засах';
+    document.getElementById('in-date').value=i.date;
+    document.getElementById('in-type').value=i.type;
+    document.getElementById('in-note').value=i.note||'';
+    document.getElementById('in-amount').value=i.amount;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteIncome('${i.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('in-modal-title').textContent='Орлого нэмэх';
+    document.getElementById('in-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('in-type').value='Цалин';
+    document.getElementById('in-note').value='';
+    document.getElementById('in-amount').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('income-modal');
+}
+function saveIncome(){
+  const date=document.getElementById('in-date').value;
+  const type=document.getElementById('in-type').value;
+  const note=document.getElementById('in-note').value.trim();
+  const amount=parseFloat(document.getElementById('in-amount').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  if(editingIncomeId){
+    const i=data.income.find(x=>x.id===editingIncomeId);
+    i.date=date; i.type=type; i.note=note; i.amount=amount; i.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.income.push({ id:'i'+Date.now(), date, type, note, amount, updatedAt:Date.now() });
+    toast('Орлого нэмэгдлээ');
+  }
+  incomeMonth=date.slice(0,7);
+  persist(); closeModal('income-modal'); render();
+}
+function deleteIncome(id){
+  if(!confirm('Энэ орлогыг устгах уу?'))return;
+  data.income=data.income.filter(x=>x.id!==id);
+  persist(); closeModal('income-modal'); render();
+}
 
 /* ═══ Тогтмол зардал ═══ */
 function fxMonthLabel(ym){
@@ -939,20 +1080,25 @@ function renderHome(){
       </div>`;
     }).join('');
   }
-  // Энэ сарын тогтмол зардал
+  // Энэ сарын мөнгөний нэгтгэл
   let fxTotal=0, fxPaid=0;
   data.fixedItems.forEach(it=>{ const a=monthAmount(it, ym); fxTotal+=a; if(isPaid(it, ym))fxPaid+=a; });
-  const fxRemain=fxTotal-fxPaid;
-  const moneyCard = data.fixedItems.length>0
-    ? `<div class="panel">
-        <h4>Энэ сарын тогтмол зардал</h4>
+  const incomeTotal=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
+  const expenseTotal=fxTotal;                 // одоохондоо тогтмол зардал (дараа хувьсах нэмэгдэнэ)
+  const balance=incomeTotal-expenseTotal;
+  const hasMoney=data.income.length>0||data.fixedItems.length>0;
+  const moneyCard = hasMoney
+    ? `<div class="money-grid">
+        <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
+        <div class="mc"><div class="ml">Зардал</div><div class="mv neg">${fmt(expenseTotal)}₮</div></div>
+        <div class="mc"><div class="ml">Үлдэгдэл</div><div class="mv ${balance>=0?'pos':'neg'}">${fmt(balance)}₮</div></div>
+       </div>
+       ${fxTotal>0?`<div class="panel"><h4>Тогтмол зардал (энэ сар)</h4>
         <div class="fx-total" style="margin:0;border:none;box-shadow:none;padding:0">
           <div class="tr"><span>Төлсөн</span><span class="num">${fmt(fxPaid)}₮</span></div>
-          <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxRemain)}₮</span></div>
-          <div class="tr big"><span>Нийт</span><span class="num">${fmt(fxTotal)}₮</span></div>
-        </div>
-       </div>`
-    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол таб дээр зардлын зүйл нэмэхэд энэ сарын нийт зардал энд гарч ирнэ.</div>`;
+          <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(fxTotal-fxPaid)}₮</span></div>
+        </div></div>`:''}`
+    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
   wrap.innerHTML=`
     <div class="stat-grid">
       <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
