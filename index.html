@@ -230,25 +230,7 @@ input,select{font-family:inherit;font-size:15px}
         <option value="haluun">Халуун ус</option>
       </select>
     </div>
-
-    <!-- Add mode: энгийн тариф -->
-    <div class="field" id="mt-simple-tariff">
-      <label>Нэгжийн тариф (₮)</label>
-      <input type="number" id="mt-tariff" inputmode="decimal" placeholder="1 м³-ийн үнэ">
-      <div class="hint">Дараа тариф өөрчлөгдвөл засах хэсгээс түүх нэмж болно</div>
-    </div>
-
-    <!-- Edit mode: тариф түүх -->
-    <div id="mt-tariff-history" style="display:none">
-      <div class="section-label"><i class="ti ti-history"></i> Тарифын түүх</div>
-      <div id="tariff-list"></div>
-      <div class="mini-add">
-        <input type="date" id="tf-date" title="Эхлэх огноо">
-        <input type="number" id="tf-price" inputmode="decimal" placeholder="Шинэ тариф ₮">
-        <button class="add-ic" onclick="addTariff()"><i class="ti ti-plus"></i></button>
-      </div>
-      <div class="hint" style="margin-top:6px">Тухайн огнооноос эхлэн шинэ тариф үйлчилнэ. Хуучин сарын тооцоо хэвээр зөв.</div>
-    </div>
+    <div class="hint" style="margin-top:-.5rem;margin-bottom:.5rem">Тоолуур зөвхөн хэрэглээ (м³) хянана. Бодит төлбөрийг тусад нь бүртгэнэ.</div>
 
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('meter-modal')">Болих</button>
@@ -319,7 +301,7 @@ let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
 let data={ meters:[], readings:[], notes:[] };
 let saveTimer=null;
-let editingMeterId=null, editingReadingId=null, editTariffs=[], histMeterId=null;
+let editingMeterId=null, editingReadingId=null, histMeterId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -456,72 +438,31 @@ function migrate(){
   if(!data.notes)data.notes=[];
 }
 
-/* ═══ Тариф — тухайн огнооны үйлчлэх тариф ═══ */
-function tariffAt(meter, dateStr){
-  const ts=(meter.tariffs||[]).filter(t=>t.date<=dateStr).sort((a,b)=>b.date.localeCompare(a.date));
-  if(ts.length)return ts[0].price;
-  if(meter.tariffs&&meter.tariffs.length)
-    return [...meter.tariffs].sort((a,b)=>a.date.localeCompare(b.date))[0].price;
-  return meter.tariff||0;
-}
-
 /* ═══ Тоолуур нэмэх/засах ═══ */
 function openMeterModal(editId){
   editingMeterId=editId||null;
-  const simple=document.getElementById('mt-simple-tariff');
-  const hist=document.getElementById('mt-tariff-history');
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
     document.getElementById('mt-modal-title').textContent='Тоолуур засах';
     document.getElementById('mt-name').value=m.name;
     document.getElementById('mt-type').value=m.type;
-    editTariffs=JSON.parse(JSON.stringify(m.tariffs||[]));
-    simple.style.display='none'; hist.style.display='block';
-    document.getElementById('tf-date').value=new Date().toISOString().slice(0,10);
-    document.getElementById('tf-price').value='';
-    renderTariffList();
   }else{
     document.getElementById('mt-modal-title').textContent='Тоолуур нэмэх';
     document.getElementById('mt-name').value='';
     document.getElementById('mt-type').value='huiten';
-    document.getElementById('mt-tariff').value='';
-    simple.style.display='block'; hist.style.display='none';
   }
   openModal('meter-modal');
 }
-function renderTariffList(){
-  const wrap=document.getElementById('tariff-list');
-  const sorted=[...editTariffs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(sorted.length===0){ wrap.innerHTML='<div class="empty-line">Тариф оруулаагүй байна</div>'; return; }
-  wrap.innerHTML=sorted.map(t=>`<div class="tariff-row">
-    <span class="tr-date num">${t.date}</span>
-    <span class="tr-price num">${fmt(t.price)}₮</span>
-    <span class="ic" onclick="removeTariff('${t.date}')"><i class="ti ti-trash"></i></span>
-  </div>`).join('');
-}
-function addTariff(){
-  const date=document.getElementById('tf-date').value;
-  const price=parseFloat(document.getElementById('tf-price').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
-  if(isNaN(price)){ toast('Тариф оруулна уу'); return; }
-  editTariffs=editTariffs.filter(t=>t.date!==date); // ижил огноо байвал дарж бичих
-  editTariffs.push({date, price});
-  document.getElementById('tf-price').value='';
-  renderTariffList();
-}
-function removeTariff(date){ editTariffs=editTariffs.filter(t=>t.date!==date); renderTariffList(); }
 function saveMeter(){
   const name=document.getElementById('mt-name').value.trim();
   const type=document.getElementById('mt-type').value;
   if(!name){ toast('Нэр оруулна уу'); return; }
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
-    m.name=name; m.type=type; m.tariffs=editTariffs; m.updatedAt=Date.now();
+    m.name=name; m.type=type; m.updatedAt=Date.now();
     toast('Тоолуур засагдлаа');
   }else{
-    const tariff=parseFloat(document.getElementById('mt-tariff').value)||0;
-    data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³',
-      tariffs:[{date:'2000-01-01', price:tariff}], updatedAt:Date.now() });
+    data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³', updatedAt:Date.now() });
     toast('Тоолуур нэмэгдлээ');
   }
   persist(); closeModal('meter-modal'); render();
@@ -576,7 +517,7 @@ function updatePreview(){
   if(isNaN(val)||!m){ pv.classList.remove('show'); return; }
   if(!prevR){
     // Анхны заалт — суурь цэг, төлбөргүй
-    pv.innerHTML='<i class="ti ti-flag"></i> Энэ анхны (суурь) заалт болно. Хэрэглээ, төлбөр дараагийн заалтаас эхэлж бодогдоно.';
+    pv.innerHTML='<i class="ti ti-flag"></i> Энэ анхны (суурь) заалт болно. Хэрэглээ дараагийн заалтаас эхэлж бодогдоно.';
     pv.classList.add('show'); return;
   }
   const prev=prevR.value;
@@ -585,9 +526,7 @@ function updatePreview(){
     pv.innerHTML='<span class="warn"><i class="ti ti-alert-triangle"></i> Заалт өмнөхөөс бага байна. Тоолуур солигдсон эсэхээ шалгана уу.</span>';
     pv.classList.add('show'); return;
   }
-  const tf=tariffAt(m, date||new Date().toISOString().slice(0,10));
-  const cost=Math.round(diff*tf);
-  pv.innerHTML=`Зөрүү: <b>${fmt(diff)} ${m.unit}</b>`+(tf?` &nbsp;·&nbsp; Төлбөр: <b>${fmt(cost)}₮</b> (тариф ${fmt(tf)}₮)`:' &nbsp;·&nbsp; <span style="color:var(--text-muted)">тариф оруулаагүй</span>');
+  pv.innerHTML=`Хэрэглээ: <b>${fmt(diff)} ${m.unit}</b>`;
   pv.classList.add('show');
 }
 function saveReading(){
@@ -686,20 +625,18 @@ function render(){
     const last=rs[rs.length-1], prev=rs[rs.length-2];
     const hot=m.type==='haluun';
     const noteCount=data.notes.filter(n=>n.meterId===m.id).length;
-    let body='', costLine='';
+    let body='';
     if(!last){
       // Заалт огт алга
       body=`<div class="mc-empty">Анхны заалтаа нэмнэ үү.</div>`;
     }else if(!prev){
       // Зөвхөн нэг (суурь) заалт — хэрэглээ хараахан бодогдохгүй
       body=`<div class="mc-usage"><span class="big num">${fmt(last.value)}</span><span class="u">эхлэлийн заалт</span></div>
-        <div class="mc-sub">Дараагийн заалт нэмэхэд хэрэглээ, төлбөр бодогдоно</div>`;
+        <div class="mc-sub">Дараагийн заалт нэмэхэд хэрэглээ бодогдоно</div>`;
     }else{
-      // 2+ заалт — хэрэглээ = сүүлийн − өмнөх, төлбөр = хэрэглээ × тухайн огнооны тариф
+      // 2+ заалт — хэрэглээ = сүүлийн − өмнөх
       const d=last.value-prev.value;
-      const tf=tariffAt(m,last.date);
-      const cost=Math.round(d*tf);
-      const sub=`заалт ${prev.value} → ${last.value}${tf?' · тариф '+fmt(tf)+'₮':''}`;
+      const sub=`заалт ${prev.value} → ${last.value}`;
       let bars='';
       const diffs=[];
       for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
@@ -712,7 +649,6 @@ function render(){
       }
       body=`<div class="mc-usage"><span class="big num">${fmt(d)}</span><span class="u">${m.unit} хэрэглээ</span></div>
         <div class="mc-sub num">${sub}</div>${bars}`;
-      costLine=`<div class="mc-foot"><span class="l">Сүүлийн төлбөр</span><span class="v num">${tf?fmt(cost)+'₮':'—'}</span></div>`;
     }
     html+=`<div class="meter-card">
       <div class="mc-head">
@@ -725,7 +661,6 @@ function render(){
         </span>
       </div>
       ${body}
-      ${costLine}
       <button class="add-reading-btn" onclick="openReadingModal('${m.id}')"><i class="ti ti-plus"></i> Заалт нэмэх</button>
     </div>`;
   });
