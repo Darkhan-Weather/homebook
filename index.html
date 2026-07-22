@@ -57,8 +57,10 @@ input,select{font-family:inherit;font-size:15px}
 .view.active{display:block}
 /* Доод навигаци */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
-  display:flex;justify-content:center;gap:8px;padding:6px 8px;z-index:60}
-.nav-btn{flex:1;max-width:130px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+  display:flex;justify-content:flex-start;gap:4px;padding:6px 8px;z-index:60;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bottom-nav::-webkit-scrollbar{display:none}
+.bottom-nav{scrollbar-width:none}
+.nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
   color:var(--text-muted);border-radius:10px;font-size:11px;font-weight:500}
 .nav-btn i{font-size:22px}
 .nav-btn.active{color:var(--accent-text)}
@@ -255,6 +257,21 @@ input,select{font-family:inherit;font-size:15px}
   background:var(--surface-2);border:1px solid var(--border);font-size:13px;margin:0 6px 6px 0}
 .cat-chip .ic{color:var(--text-muted);font-size:15px;cursor:pointer}
 .cat-chip .ic:hover{color:var(--danger)}
+
+/* ── Машин ── */
+.veh-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.veh-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.veh-icon{width:40px;height:40px;border-radius:10px;background:#e0e7ff;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.veh-icon i{font-size:22px;color:#4338ca}
+.veh-title{font-size:15px;font-weight:600}
+.veh-sub{font-size:12px;color:var(--text-2)}
+.veh-total{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:.75rem}
+.veh-total .l{font-size:14px;color:var(--text-2)}
+.veh-total .v{font-size:18px;font-weight:600}
+.veh-empty{font-size:13px;color:var(--text-muted);padding:4px 0 1rem}
 </style>
 </head>
 <body>
@@ -314,6 +331,8 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-income" class="view"></div>
     <!-- Хувьсах зардал -->
     <div id="view-variable" class="view"></div>
+    <!-- Машин -->
+    <div id="view-vehicles" class="view"></div>
   </div>
   <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
@@ -322,6 +341,7 @@ input,select{font-family:inherit;font-size:15px}
     <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
     <button class="nav-btn" data-view="income" onclick="showView('income')"><i class="ti ti-coin"></i><span>Орлого</span></button>
     <button class="nav-btn" data-view="variable" onclick="showView('variable')"><i class="ti ti-basket"></i><span>Хувьсах</span></button>
+    <button class="nav-btn" data-view="vehicles" onclick="showView('vehicles')"><i class="ti ti-car"></i><span>Машин</span></button>
   </nav>
 </div>
 
@@ -499,6 +519,66 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: машин нэмэх/засах -->
+<div class="modal-bg" id="vehicle-modal">
+  <div class="modal">
+    <h3 id="vh-modal-title">Машин нэмэх</h3>
+    <div class="field">
+      <label>Нэр / марк</label>
+      <input type="text" id="vh-name" placeholder="Жишээ: Prius 30">
+    </div>
+    <div class="field">
+      <label>Улсын дугаар</label>
+      <input type="text" id="vh-plate" placeholder="Жишээ: 1234 УБА">
+    </div>
+    <div class="field">
+      <label>Нэмэлт тэмдэглэл</label>
+      <input type="text" id="vh-brand" placeholder="Жишээ: өнгө, он (заавал биш)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('vehicle-modal')">Болих</button>
+      <button class="btn acc" onclick="saveVehicle()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="vh-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: засвар нэмэх/засах -->
+<div class="modal-bg" id="repair-modal">
+  <div class="modal">
+    <h3 id="rp-modal-title">Засвар нэмэх</h3>
+    <div class="field">
+      <label>Огноо</label>
+      <input type="date" id="rp-date">
+    </div>
+    <div class="field">
+      <label>Юу зассан / сольсон</label>
+      <input type="text" id="rp-desc" placeholder="Жишээ: Тосны шүүр сольсон">
+    </div>
+    <div class="field">
+      <label>Дүн (₮)</label>
+      <input type="number" id="rp-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('repair-modal')">Болих</button>
+      <button class="btn acc" onclick="saveRepair()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="rp-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: засварын түүх -->
+<div class="modal-bg" id="repairs-modal">
+  <div class="modal">
+    <h3 id="rps-title">Засварын түүх</h3>
+    <div id="rps-list"></div>
+    <button class="add-reading-btn" id="rps-add"><i class="ti ti-plus"></i> Засвар нэмэх</button>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('repairs-modal')">Хаах</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -512,7 +592,7 @@ const DATA_FILE='homebook_data.json';
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[] };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -521,6 +601,7 @@ let incomeMonth=new Date().toISOString().slice(0,7);
 let editingIncomeId=null;
 let variableMonth=new Date().toISOString().slice(0,7);
 let editingVariableId=null;
+let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -599,7 +680,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -633,6 +714,8 @@ async function loadFromDrive(){
       data.income=mergeById(data.income, remote.income||[]);
       data.categories=mergeById(data.categories, remote.categories||[]);
       data.variable=mergeById(data.variable, remote.variable||[]);
+      data.vehicles=mergeById(data.vehicles, remote.vehicles||[]);
+      data.repairs=mergeById(data.repairs, remote.repairs||[]);
       migrate(); saveLocal();
     }
     setSync('Синктэй','#0f766e'); render();
@@ -668,7 +751,7 @@ async function doBackup(){
     const today=new Date().toISOString().slice(0,10);
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -711,6 +794,7 @@ function loadLocal(){
   if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
+  if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -721,6 +805,7 @@ function migrate(){
   if(!data.notes)data.notes=[];
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
+  if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -906,7 +991,150 @@ function showView(name){
 }
 
 /* ═══ Render — бүх дэлгэц ═══ */
-function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); }
+function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); renderVariable(); renderVehicles(); }
+
+/* ═══ Машин ═══ */
+function repairsOf(vehicleId){ return data.repairs.filter(r=>r.vehicleId===vehicleId).sort((a,b)=>b.date.localeCompare(a.date)); }
+function vehicleTotal(vehicleId){ return repairsOf(vehicleId).reduce((s,r)=>s+(r.amount||0),0); }
+function renderVehicles(){
+  const wrap=document.getElementById('view-vehicles');
+  if(data.vehicles.length===0){
+    wrap.innerHTML=`<div class="empty-state" style="padding:2.5rem 1rem">
+      <i class="ti ti-car"></i><h3>Машин алга</h3>
+      <p>Машинаа нэмээд засвар, зардлынх нь түүхийг хөтөлнө.</p>
+      <button class="btn acc" onclick="openVehicleModal()"><i class="ti ti-plus"></i> Машин нэмэх</button>
+    </div>`;
+    return;
+  }
+  let html='';
+  data.vehicles.forEach(v=>{
+    const reps=repairsOf(v.id);
+    const total=vehicleTotal(v.id);
+    html+=`<div class="veh-card">
+      <div class="veh-head">
+        <div class="veh-icon"><i class="ti ti-car"></i></div>
+        <div style="flex:1"><div class="veh-title">${escapeHtml(v.name)}</div>
+          <div class="veh-sub">${escapeHtml(v.plate||'')}${v.brand?' · '+escapeHtml(v.brand):''}</div></div>
+        <span class="card-actions">
+          <span class="ic" onclick="openVehicleModal('${v.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
+          <span class="ic" onclick="deleteVehicle('${v.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+        </span>
+      </div>
+      <div class="veh-total"><span class="l">Нийт зардал (${reps.length} засвар)</span><span class="v num">${fmt(total)}₮</span></div>
+      ${reps.length?reps.slice(0,3).map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+        <span><span class="num" style="color:var(--text-2)">${r.date}</span> · ${escapeHtml(r.desc||'')}</span>
+        <span class="num" style="font-weight:500">${fmt(r.amount)}₮</span></div>`).join(''):'<div class="veh-empty">Засвар хараахан алга</div>'}
+      ${reps.length>3?`<div style="font-size:12px;color:var(--text-muted);padding:2px 0 6px">+${reps.length-3} засвар...</div>`:''}
+      <button class="add-reading-btn" onclick="openRepairsModal('${v.id}')"><i class="ti ti-history"></i> Засварын түүх</button>
+    </div>`;
+  });
+  html+=`<button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openVehicleModal()"><i class="ti ti-plus"></i> Машин нэмэх</button>`;
+  wrap.innerHTML=html;
+}
+function openVehicleModal(editId){
+  editingVehicleId=editId||null;
+  const delWrap=document.getElementById('vh-delete-wrap');
+  if(editingVehicleId){
+    const v=data.vehicles.find(x=>x.id===editingVehicleId);
+    document.getElementById('vh-modal-title').textContent='Машин засах';
+    document.getElementById('vh-name').value=v.name;
+    document.getElementById('vh-plate').value=v.plate||'';
+    document.getElementById('vh-brand').value=v.brand||'';
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteVehicle('${v.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('vh-modal-title').textContent='Машин нэмэх';
+    document.getElementById('vh-name').value='';
+    document.getElementById('vh-plate').value='';
+    document.getElementById('vh-brand').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('vehicle-modal');
+}
+function saveVehicle(){
+  const name=document.getElementById('vh-name').value.trim();
+  const plate=document.getElementById('vh-plate').value.trim();
+  const brand=document.getElementById('vh-brand').value.trim();
+  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(editingVehicleId){
+    const v=data.vehicles.find(x=>x.id===editingVehicleId);
+    v.name=name; v.plate=plate; v.brand=brand; v.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.vehicles.push({ id:'veh'+Date.now(), name, plate, brand, updatedAt:Date.now() });
+    toast('Машин нэмэгдлээ');
+  }
+  persist(); closeModal('vehicle-modal'); renderVehicles();
+}
+function deleteVehicle(id){
+  const v=data.vehicles.find(x=>x.id===id);
+  if(!confirm('"'+v.name+'"-г устгах уу? Засварын түүх нь бас устана.'))return;
+  data.vehicles=data.vehicles.filter(x=>x.id!==id);
+  data.repairs=data.repairs.filter(r=>r.vehicleId!==id);
+  persist(); closeModal('vehicle-modal'); render();
+}
+
+/* ── Засвар ── */
+function openRepairsModal(vehicleId){
+  repairVehicleId=vehicleId;
+  const v=data.vehicles.find(x=>x.id===vehicleId);
+  document.getElementById('rps-title').textContent=v.name+' — засвар';
+  document.getElementById('rps-add').onclick=()=>openRepairModal();
+  const reps=repairsOf(vehicleId);
+  const wrap=document.getElementById('rps-list');
+  if(reps.length===0){ wrap.innerHTML='<div class="empty-line">Засвар алга</div>'; }
+  else{
+    wrap.innerHTML=reps.map(r=>`<div class="hist-row">
+      <span class="hd num">${r.date}</span>
+      <span class="hmain">${escapeHtml(r.desc||'')} <span class="hsub num">${fmt(r.amount)}₮</span></span>
+      <span class="hacts">
+        <span class="ic" onclick="openRepairModal('${r.id}')"><i class="ti ti-pencil"></i></span>
+        <span class="ic" onclick="deleteRepair('${r.id}')"><i class="ti ti-trash"></i></span>
+      </span></div>`).join('');
+  }
+  openModal('repairs-modal');
+}
+function openRepairModal(editId){
+  editingRepairId=editId||null;
+  const delWrap=document.getElementById('rp-delete-wrap');
+  if(editingRepairId){
+    const r=data.repairs.find(x=>x.id===editingRepairId);
+    document.getElementById('rp-modal-title').textContent='Засвар засах';
+    document.getElementById('rp-date').value=r.date;
+    document.getElementById('rp-desc').value=r.desc||'';
+    document.getElementById('rp-amount').value=r.amount;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteRepair('${r.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    document.getElementById('rp-modal-title').textContent='Засвар нэмэх';
+    document.getElementById('rp-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('rp-desc').value='';
+    document.getElementById('rp-amount').value='';
+    delWrap.innerHTML='';
+  }
+  openModal('repair-modal');
+}
+function saveRepair(){
+  const date=document.getElementById('rp-date').value;
+  const desc=document.getElementById('rp-desc').value.trim();
+  const amount=parseFloat(document.getElementById('rp-amount').value);
+  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  if(editingRepairId){
+    const r=data.repairs.find(x=>x.id===editingRepairId);
+    r.date=date; r.desc=desc; r.amount=amount; r.updatedAt=Date.now();
+    toast('Засагдлаа');
+  }else{
+    data.repairs.push({ id:'rep'+Date.now(), vehicleId:repairVehicleId, date, desc, amount, updatedAt:Date.now() });
+    toast('Засвар нэмэгдлээ');
+  }
+  persist(); closeModal('repair-modal'); render();
+  if(document.getElementById('repairs-modal').classList.contains('show'))openRepairsModal(repairVehicleId);
+}
+function deleteRepair(id){
+  if(!confirm('Энэ засварыг устгах уу?'))return;
+  data.repairs=data.repairs.filter(x=>x.id!==id);
+  persist(); render();
+  if(document.getElementById('repairs-modal').classList.contains('show'))openRepairsModal(repairVehicleId);
+}
 
 /* ═══ Ангилал ═══ */
 function catName(id){ const c=data.categories.find(x=>x.id===id); return c?c.name:'—'; }
@@ -1300,9 +1528,10 @@ function renderHome(){
   data.fixedItems.forEach(it=>{ const a=monthAmount(it, ym); fxTotal+=a; if(isPaid(it, ym))fxPaid+=a; });
   const incomeTotal=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
   const varTotal=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
-  const expenseTotal=fxTotal+varTotal;        // тогтмол + хувьсах (дараа машин, эрүүл мэнд нэмэгдэнэ)
+  const repairTotal=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0);
+  const expenseTotal=fxTotal+varTotal+repairTotal;   // тогтмол + хувьсах + машины засвар
   const balance=incomeTotal-expenseTotal;
-  const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0;
+  const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0;
   const moneyCard = hasMoney
     ? `<div class="money-grid">
         <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
