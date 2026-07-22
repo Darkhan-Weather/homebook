@@ -574,7 +574,12 @@ function updatePreview(){
   lastEl.textContent=prevR?('Өмнөх заалт: '+prevR.value+' ('+prevR.date+')'):'Энэ тоолуурын анхны заалт';
   const pv=document.getElementById('rd-preview');
   if(isNaN(val)||!m){ pv.classList.remove('show'); return; }
-  const prev=prevR?prevR.value:0;
+  if(!prevR){
+    // Анхны заалт — суурь цэг, төлбөргүй
+    pv.innerHTML='<i class="ti ti-flag"></i> Энэ анхны (суурь) заалт болно. Хэрэглээ, төлбөр дараагийн заалтаас эхэлж бодогдоно.';
+    pv.classList.add('show'); return;
+  }
+  const prev=prevR.value;
   const diff=val-prev;
   if(diff<0){
     pv.innerHTML='<span class="warn"><i class="ti ti-alert-triangle"></i> Заалт өмнөхөөс бага байна. Тоолуур солигдсон эсэхээ шалгана уу.</span>';
@@ -626,10 +631,10 @@ function openHistory(meterId){
       const idx=rs.length-1-i; const all=readingsOf(meterId);
       const pos=all.findIndex(x=>x.id===r.id);
       const prev=pos>0?all[pos-1]:null;
-      const diff=prev?(r.value-prev.value):r.value;
+      const label=prev?`<span class="hsub num">(зөрүү ${fmt(r.value-prev.value)} ${m.unit})</span>`:`<span class="hsub">эхлэлийн заалт</span>`;
       return `<div class="hist-row">
         <span class="hd num">${r.date}</span>
-        <span class="hmain"><b class="num">${r.value}</b> <span class="hsub num">(зөрүү ${fmt(diff)} ${m.unit})</span></span>
+        <span class="hmain"><b class="num">${r.value}</b> ${label}</span>
         <span class="hacts">
           <span class="ic" onclick="openReadingModal(null,'${r.id}')"><i class="ti ti-pencil"></i></span>
           <span class="ic" onclick="deleteReading('${r.id}')"><i class="ti ti-trash"></i></span>
@@ -681,14 +686,21 @@ function render(){
     const last=rs[rs.length-1], prev=rs[rs.length-2];
     const hot=m.type==='haluun';
     const noteCount=data.notes.filter(n=>n.meterId===m.id).length;
-    let usage='—', costLine='', sub='Заалт хараахан алга', bars='';
-    if(last){
-      const d=prev?(last.value-prev.value):last.value;
-      usage=fmt(d);
+    let body='', costLine='';
+    if(!last){
+      // Заалт огт алга
+      body=`<div class="mc-empty">Анхны заалтаа нэмнэ үү.</div>`;
+    }else if(!prev){
+      // Зөвхөн нэг (суурь) заалт — хэрэглээ хараахан бодогдохгүй
+      body=`<div class="mc-usage"><span class="big num">${fmt(last.value)}</span><span class="u">эхлэлийн заалт</span></div>
+        <div class="mc-sub">Дараагийн заалт нэмэхэд хэрэглээ, төлбөр бодогдоно</div>`;
+    }else{
+      // 2+ заалт — хэрэглээ = сүүлийн − өмнөх, төлбөр = хэрэглээ × тухайн огнооны тариф
+      const d=last.value-prev.value;
       const tf=tariffAt(m,last.date);
       const cost=Math.round(d*tf);
-      sub=`заалт ${prev?prev.value+' → '+last.value:last.value}${tf?' · тариф '+fmt(tf)+'₮':''}`;
-      costLine=`<div class="mc-foot"><span class="l">Сүүлийн төлбөр</span><span class="v num">${tf?fmt(cost)+'₮':'—'}</span></div>`;
+      const sub=`заалт ${prev.value} → ${last.value}${tf?' · тариф '+fmt(tf)+'₮':''}`;
+      let bars='';
       const diffs=[];
       for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
       const recent=diffs.slice(-6); const mx=Math.max(...recent,1);
@@ -698,6 +710,9 @@ function render(){
           return `<div class="bar${i===recent.length-1?' last':''}" style="height:${h}px"></div>`;
         }).join('')+'</div>';
       }
+      body=`<div class="mc-usage"><span class="big num">${fmt(d)}</span><span class="u">${m.unit} хэрэглээ</span></div>
+        <div class="mc-sub num">${sub}</div>${bars}`;
+      costLine=`<div class="mc-foot"><span class="l">Сүүлийн төлбөр</span><span class="v num">${tf?fmt(cost)+'₮':'—'}</span></div>`;
     }
     html+=`<div class="meter-card">
       <div class="mc-head">
@@ -709,9 +724,7 @@ function render(){
           <span class="ic" onclick="deleteMeter('${m.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
         </span>
       </div>
-      ${last?`<div class="mc-usage"><span class="big num">${usage}</span><span class="u">${m.unit} хэрэглээ</span></div>
-      <div class="mc-sub num">${sub}</div>${bars}`
-      :`<div class="mc-empty">Анхны заалтаа нэмнэ үү.</div>`}
+      ${body}
       ${costLine}
       <button class="add-reading-btn" onclick="openReadingModal('${m.id}')"><i class="ti ti-plus"></i> Заалт нэмэх</button>
     </div>`;
