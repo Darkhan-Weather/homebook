@@ -419,9 +419,9 @@ input,select{font-family:inherit;font-size:15px}
       </div>
     </div>
     <!-- Хураангуй -->
-    <div id="view-home" class="view"></div>
+    <div id="view-home" class="view active"></div>
     <!-- Тоолуур -->
-    <div id="view-meters" class="view active">
+    <div id="view-meters" class="view">
       <div id="meters-list"></div>
     </div>
     <!-- Тогтмол зардал -->
@@ -439,10 +439,10 @@ input,select{font-family:inherit;font-size:15px}
     <!-- Сануулга -->
     <div id="view-reminders" class="view"></div>
   </div>
-  <div class="fab" id="fab"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
+  <div class="fab" id="fab" style="display:none"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
   <nav class="bottom-nav">
-    <button class="nav-btn" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
-    <button class="nav-btn active" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
+    <button class="nav-btn active" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
+    <button class="nav-btn" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
     <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
     <button class="nav-btn" data-view="income" onclick="showView('income')"><i class="ti ti-coin"></i><span>Орлого</span></button>
     <button class="nav-btn" data-view="variable" onclick="showView('variable')"><i class="ti ti-basket"></i><span>Хувьсах</span></button>
@@ -989,7 +989,7 @@ function enterApp(){
   const av=document.getElementById('avatar');
   if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
   else{ av.textContent=name?name[0].toUpperCase():'Т'; }
-  render();
+  showView(currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
 }
 
 /* ═══ Токен ба auth алдаа барих ═══
@@ -1443,7 +1443,7 @@ function deleteNote(id){
 }
 
 /* ═══ Навигаци ═══ */
-let currentView='meters';
+let currentView='home';
 function showView(name){
   currentView=name;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
