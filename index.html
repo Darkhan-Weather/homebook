@@ -6,6 +6,19 @@
 <title>HomeBook</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d9488">
+<!-- CSP: XSS гарсан ч гадны домэйн руу өгөгдөл илгээхийг хориглоно -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com;
+  style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  font-src 'self' https://cdn.jsdelivr.net;
+  img-src 'self' data: https://lh3.googleusercontent.com;
+  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net;
+  frame-src https://accounts.google.com;
+  base-uri 'self';
+  object-src 'none';
+  form-action 'none';
+  frame-ancestors 'none'">
 <meta name="description" content="Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -124,6 +137,8 @@ input,select{font-family:inherit;font-size:15px}
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mc-icon i{font-size:20px;color:var(--accent-text)}
 .mc-icon.hot{background:#fee2e2}.mc-icon.hot i{color:#dc2626}
+.mc-icon.heat{background:#ffedd5}.mc-icon.heat i{color:#ea580c}
+.mc-icon.elec{background:#fef9c3}.mc-icon.elec i{color:#ca8a04}
 .mc-title{font-size:15px;font-weight:500}
 .mc-date{font-size:12px;color:var(--text-2)}
 .card-actions{margin-left:auto;display:flex;gap:1px}
@@ -364,7 +379,7 @@ input,select{font-family:inherit;font-size:15px}
       <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
       <h1>HomeBook</h1>
       <p class="sub">Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор</p>
-      <div class="feat"><i class="ti ti-wallet"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Тоолуур, тогтмол, хувьсах</div></div></div>
+      <div class="feat"><i class="ti ti-wallet"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Ус, дулаан, цахилгаан, тогтмол, хувьсах</div></div></div>
       <div class="feat"><i class="ti ti-car"></i><div><div class="ft">Машин</div><div class="fs">Засвар, даатгал, татвар</div></div></div>
       <div class="feat"><i class="ti ti-heartbeat"></i><div><div class="ft">Эрүүл мэнд</div><div class="fs">Гишүүн бүрийн эмчилгээ</div></div></div>
       <div class="feat"><i class="ti ti-bell"></i><div><div class="ft">Сануулга</div><div class="fs">Дуусах хугацаа сануулна</div></div></div>
@@ -446,11 +461,13 @@ input,select{font-family:inherit;font-size:15px}
     <div class="field">
       <label>Төрөл</label>
       <select id="mt-type">
-        <option value="huiten">Хүйтэн ус</option>
-        <option value="haluun">Халуун ус</option>
+        <option value="huiten">Хүйтэн ус (м³)</option>
+        <option value="haluun">Халуун ус (м³)</option>
+        <option value="dulaan">Дулаан (Гкал)</option>
+        <option value="tsahilgaan">Цахилгаан (кВт·ц)</option>
       </select>
     </div>
-    <div class="hint" style="margin-top:-.5rem;margin-bottom:.5rem">Тоолуур зөвхөн хэрэглээ (м³) хянана. Бодит төлбөрийг тусад нь бүртгэнэ.</div>
+    <div class="hint" style="margin-top:-.5rem;margin-bottom:.5rem">Тоолуур зөвхөн хэрэглээ хянана. Бодит төлбөрийг Тогтмол таб дээр бүртгэнэ.</div>
 
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('meter-modal')">Болих</button>
@@ -473,7 +490,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Заалт</label>
-      <input type="number" id="rd-value" inputmode="decimal" placeholder="Тоолуур дээрх тоо" oninput="updatePreview()">
+      <input type="number" min="0" id="rd-value" inputmode="decimal" placeholder="Тоолуур дээрх тоо" oninput="updatePreview()">
       <div class="hint" id="rd-last"></div>
     </div>
     <div class="preview" id="rd-preview"></div>
@@ -533,7 +550,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field" id="fx-amt-field">
       <label>Сарын дүн (₮)</label>
-      <input type="number" id="fx-amount" inputmode="decimal" placeholder="Жишээ: 35000">
+      <input type="number" min="0" id="fx-amount" inputmode="decimal" placeholder="Жишээ: 35000">
       <div class="hint">Хэлбэлзэх зардлын дүнг сар бүр жагсаалтад бичнэ</div>
     </div>
     <div class="modal-actions" id="fx-modal-actions">
@@ -566,7 +583,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Дүн (₮)</label>
-      <input type="number" id="in-amount" inputmode="decimal" placeholder="Гарт орсон дүн">
+      <input type="number" min="0" id="in-amount" inputmode="decimal" placeholder="Гарт орсон дүн">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('income-modal')">Болих</button>
@@ -594,7 +611,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Дүн (₮)</label>
-      <input type="number" id="vx-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+      <input type="number" min="0" id="vx-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('variable-modal')">Болих</button>
@@ -657,7 +674,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Дүн (₮)</label>
-      <input type="number" id="rp-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+      <input type="number" min="0" id="rp-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('repair-modal')">Болих</button>
@@ -717,7 +734,7 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Дүн (₮)</label>
-      <input type="number" id="tr-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
+      <input type="number" min="0" id="tr-amount" inputmode="decimal" placeholder="Зарцуулсан дүн">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('treat-modal')">Болих</button>
@@ -756,18 +773,18 @@ input,select{font-family:inherit;font-size:15px}
     </div>
     <div class="field">
       <label>Нийт дүн (₮)</label>
-      <input type="number" id="ln-total" inputmode="decimal" placeholder="Нийт зээлийн дүн">
+      <input type="number" min="0" id="ln-total" inputmode="decimal" placeholder="Нийт зээлийн дүн">
     </div>
     <!-- зээл -->
     <div id="ln-zeel-fields">
-      <div class="field"><label>Сарын төлбөр (₮)</label><input type="number" id="ln-monthly" inputmode="decimal"></div>
+      <div class="field"><label>Сарын төлбөр (₮)</label><input type="number" min="0" id="ln-monthly" inputmode="decimal"></div>
       <div class="field"><label>Дуусах огноо</label><input type="date" id="ln-due"></div>
     </div>
     <!-- хэсэгчлэн -->
     <div id="ln-hes-fields" style="display:none">
-      <div class="field"><label>Хэдэн хуваасан</label><input type="number" id="ln-parts" inputmode="numeric" placeholder="Жишээ: 4"></div>
-      <div class="field"><label>Нэг хэсгийн дүн (₮)</label><input type="number" id="ln-partamt" inputmode="decimal"></div>
-      <div class="field"><label>Төлсөн хэсэг</label><input type="number" id="ln-paid" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Хэдэн хуваасан</label><input type="number" min="0" id="ln-parts" inputmode="numeric" placeholder="Жишээ: 4"></div>
+      <div class="field"><label>Нэг хэсгийн дүн (₮)</label><input type="number" min="0" id="ln-partamt" inputmode="decimal"></div>
+      <div class="field"><label>Төлсөн хэсэг</label><input type="number" min="0" id="ln-paid" inputmode="numeric" placeholder="0"></div>
     </div>
     <div class="field"><label>Дараагийн төлөх огноо</label><input type="date" id="ln-next"></div>
     <div class="modal-actions">
@@ -783,8 +800,8 @@ input,select{font-family:inherit;font-size:15px}
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sv-modal-title">
     <h3 id="sv-modal-title">Хуримтлал нэмэх</h3>
     <div class="field"><label>Нэр</label><input type="text" id="sv-name" placeholder="Жишээ: Зуны аялал"></div>
-    <div class="field"><label>Зорилтот дүн (₮)</label><input type="number" id="sv-target" inputmode="decimal"></div>
-    <div class="field"><label>Одоо цугларсан (₮)</label><input type="number" id="sv-current" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Зорилтот дүн (₮)</label><input type="number" min="0" id="sv-target" inputmode="decimal"></div>
+    <div class="field"><label>Одоо цугларсан (₮)</label><input type="number" min="0" id="sv-current" inputmode="decimal" placeholder="0"></div>
     <div class="field"><label>Зорилтот огноо (заавал биш)</label><input type="date" id="sv-date"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('saving-modal')">Болих</button>
@@ -883,8 +900,10 @@ function initGSI(){
       accessToken=resp.access_token;
       const expiresIn=resp.expires_in?parseInt(resp.expires_in):3600;
       tokenExpiresAt=Date.now()+expiresIn*1000;
-      localStorage.setItem('hb_tok',accessToken);
-      localStorage.setItem('hb_tok_exp',String(tokenExpiresAt));
+      // Токеныг зөвхөн энэ табын хугацаанд хадгална (таб хаагдахад устана).
+      // localStorage-д хадгалбал XSS гарсан үед удаан хугацаагаар задрах эрсдэлтэй.
+      sessionStorage.setItem('hb_tok',accessToken);
+      sessionStorage.setItem('hb_tok_exp',String(tokenExpiresAt));
       try{
         const info=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
           {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
@@ -904,6 +923,7 @@ function login(){
 function logout(){
   if(!confirm('Гарах уу?'))return;
   accessToken=null; tokenExpiresAt=0; currentUser=null;
+  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
   goScreen('home-screen');
 }
@@ -1143,6 +1163,7 @@ function migrate(){
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
+  (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; });
   migratePayments();
   purgeTombstones();
 }
@@ -1166,6 +1187,15 @@ function migratePayments(){
   data.payments=Object.values(byKey).map(p=>{ p.id=paymentId(p.itemId,p.month); return p; });
 }
 
+/* ═══ Тоолуурын төрөл — нэгж, дүрс, өнгө ═══ */
+const METER_TYPES={
+  huiten:    { unit:'м³',    icon:'droplet',       cls:'' },
+  haluun:    { unit:'м³',    icon:'droplet-filled',cls:'hot' },
+  dulaan:    { unit:'Гкал',  icon:'flame',         cls:'heat' },
+  tsahilgaan:{ unit:'кВт·ц', icon:'bolt',          cls:'elec' }
+};
+function meterType(m){ return METER_TYPES[m.type]||METER_TYPES.huiten; }
+
 /* ═══ Тоолуур нэмэх/засах ═══ */
 function openMeterModal(editId){
   editingMeterId=editId||null;
@@ -1187,10 +1217,11 @@ function saveMeter(){
   if(!name){ toast('Нэр оруулна уу'); return; }
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
-    m.name=name; m.type=type; m.updatedAt=Date.now();
+    m.name=name; m.type=type; m.unit=(METER_TYPES[type]||METER_TYPES.huiten).unit; m.updatedAt=Date.now();
     toast('Тоолуур засагдлаа');
   }else{
-    data.meters.push({ id:'m'+Date.now(), name, type, unit:'м³', updatedAt:Date.now() });
+    data.meters.push({ id:'m'+Date.now(), name, type,
+      unit:(METER_TYPES[type]||METER_TYPES.huiten).unit, updatedAt:Date.now() });
     toast('Тоолуур нэмэгдлээ');
   }
   persist(); closeModal('meter-modal'); render();
@@ -1266,6 +1297,15 @@ function saveReading(){
   const val=parseFloat(document.getElementById('rd-value').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
   if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
+  if(val<0){ toast('Заалт сөрөг байж болохгүй'); return; }
+  if(val>1e9){ toast('Заалт хэт том байна'); return; }
+  // Өмнөх заалтаас буурсан бол — тоолуур солигдсон эсэхийг лавлах
+  let prevRs=readingsOf(meterId);
+  if(editingReadingId)prevRs=prevRs.filter(r=>r.id!==editingReadingId);
+  const prevR=[...prevRs].filter(r=>r.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(prevR && val<prevR.value){
+    if(!confirm('Шинэ заалт ('+val+') өмнөхөөс ('+prevR.value+') бага байна.\nТоолуур солигдсон эсвэл буруу бичсэн байж магадгүй. Ямар ч байсан хадгалах уу?'))return;
+  }
   if(editingReadingId){
     const r=data.readings.find(x=>x.id===editingReadingId);
     r.date=date; r.value=val; r.updatedAt=Date.now();
@@ -1602,6 +1642,12 @@ function saveLoan(){
   const name=g('ln-name').value.trim();
   const type=g('ln-type').value;
   if(!name){ toast('Нэр оруулна уу'); return; }
+  for(const [f,lbl] of [['ln-total','Нийт дүн'],['ln-monthly','Сарын төлбөр'],['ln-partamt','Хэсгийн дүн']]){
+    const v=parseFloat(g(f).value); if(!isNaN(v)&&v<0){ toast(lbl+' сөрөг байж болохгүй'); return; }
+  }
+  const parts=parseInt(g('ln-parts').value)||0, paidP=parseInt(g('ln-paid').value)||0;
+  if(parts<0||paidP<0){ toast('Хэсгийн тоо сөрөг байж болохгүй'); return; }
+  if(parts>0&&paidP>parts){ toast('Төлсөн хэсэг нийт хэсгээс их байж болохгүй'); return; }
   const obj={ name, type, total:parseFloat(g('ln-total').value)||0, next:g('ln-next').value,
     monthly:parseFloat(g('ln-monthly').value)||0, due:g('ln-due').value,
     parts:parseInt(g('ln-parts').value)||0, partAmount:parseFloat(g('ln-partamt').value)||0,
@@ -1646,7 +1692,9 @@ function saveSaving(){
   const g=id=>document.getElementById(id);
   const name=g('sv-name').value.trim();
   if(!name){ toast('Нэр оруулна уу'); return; }
-  const obj={ name, target:parseFloat(g('sv-target').value)||0, current:parseFloat(g('sv-current').value)||0,
+  const tgt=parseFloat(g('sv-target').value)||0, cur=parseFloat(g('sv-current').value)||0;
+  if(tgt<0||cur<0){ toast('Сөрөг дүн оруулах боломжгүй'); return; }
+  const obj={ name, target:tgt, current:cur,
     date:g('sv-date').value, updatedAt:Date.now() };
   if(editingSavingId){ Object.assign(data.savings.find(x=>x.id===editingSavingId), obj); toast('Засагдлаа'); }
   else{ obj.id='sv'+Date.now(); data.savings.push(obj); toast('Хуримтлал нэмэгдлээ'); }
@@ -1786,7 +1834,7 @@ function saveTreat(){
   const desc=document.getElementById('tr-desc').value.trim();
   const amount=parseFloat(document.getElementById('tr-amount').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
-  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
   if(editingTreatId){
     const t=data.treatments.find(x=>x.id===editingTreatId);
     t.date=date; t.desc=desc; t.amount=amount; t.updatedAt=Date.now();
@@ -1933,7 +1981,7 @@ function saveRepair(){
   const desc=document.getElementById('rp-desc').value.trim();
   const amount=parseFloat(document.getElementById('rp-amount').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
-  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
   if(editingRepairId){
     const r=data.repairs.find(x=>x.id===editingRepairId);
     r.date=date; r.desc=desc; r.amount=amount; r.updatedAt=Date.now();
@@ -2076,7 +2124,7 @@ function saveVariable(){
   const note=document.getElementById('vx-note').value.trim();
   const amount=parseFloat(document.getElementById('vx-amount').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
-  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
   if(editingVariableId){
     const v=data.variable.find(x=>x.id===editingVariableId);
     v.date=date; v.categoryId=categoryId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
@@ -2163,7 +2211,7 @@ function saveIncome(){
   const note=document.getElementById('in-note').value.trim();
   const amount=parseFloat(document.getElementById('in-amount').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
-  if(isNaN(amount)){ toast('Дүн оруулна уу'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
   if(editingIncomeId){
     const i=data.income.find(x=>x.id===editingIncomeId);
     i.date=date; i.type=type; i.note=note; i.amount=amount; i.updatedAt=Date.now();
@@ -2215,8 +2263,10 @@ function togglePaid(itemId){
   persist(); renderFixed(); renderHome();
 }
 function setHelbelzehAmount(itemId, val){
-  const amount=parseFloat(val); 
-  setPayment(itemId, fixedMonth, {amount:isNaN(amount)?0:amount});
+  let amount=parseFloat(val);
+  if(isNaN(amount))amount=0;
+  if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй'); amount=0; renderFixed(); }
+  setPayment(itemId, fixedMonth, {amount});
   persist(); renderFixedTotals(); renderHome();
 }
 function renderFixed(){
@@ -2320,6 +2370,7 @@ function saveFixedItem(){
   const group=document.getElementById('fx-group').value;
   const amount=parseFloat(document.getElementById('fx-amount').value)||0;
   if(!name){ toast('Нэр оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
   if(editingFixedId){
     const it=data.fixedItems.find(x=>x.id===editingFixedId);
     it.name=name; it.type=type; it.group=group; it.amount=amount; it.updatedAt=Date.now();
@@ -2532,7 +2583,7 @@ function renderMeters(){
   data.meters.forEach(m=>{
     const rs=readingsOf(m.id);
     const last=rs[rs.length-1], prev=rs[rs.length-2];
-    const hot=m.type==='haluun';
+    const mt=meterType(m);
     const noteCount=data.notes.filter(n=>n.meterId===m.id).length;
     let body='';
     if(!last){
@@ -2561,7 +2612,7 @@ function renderMeters(){
     }
     html+=`<div class="meter-card">
       <div class="mc-head">
-        <div class="mc-icon${hot?' hot':''}"><i class="ti ti-droplet"></i></div>
+        <div class="mc-icon ${mt.cls}"><i class="ti ti-${mt.icon}"></i></div>
         <div><div class="mc-title">${escapeHtml(m.name)}</div><div class="mc-date">${last?last.date:''}${noteCount?' · '+noteCount+' тэмдэглэгээ':''}</div></div>
         <span class="card-actions">
           <button type="button" class="ic" onclick="openHistory('${m.id}')" aria-label="Түүх харах"><i class="ti ti-history"></i></button>
@@ -2579,6 +2630,15 @@ function renderMeters(){
 
 /* ═══ Туслах ═══ */
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('en-US'); }
+/* Дүнгийн валидаци — сөрөг ба хэт том утга хориглоно */
+const MAX_AMOUNT=1e12;
+function validAmount(v,{allowZero=true}={}){
+  if(isNaN(v))return {ok:false,msg:'Дүн оруулна уу'};
+  if(v<0)return {ok:false,msg:'Сөрөг дүн оруулах боломжгүй'};
+  if(!allowZero && v===0)return {ok:false,msg:'Дүн 0-ээс их байх ёстой'};
+  if(v>MAX_AMOUNT)return {ok:false,msg:'Дүн хэт том байна'};
+  return {ok:true};
+}
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 let toastTimer=null;
@@ -2667,8 +2727,10 @@ if('serviceWorker' in navigator){
 
 window.addEventListener('load',()=>{
   loadLocal();
-  const tok=localStorage.getItem('hb_tok');
-  const exp=parseInt(localStorage.getItem('hb_tok_exp')||'0');
+  const tok=sessionStorage.getItem('hb_tok');
+  const exp=parseInt(sessionStorage.getItem('hb_tok_exp')||'0');
+  // Хуучин хувилбарын үлдэгдэл токеныг цэвэрлэх
+  localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp');
   const usr=localStorage.getItem('hb_usr');
   if(tok && exp>Date.now()){
     accessToken=tok; tokenExpiresAt=exp;
