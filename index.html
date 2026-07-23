@@ -1205,6 +1205,7 @@ function deleteMeter(id){
   data.meters=data.meters.filter(x=>x.id!==id);
   data.readings=data.readings.filter(r=>r.meterId!==id);
   data.notes=data.notes.filter(n=>n.meterId!==id);
+  closeIfOpen('hist-modal'); closeIfOpen('meter-modal');
   persist(); render();
 }
 
@@ -1274,14 +1275,14 @@ function saveReading(){
     toast('Заалт хадгалагдлаа');
   }
   persist(); closeModal('reading-modal'); render();
-  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
+  if(isModalOpen('hist-modal'))openHistory(histMeterId);
 }
 function deleteReading(id){
   if(!confirm('Энэ заалтыг устгах уу?'))return;
   tombstone(id);
   data.readings=data.readings.filter(r=>r.id!==id);
-  persist(); render();
-  if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
+  persist(); closeIfOpen('reading-modal'); render();
+  if(isModalOpen('hist-modal'))openHistory(histMeterId);
 }
 
 /* ═══ Тэмдэглэгээ ═══ */
@@ -1737,7 +1738,8 @@ function deleteMember(id){
   tombstoneAll(data.treatments.filter(t=>t.memberId===id).map(t=>t.id));
   data.members=data.members.filter(x=>x.id!==id);
   data.treatments=data.treatments.filter(t=>t.memberId!==id);
-  persist(); closeModal('member-modal'); render();
+  closeIfOpen('treats-modal'); closeIfOpen('member-modal');
+  persist(); render();
 }
 
 /* ── Эмчилгээ ── */
@@ -1794,14 +1796,14 @@ function saveTreat(){
     toast('Эмчилгээ нэмэгдлээ');
   }
   persist(); closeModal('treat-modal'); render();
-  if(document.getElementById('treats-modal').classList.contains('show'))openTreatsModal(treatMemberId);
+  if(isModalOpen('treats-modal'))openTreatsModal(treatMemberId);
 }
 function deleteTreat(id){
   if(!confirm('Энэ эмчилгээг устгах уу?'))return;
   tombstone(id);
   data.treatments=data.treatments.filter(x=>x.id!==id);
-  persist(); render();
-  if(document.getElementById('treats-modal').classList.contains('show'))openTreatsModal(treatMemberId);
+  persist(); closeIfOpen('treat-modal'); render();
+  if(isModalOpen('treats-modal'))openTreatsModal(treatMemberId);
 }
 
 /* ═══ Машин ═══ */
@@ -1883,7 +1885,8 @@ function deleteVehicle(id){
   tombstoneAll(data.repairs.filter(r=>r.vehicleId===id).map(r=>r.id));
   data.vehicles=data.vehicles.filter(x=>x.id!==id);
   data.repairs=data.repairs.filter(r=>r.vehicleId!==id);
-  persist(); closeModal('vehicle-modal'); render();
+  closeIfOpen('repairs-modal'); closeIfOpen('vehicle-modal');
+  persist(); render();
 }
 
 /* ── Засвар ── */
@@ -1940,14 +1943,14 @@ function saveRepair(){
     toast('Засвар нэмэгдлээ');
   }
   persist(); closeModal('repair-modal'); render();
-  if(document.getElementById('repairs-modal').classList.contains('show'))openRepairsModal(repairVehicleId);
+  if(isModalOpen('repairs-modal'))openRepairsModal(repairVehicleId);
 }
 function deleteRepair(id){
   if(!confirm('Энэ засварыг устгах уу?'))return;
   tombstone(id);
   data.repairs=data.repairs.filter(x=>x.id!==id);
-  persist(); render();
-  if(document.getElementById('repairs-modal').classList.contains('show'))openRepairsModal(repairVehicleId);
+  persist(); closeIfOpen('repair-modal'); render();
+  if(isModalOpen('repairs-modal'))openRepairsModal(repairVehicleId);
 }
 
 /* ═══ Ангилал ═══ */
@@ -2584,26 +2587,52 @@ function toast(msg){
   t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-/* ═══ Модалын хүртээмж: Escape, focus trap, фокус буцаах ═══ */
-let lastFocused=null;
+/* ═══ Модалын стек — нэг үед зөвхөн НЭГ цонх харагдана ═══
+   Түүхийн цонхноос "нэмэх" цонх нээхэд доод цонх түр нуугдаж,
+   дээд нь хаагдахад буцаж гарна. Ингэснээр давхарлахгүй. */
+let modalStack=[];   // [{id, returnFocus}]
 function focusablesIn(el){
   return [...el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
     .filter(x=>!x.disabled && x.offsetParent!==null);
 }
-function openModal(id){
-  lastFocused=document.activeElement;
+function showModalEl(id){
   const bg=document.getElementById(id);
+  if(!bg)return null;
   bg.classList.add('show');
   const f=focusablesIn(bg);
   if(f.length)setTimeout(()=>f[0].focus(),50);
+  return bg;
+}
+function openModal(id){
+  if(modalStack.some(m=>m.id===id)){   // аль хэдийн стект байвал зүгээр л дээш гаргана
+    modalStack.filter(m=>m.id!==id).forEach(m=>document.getElementById(m.id).classList.remove('show'));
+    showModalEl(id); return;
+  }
+  const top=modalStack[modalStack.length-1];
+  if(top)document.getElementById(top.id).classList.remove('show');   // доод цонхыг нуух
+  modalStack.push({ id, returnFocus: top?null:document.activeElement });
+  showModalEl(id);
 }
 function closeModal(id){
-  document.getElementById(id).classList.remove('show');
-  if(lastFocused && lastFocused.focus){ lastFocused.focus(); lastFocused=null; }
+  const bg=document.getElementById(id);
+  if(bg)bg.classList.remove('show');
+  const idx=modalStack.findIndex(m=>m.id===id);
+  if(idx<0)return;
+  const entry=modalStack[idx];
+  modalStack.splice(idx,1);
+  const prev=modalStack[modalStack.length-1];
+  if(prev){ showModalEl(prev.id); }                                  // доод цонхыг буцааж гаргах
+  else if(entry.returnFocus && entry.returnFocus.focus){ entry.returnFocus.focus(); }
+}
+function closeIfOpen(id){ if(modalStack.some(m=>m.id===id))closeModal(id); }
+function isModalOpen(id){ return modalStack.some(m=>m.id===id); }
+function closeAllModals(){
+  modalStack.slice().reverse().forEach(m=>{ const el=document.getElementById(m.id); if(el)el.classList.remove('show'); });
+  modalStack=[];
 }
 function topOpenModal(){
-  const open=[...document.querySelectorAll('.modal-bg.show')];
-  return open.length?open[open.length-1]:null;
+  const top=modalStack[modalStack.length-1];
+  return top?document.getElementById(top.id):null;
 }
 document.addEventListener('keydown',e=>{
   const bg=topOpenModal();
