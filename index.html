@@ -233,6 +233,12 @@ input,select{font-family:inherit;font-size:15px}
 .fx-total .tr.big{font-size:17px;font-weight:600;color:var(--text);border-top:1px solid var(--border);
   margin-top:6px;padding-top:11px}
 .fx-total .tr.big .num{font-weight:600}
+.grp-head{display:flex;justify-content:space-between;align-items:center;margin:1.1rem 0 .5rem;
+  font-size:13px;font-weight:600;color:var(--text-2)}
+.grp-head:first-child{margin-top:.25rem}
+.grp-head .gl{display:inline-flex;align-items:center;gap:6px}
+.grp-head .gl i{font-size:16px;color:var(--accent-text)}
+.grp-head .gv{color:var(--text);font-variant-numeric:tabular-nums}
 
 /* ── Орлого + мөнгөний нэгтгэл ── */
 .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -494,6 +500,16 @@ input,select{font-family:inherit;font-size:15px}
     <div class="field">
       <label>Нэр</label>
       <input type="text" id="fx-name" placeholder="Жишээ: Интернэт, СӨХ, Ус суваг">
+    </div>
+    <div class="field">
+      <label>Бүлэг</label>
+      <select id="fx-group">
+        <option value="Ашиглалт">Ашиглалт (ус, дулаан, цахилгаан)</option>
+        <option value="Холбоо/ТВ">Холбоо / ТВ (интернэт, утас, LookTV)</option>
+        <option value="Орон сууц">Орон сууц (СӨХ, хог)</option>
+        <option value="Хүүхэд">Хүүхэд (цэцэрлэг, сургалт)</option>
+        <option value="Бусад">Бусад</option>
+      </select>
     </div>
     <div class="field">
       <label>Төрөл</label>
@@ -861,7 +877,9 @@ function initGSI(){
           {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
         currentUser=info; localStorage.setItem('hb_usr',JSON.stringify(info));
       }catch(e){ currentUser={name:'Хэрэглэгч'}; }
+      reauthPending=false;
       enterApp(); await loadFromDrive();
+      if(pendingSave){ pendingSave=false; await saveToDrive(); }
     }
   });
 }
@@ -889,14 +907,41 @@ function enterApp(){
   render();
 }
 
+/* ═══ Токен ба auth алдаа барих ═══
+   Access token 1 цагийн настай. Хугацаа дуусахад Drive дуудлага 401 буцаана.
+   apiFetch үүнийг барьж, автоматаар дахин нэвтрэлт хүсэж, хүлээгдэж буй
+   хадгалалтыг дараа нь давтана. */
+let reauthPending=false, pendingSave=false;
+function tokenExpiringSoon(){ return !tokenExpiresAt || Date.now() > tokenExpiresAt-60000; }
+function requestReauth(){
+  if(reauthPending)return;
+  reauthPending=true;
+  setSync('Дахин нэвтэрч байна...','#f39c12');
+  initGSI();
+  if(tokenClient){ tokenClient.requestAccessToken(); }
+  else { setSync('Дахин нэвтэрнэ үү','#dc2626'); }
+  setTimeout(()=>{ reauthPending=false; }, 8000);
+}
+async function apiFetch(url, opts){
+  opts=Object.assign({}, opts||{});
+  opts.headers=Object.assign({}, opts.headers||{}, {Authorization:'Bearer '+accessToken});
+  const res=await fetch(url, opts);
+  if(res.status===401||res.status===403){
+    const err=new Error('auth'); err.authError=true;
+    requestReauth();
+    throw err;
+  }
+  return res;
+}
+
 /* ═══ Drive sync ═══ */
 async function getOrCreateFolder(){
   if(driveFolderId)return driveFolderId;
-  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   if(res.files&&res.files.length>0){ driveFolderId=res.files[0].id; }
   else{
-    const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+    const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
       method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
       body:JSON.stringify({name:FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'})
     }).then(r=>r.json());
@@ -905,12 +950,13 @@ async function getOrCreateFolder(){
   return driveFolderId;
 }
 async function findDataFile(folderId){
-  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILE}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILE}' and '${folderId}' in parents and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   return res.files&&res.files.length>0?res.files[0].id:null;
 }
 async function saveToDrive(){
   if(!accessToken)return;
+  if(tokenExpiringSoon()){ pendingSave=true; requestReauth(); return; }
   setSync('Хадгалж байна...','#f39c12');
   try{
     const folderId=await getOrCreateFolder();
@@ -918,18 +964,22 @@ async function saveToDrive(){
     const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
-      const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+      const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
         body:JSON.stringify({name:DATA_FILE,mimeType:'application/json',parents:[folderId]})
       }).then(r=>r.json());
       driveDataFileId=meta.id;
     }
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
+    await apiFetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
       method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
     setSync('Синктэй','#0f766e');
     // Нөөц — 5 минутанд нэгээс олонгүй
     if(Date.now()-lastBackupAt>5*60*1000)doBackup();
-  }catch(e){ console.error('Drive хадгалах алдаа:',e); setSync('Хадгалагдаагүй','#dc2626'); }
+  }catch(e){
+    if(e&&e.authError){ pendingSave=true; setSync('Дахин нэвтэрнэ үү','#dc2626'); }
+    else{ console.error('Drive хадгалах алдаа:',e); setSync('Хадгалагдаагүй — дахин оролдоно','#dc2626');
+          clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,15000); }
+  }
 }
 async function loadFromDrive(){
   if(!accessToken)return;
@@ -938,7 +988,7 @@ async function loadFromDrive(){
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
     if(driveDataFileId){
-      const text=await fetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
+      const text=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
         {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
       const remote=JSON.parse(text);
       mergeTombstones(remote.tombstones);   // эхлээд устгалтууд, дараа нь бичлэгүүд
@@ -961,14 +1011,17 @@ async function loadFromDrive(){
     }
     setSync('Синктэй','#0f766e'); render();
     if(!sessionBackupDone){ sessionBackupDone=true; doBackup(); }
-  }catch(e){ console.error('Drive уншах алдаа:',e); setSync('Уншигдаагүй','#dc2626'); }
+  }catch(e){
+    if(e&&e.authError){ setSync('Дахин нэвтэрнэ үү','#dc2626'); }
+    else{ console.error('Drive уншах алдаа:',e); setSync('Уншигдаагүй','#dc2626'); }
+  }
 }
 
 /* ═══ Backup — Drive дээр өдрийн нөөц (сүүлийн 14) ═══ */
 let backupFolderId=null, lastBackupAt=0, sessionBackupDone=false;
 const MAX_BACKUPS=14;
 async function findFileInFolder(name,folderId){
-  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(name)}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(name)}' and '${folderId}' in parents and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   return res.files&&res.files.length>0?res.files[0].id:null;
 }
@@ -976,7 +1029,7 @@ async function getBackupFolder(parentId){
   if(backupFolderId)return backupFolderId;
   let id=await findFileInFolder('backups',parentId);
   if(!id){
-    const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+    const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
       method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
       body:JSON.stringify({name:'backups',mimeType:'application/vnd.google-apps.folder',parents:[parentId]})
     }).then(r=>r.json());
@@ -994,28 +1047,28 @@ async function doBackup(){
     let fid=await findFileInFolder(name,bf);
     const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
-      const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
+      const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
         body:JSON.stringify({name,mimeType:'application/json',parents:[bf]})
       }).then(r=>r.json());
       fid=meta.id;
     }
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
+    await apiFetch(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
       method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
     lastBackupAt=Date.now();
     cleanupBackups(bf);
-  }catch(e){ console.error('Backup алдаа:',e); }
+  }catch(e){ if(!(e&&e.authError))console.error('Backup алдаа:',e); }
 }
 async function cleanupBackups(bf){
   try{
-    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
+    const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
       {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
     if(res.files&&res.files.length>MAX_BACKUPS){
       for(const f of res.files.slice(MAX_BACKUPS)){
-        await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}});
+        await apiFetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}});
       }
     }
-  }catch(e){ console.error('Backup цэвэрлэх алдаа:',e); }
+  }catch(e){ if(!(e&&e.authError))console.error('Backup цэвэрлэх алдаа:',e); }
 }
 /* ═══ Tombstone — устгалтыг төхөөрөмж хооронд зөв дамжуулах ═══
    Устгасан бичлэгийн id-г цагтай нь бүртгэнэ. Синк хийхэд нөгөө
@@ -1074,6 +1127,7 @@ function migrate(){
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
+  (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   purgeTombstones();
 }
 
@@ -2134,21 +2188,35 @@ function renderFixed(){
       <p>Интернэт, СӨХ, хог, ус, дулаан зэргээ нэмээд сар бүр төлбөрөө хөтөлнө.</p>
     </div>`;
   }else{
-    rows=items.map(it=>{
-      const paid=isPaid(it, fixedMonth);
-      const amt=monthAmount(it, fixedMonth);
-      const amtCell = it.type==='helbelzeh'
-        ? `<input class="fx-amt-input num" type="number" inputmode="decimal" value="${amt||''}" placeholder="0" onchange="setHelbelzehAmount('${it.id}',this.value)">`
-        : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
-      return `<div class="fx-row">
-        <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
-        <div class="fx-main" onclick="openFixedModal('${it.id}')">
-          <div class="fx-name">${escapeHtml(it.name)}</div>
-          <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
-        </div>
-        ${amtCell}
-        <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
-      </div>`;
+    // Бүлгээр бүлэглэх
+    const GROUP_ORDER=['Ашиглалт','Холбоо/ТВ','Орон сууц','Хүүхэд','Бусад'];
+    const GROUP_ICON={'Ашиглалт':'bolt','Холбоо/ТВ':'device-tv','Орон сууц':'building-community','Хүүхэд':'mood-kid','Бусад':'dots'};
+    const groups={};
+    items.forEach(it=>{ const g=it.group||'Бусад'; (groups[g]=groups[g]||[]).push(it); });
+    const names=Object.keys(groups).sort((a,b)=>{
+      const ia=GROUP_ORDER.indexOf(a), ib=GROUP_ORDER.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
+    rows=names.map(g=>{
+      const gItems=groups[g];
+      const gTotal=gItems.reduce((s,it)=>s+monthAmount(it, fixedMonth),0);
+      const body=gItems.map(it=>{
+        const paid=isPaid(it, fixedMonth);
+        const amt=monthAmount(it, fixedMonth);
+        const amtCell = it.type==='helbelzeh'
+          ? `<input class="fx-amt-input num" type="number" inputmode="decimal" value="${amt||''}" placeholder="0" onchange="setHelbelzehAmount('${it.id}',this.value)">`
+          : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
+        return `<div class="fx-row">
+          <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
+          <div class="fx-main" onclick="openFixedModal('${it.id}')">
+            <div class="fx-name">${escapeHtml(it.name)}</div>
+            <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
+          </div>
+          ${amtCell}
+          <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
+        </div>`;
+      }).join('');
+      return `<div class="grp-head"><span class="gl"><i class="ti ti-${GROUP_ICON[g]||'dots'}"></i> ${escapeHtml(g)}</span><span class="gv num">${fmt(gTotal)}₮</span></div>${body}`;
     }).join('');
   }
   wrap.innerHTML=`
@@ -2191,12 +2259,14 @@ function openFixedModal(editId){
     document.getElementById('fx-modal-title').textContent='Зардлын зүйл засах';
     document.getElementById('fx-name').value=it.name;
     document.getElementById('fx-type').value=it.type;
+    document.getElementById('fx-group').value=it.group||'Бусад';
     document.getElementById('fx-amount').value=it.amount||'';
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteFixedItem('${it.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('fx-modal-title').textContent='Зардлын зүйл нэмэх';
     document.getElementById('fx-name').value='';
     document.getElementById('fx-type').value='togtmol';
+    document.getElementById('fx-group').value='Ашиглалт';
     document.getElementById('fx-amount').value='';
     delWrap.innerHTML='';
   }
@@ -2206,14 +2276,15 @@ function openFixedModal(editId){
 function saveFixedItem(){
   const name=document.getElementById('fx-name').value.trim();
   const type=document.getElementById('fx-type').value;
+  const group=document.getElementById('fx-group').value;
   const amount=parseFloat(document.getElementById('fx-amount').value)||0;
   if(!name){ toast('Нэр оруулна уу'); return; }
   if(editingFixedId){
     const it=data.fixedItems.find(x=>x.id===editingFixedId);
-    it.name=name; it.type=type; it.amount=amount; it.updatedAt=Date.now();
+    it.name=name; it.type=type; it.group=group; it.amount=amount; it.updatedAt=Date.now();
     toast('Засагдлаа');
   }else{
-    data.fixedItems.push({ id:'f'+Date.now(), name, type, amount, updatedAt:Date.now() });
+    data.fixedItems.push({ id:'f'+Date.now(), name, type, group, amount, updatedAt:Date.now() });
     toast('Нэмэгдлээ');
   }
   persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
