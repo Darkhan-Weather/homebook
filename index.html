@@ -809,6 +809,18 @@ const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.
 const FOLDER_NAME='HomeBook';
 const DATA_FILE='homebook_data.json';
 
+/* ═══ Огноо — ОРОН НУТГИЙН цаг (UTC биш) ═══
+   toISOString() нь UTC буцаадаг тул UB (UTC+8) цагаар шөнө 00:00–08:00-д
+   өмнөх өдрийг өгдөг. Дараах функцүүд орон нутгийн огноог зөв өгнө. */
+function fmtDateLocal(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function todayLocal(){ return fmtDateLocal(new Date()); }
+function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
+
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
@@ -816,10 +828,10 @@ let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
-let fixedMonth=new Date().toISOString().slice(0,7);   // 'YYYY-MM'
-let incomeMonth=new Date().toISOString().slice(0,7);
+let fixedMonth=monthLocal();   // 'YYYY-MM'
+let incomeMonth=monthLocal();
 let editingIncomeId=null;
-let variableMonth=new Date().toISOString().slice(0,7);
+let variableMonth=monthLocal();
 let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
@@ -976,7 +988,7 @@ async function doBackup(){
   try{
     const folderId=await getOrCreateFolder();
     const bf=await getBackupFolder(folderId);
-    const today=new Date().toISOString().slice(0,10);
+    const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
     const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders})],{type:'application/json'});
@@ -1101,7 +1113,7 @@ function openReadingModal(preMeterId, editId){
     document.getElementById('rd-modal-title').textContent='Шинэ заалт нэмэх';
     sel.disabled=false;
     if(preMeterId)sel.value=preMeterId;
-    document.getElementById('rd-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('rd-date').value=todayLocal();
     document.getElementById('rd-value').value='';
   }
   updatePreview(); openModal('reading-modal');
@@ -1163,7 +1175,7 @@ function openHistory(meterId){
   const m=data.meters.find(x=>x.id===meterId);
   document.getElementById('hist-title').textContent=m.name;
   document.getElementById('hist-add-reading').onclick=()=>openReadingModal(meterId);
-  document.getElementById('nt-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('nt-date').value=todayLocal();
   document.getElementById('nt-text').value='';
   // Заалтууд (шинэ нь дээр)
   const rs=[...readingsOf(meterId)].reverse();
@@ -1231,12 +1243,12 @@ function render(){ renderMeters(); renderHome(); renderFixed(); renderIncome(); 
 function daysLeft(dateStr){
   if(!dateStr)return null;
   const d=new Date(dateStr+'T00:00:00');
-  const t=new Date(new Date().toISOString().slice(0,10)+'T00:00:00');
+  const t=new Date(todayLocal()+'T00:00:00');
   return Math.round((d-t)/86400000);
 }
 function dateMinusDays(dateStr, days){
   const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()-days);
-  return d.toISOString().slice(0,10);
+  return fmtDateLocal(d);
 }
 function reminderStatus(r){
   const dl=daysLeft(r.date);
@@ -1489,7 +1501,7 @@ function payPart(id){
   const l=data.loans.find(x=>x.id===id);
   if(l.paidParts<l.parts){
     l.paidParts=(l.paidParts||0)+1;
-    if(l.next){ const [y,m,d]=l.next.split('-').map(Number); l.next=new Date(y,m,d).toISOString().slice(0,10); }
+    if(l.next){ const [y,m,d]=l.next.split('-').map(Number); l.next=fmtDateLocal(new Date(y,m,d)); }
     l.updatedAt=Date.now(); persist(); renderFinance(); toast('Хэсэг төлөгдлөө');
   }
 }
@@ -1639,7 +1651,7 @@ function openTreatModal(editId){
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteTreat('${t.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('tr-modal-title').textContent='Эмчилгээ нэмэх';
-    document.getElementById('tr-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('tr-date').value=todayLocal();
     document.getElementById('tr-desc').value='';
     document.getElementById('tr-amount').value='';
     delWrap.innerHTML='';
@@ -1782,7 +1794,7 @@ function openRepairModal(editId){
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteRepair('${r.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('rp-modal-title').textContent='Засвар нэмэх';
-    document.getElementById('rp-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('rp-date').value=todayLocal();
     document.getElementById('rp-desc').value='';
     document.getElementById('rp-amount').value='';
     delWrap.innerHTML='';
@@ -1847,7 +1859,7 @@ function addDefaultCategories(){
 /* ═══ Хувьсах зардал ═══ */
 function changeVariableMonth(delta){
   const [y,m]=variableMonth.split('-').map(Number);
-  variableMonth=new Date(y, m-1+delta, 1).toISOString().slice(0,7);
+  variableMonth=monthLocal(new Date(y, m-1+delta, 1));
   renderVariable();
 }
 function variableOfMonth(month){
@@ -1922,7 +1934,7 @@ function openVariableModal(editId){
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteVariable('${v.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('vx-modal-title').textContent='Зардал нэмэх';
-    document.getElementById('vx-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('vx-date').value=todayLocal();
     document.getElementById('vx-note').value='';
     document.getElementById('vx-amount').value='';
     delWrap.innerHTML='';
@@ -1956,7 +1968,7 @@ function deleteVariable(id){
 /* ═══ Орлого ═══ */
 function changeIncomeMonth(delta){
   const [y,m]=incomeMonth.split('-').map(Number);
-  incomeMonth=new Date(y, m-1+delta, 1).toISOString().slice(0,7);
+  incomeMonth=monthLocal(new Date(y, m-1+delta, 1));
   renderIncome();
 }
 function incomeOfMonth(month){
@@ -2007,7 +2019,7 @@ function openIncomeModal(editId){
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteIncome('${i.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('in-modal-title').textContent='Орлого нэмэх';
-    document.getElementById('in-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('in-date').value=todayLocal();
     document.getElementById('in-type').value='Цалин';
     document.getElementById('in-note').value='';
     document.getElementById('in-amount').value='';
@@ -2047,7 +2059,7 @@ function fxMonthLabel(ym){
 function changeFixedMonth(delta){
   const [y,m]=fixedMonth.split('-').map(Number);
   const d=new Date(y, m-1+delta, 1);
-  fixedMonth=d.toISOString().slice(0,7);
+  fixedMonth=monthLocal(d);
   renderFixed();
 }
 function getPayment(itemId, month){ return data.payments.find(p=>p.itemId===itemId&&p.month===month)||null; }
@@ -2187,7 +2199,7 @@ function monthlyTotals(ym){
 }
 function lastNMonths(n){
   const arr=[]; const d=new Date(); d.setDate(1);
-  for(let i=n-1;i>=0;i--){ const x=new Date(d.getFullYear(),d.getMonth()-i,1); arr.push(x.toISOString().slice(0,7)); }
+  for(let i=n-1;i>=0;i--){ const x=new Date(d.getFullYear(),d.getMonth()-i,1); arr.push(monthLocal(x)); }
   return arr;
 }
 function buildMonthChart(){
@@ -2233,13 +2245,13 @@ function exportExcel(){
   add('Эрүүл мэнд', data.treatments.map(t=>({Огноо:t.date,Гишүүн:(data.members.find(x=>x.id===t.memberId)||{}).name||'',Эмчилгээ:t.desc||'',Дүн:t.amount})));
   add('Тоолуур заалт', data.readings.map(r=>({Огноо:r.date,Тоолуур:(data.meters.find(x=>x.id===r.meterId)||{}).name||'',Заалт:r.value})));
   if(wb.SheetNames.length===0){ toast('Экспортлох өгөгдөл алга'); return; }
-  XLSX.writeFile(wb,'HomeBook_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb,'HomeBook_'+todayLocal()+'.xlsx');
   toast('Excel татагдлаа');
 }
 
 /* ── Сарын тайлан (Word/.doc) ── */
 function exportReport(){
-  const ym=new Date().toISOString().slice(0,7);
+  const ym=monthLocal();
   const t=monthlyTotals(ym);
   const balance=t.income-t.expense;
   const incList=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym);
@@ -2270,7 +2282,7 @@ function renderHome(){
   const wrap=document.getElementById('view-home');
   const meterCount=data.meters.length;
   const totalReadings=data.readings.length;
-  const ym=new Date().toISOString().slice(0,7);
+  const ym=monthLocal();
   const thisMonth=data.readings.filter(r=>r.date&&r.date.slice(0,7)===ym).length;
   // Сүүлийн үйл ажиллагаа (бүх тоолуурын заалт, шинэ нь дээр)
   const all=[...data.readings].sort((a,b)=>b.date.localeCompare(a.date)||(b.updatedAt||0)-(a.updatedAt||0)).slice(0,6);
@@ -2300,7 +2312,7 @@ function renderHome(){
   const expenseTotal=fxTotal+varTotal+repairTotal+treatTotal;   // тогтмол + хувьсах + машин + эрүүл мэнд
   const balance=incomeTotal-expenseTotal;
   // Өнгөрсөн сартай харьцуулах
-  const prevYm=(()=>{ const d=new Date(); return new Date(d.getFullYear(),d.getMonth()-1,1).toISOString().slice(0,7); })();
+  const prevYm=(()=>{ const d=new Date(); return monthLocal(new Date(d.getFullYear(),d.getMonth()-1,1)); })();
   const prevExp=monthlyTotals(prevYm).expense;
   let momHtml='';
   if(prevExp>0){
