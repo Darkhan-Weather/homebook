@@ -231,6 +231,8 @@ input,select{font-family:inherit;font-size:15px}
 .sync-badge{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--surface-2);
   color:var(--text-2);display:inline-flex;align-items:center;gap:5px}
 .sync-badge i{font-size:13px}
+.sync-badge.need-auth{background:#fee2e2;color:#b91c1c!important;font-weight:500;cursor:pointer}
+.sync-badge.need-auth:hover{background:#fecaca}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;
   background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;
   opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
@@ -412,7 +414,7 @@ input,select{font-family:inherit;font-size:15px}
         <div class="month" id="month-label"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <span class="sync-badge" id="sync-badge"><i class="ti ti-cloud"></i> <span>Синктэй</span></span>
+        <button type="button" class="sync-badge" id="sync-badge" onclick="onSyncBadgeClick()" aria-label="Синкийн төлөв"><i class="ti ti-cloud"></i> <span>Синктэй</span></button>
         <div class="avatar" id="avatar" onclick="logout()" title="Гарах">Т</div>
       </div>
     </div>
@@ -902,7 +904,23 @@ function initGSI(){
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID, scope:SCOPES,
     callback:async(resp)=>{
-      if(resp.error){ alert('Нэвтрэх алдаа: '+resp.error); return; }
+      if(resp.error){
+        // Чимээгүй сэргээлт бүтсэнгүй — popup-г автоматаар нээхгүй
+        // (браузер хааж болзошгүй). Хэрэглэгчид ил товч харуулна.
+        if(silentAttempt){
+          silentAttempt=false; reauthPending=false;
+          setSync('Дахин нэвтрэх','#dc2626');
+          if(document.getElementById('app-screen').classList.contains('active')){
+            toast('Холболт дууслаа — дээд талын "Дахин нэвтрэх" дээр дарна уу');
+          }else{ goScreen('login-screen'); }
+          return;
+        }
+        silentAttempt=false; reauthPending=false;
+        if(resp.error!=='popup_closed'&&resp.error!=='access_denied')
+          alert('Нэвтрэх алдаа: '+resp.error);
+        return;
+      }
+      silentAttempt=false;
       accessToken=resp.access_token;
       const expiresIn=resp.expires_in?parseInt(resp.expires_in):3600;
       tokenExpiresAt=Date.now()+expiresIn*1000;
@@ -921,10 +939,37 @@ function initGSI(){
     }
   });
 }
+/* Өмнө нэвтэрсэн хаягийг санаж, Google-д hint болгож дамжуулна.
+   Ингэснээр браузерт олон Google акаунт нэвтэрсэн ч "бүртгэл сонгох"
+   цонх гарахгүй, чимээгүй сэргээнэ. */
+let silentAttempt=false;
+function onSyncBadgeClick(){
+  const b=document.getElementById('sync-badge');
+  if(b&&b.classList.contains('need-auth')){ login(); return; }
+  if(accessToken&&navigator.onLine){ loadFromDrive(); }
+}
+function savedEmail(){
+  if(currentUser&&currentUser.email)return currentUser.email;
+  try{ return (JSON.parse(localStorage.getItem('hb_usr')||'{}')).email||null; }catch(e){ return null; }
+}
+function requestToken(opts){
+  opts=opts||{};
+  initGSI();
+  if(!tokenClient){ setSync('Дахин нэвтрэх','#dc2626'); return false; }
+  const email=savedEmail();
+  if(opts.silent && email){
+    silentAttempt=true;
+    tokenClient.requestAccessToken({ prompt:'', hint:email });   // chooser алгасна
+  }else{
+    silentAttempt=false;
+    tokenClient.requestAccessToken(email?{ hint:email }:{});
+  }
+  return true;
+}
 function login(){
   initGSI();
   if(!tokenClient){ alert('Google сервис ачаалж дуусаагүй. Түр хүлээгээд дахин дарна уу.'); return; }
-  tokenClient.requestAccessToken();
+  requestToken();
 }
 function logout(){
   if(!confirm('Гарах уу?'))return;
@@ -956,10 +1001,10 @@ function requestReauth(){
   if(reauthPending)return;
   reauthPending=true;
   setSync('Дахин нэвтэрч байна...','#f39c12');
-  initGSI();
-  if(tokenClient){ tokenClient.requestAccessToken(); }
-  else { setSync('Дахин нэвтэрнэ үү','#dc2626'); }
-  setTimeout(()=>{ reauthPending=false; }, 8000);
+  // Эхлээд чимээгүй (hint-тэй) — chooser гарахгүй
+  if(!requestToken({silent:true})) setSync('Дахин нэвтрэх','#dc2626');
+  // Popup гарч, хэрэглэгч сонгох хүртэл хугацаа хэрэгтэй тул урт хүлээлт
+  setTimeout(()=>{ reauthPending=false; }, 20000);
 }
 async function apiFetch(url, opts){
   opts=Object.assign({}, opts||{});
@@ -1139,8 +1184,12 @@ function mergeById(local, remote){
 function setSync(text,color){
   const b=document.getElementById('sync-badge');
   if(!b)return;
-  if(!navigator.onLine){ b.querySelector('span').textContent='Офлайн'; b.style.color='#a8a29e'; return; }
+  if(!navigator.onLine){ text='Офлайн'; color='#a8a29e'; }
   b.querySelector('span').textContent=text; b.style.color=color;
+  // Нэвтрэлт шаардлагатай үед badge дарж болдог товч болно
+  const needAuth = text==='Дахин нэвтрэх' || text==='Дахин нэвтэрнэ үү';
+  b.classList.toggle('need-auth', needAuth);
+  b.setAttribute('aria-label', needAuth?'Дахин нэвтрэх':('Синкийн төлөв: '+text));
 }
 function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
 function saveLocal(){ localStorage.setItem('hb_data',JSON.stringify(data)); }
@@ -1529,7 +1578,7 @@ async function addToCalendar(id){
         body:JSON.stringify(body)});
       if(res.status===401||res.status===403){
         toast('Календарийн зөвшөөрөл хэрэгтэй — дахин нэвтэрнэ үү');
-        if(tokenClient)tokenClient.requestAccessToken();
+        requestToken();
         return;
       }
       const ev=await res.json();
@@ -2742,11 +2791,20 @@ window.addEventListener('load',()=>{
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp');
   const usr=localStorage.getItem('hb_usr');
   if(tok && exp>Date.now()){
+    // Хүчинтэй токен бий — шууд орно
     accessToken=tok; tokenExpiresAt=exp;
     if(usr){ try{currentUser=JSON.parse(usr);}catch(e){} }
     enterApp();
     const tryLoad=setInterval(()=>{ if(window.google&&google.accounts){ clearInterval(tryLoad); initGSI(); loadFromDrive(); } },300);
     setTimeout(()=>clearInterval(tryLoad),6000);
+  }else if(usr){
+    // Токен дууссан ч өмнө нэвтэрсэн хэрэглэгч — hint-ээр чимээгүй сэргээхийг оролдоно
+    try{ currentUser=JSON.parse(usr); }catch(e){}
+    goScreen('login-screen');
+    const tryAuth=setInterval(()=>{
+      if(window.google&&google.accounts){ clearInterval(tryAuth); requestToken({silent:true}); }
+    },300);
+    setTimeout(()=>clearInterval(tryAuth),6000);
   }else{ goScreen('home-screen'); }
 });
 </script>
