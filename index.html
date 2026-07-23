@@ -17,11 +17,11 @@
   frame-src https://accounts.google.com;
   base-uri 'self';
   object-src 'none';
-  form-action 'none';
-  frame-ancestors 'none'">
+  form-action 'none'">
 <meta name="description" content="Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="HomeBook">
@@ -151,6 +151,7 @@ input,select{font-family:inherit;font-size:15px}
 .mc-bars{display:flex;align-items:flex-end;gap:5px;height:48px;margin-bottom:1rem}
 .mc-bars .bar{flex:1;background:var(--accent-bg);border-radius:3px;min-height:4px}
 .mc-bars .bar.last{background:var(--accent)}
+.mc-bars .bar.empty{background:transparent;height:4px}
 .mc-foot{display:flex;justify-content:space-between;align-items:center;
   padding-top:10px;border-top:1px solid var(--border)}
 .mc-foot .l{font-size:14px;color:var(--text-2)}
@@ -847,6 +848,11 @@ input,select{font-family:inherit;font-size:15px}
 
 <div class="toast" id="toast"></div>
 
+<script>
+/* Clickjacking хамгаалалт — frame-ancestors нь <meta>-д ажилладаггүй,
+   GitHub Pages HTTP толгой тохируулах боломж өгдөггүй тул JS-ээр. */
+if(window.top!==window.self){ try{ window.top.location=window.self.location; }catch(e){ document.documentElement.style.display='none'; } }
+</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ═══ Тохиргоо ═══ */
@@ -2602,7 +2608,10 @@ function renderMeters(){
       for(let i=1;i<rs.length;i++)diffs.push(rs[i].value-rs[i-1].value);
       const recent=diffs.slice(-6); const mx=Math.max(...recent,1);
       if(recent.length){
-        bars='<div class="mc-bars">'+recent.map((d2,i)=>{
+        // Үргэлж 6 нүд — цөөн заалттай үед багана дэлгэц дүүрэн сунахгүй
+        const slots=6-recent.length;
+        const pad=Array(slots<0?0:slots).fill('<div class="bar empty"></div>').join('');
+        bars='<div class="mc-bars">'+pad+recent.map((d2,i)=>{
           const h=Math.max(4,Math.round(d2/mx*44));
           return `<div class="bar${i===recent.length-1?' last':''}" style="height:${h}px"></div>`;
         }).join('')+'</div>';
