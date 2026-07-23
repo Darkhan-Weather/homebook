@@ -2,7 +2,7 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>HomeBook</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d9488">
@@ -28,7 +28,12 @@
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
 .num{font-variant-numeric:tabular-nums}
-button{font-family:inherit;cursor:pointer;border:none;background:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.ic{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px}
+.fx-main,.inc-main,.vx-main{text-align:left;font:inherit;padding:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
 input,select{font-family:inherit;font-size:15px}
 
 .screen{display:none;min-height:100vh}
@@ -432,7 +437,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: тоолуур нэмэх/засах -->
 <div class="modal-bg" id="meter-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt-modal-title">
     <h3 id="mt-modal-title">Тоолуур нэмэх</h3>
     <div class="field">
       <label>Нэр</label>
@@ -456,7 +461,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: заалт нэмэх/засах -->
 <div class="modal-bg" id="reading-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rd-modal-title">
     <h3 id="rd-modal-title">Шинэ заалт нэмэх</h3>
     <div class="field">
       <label>Тоолуур</label>
@@ -481,7 +486,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: түүх (заалт + тэмдэглэгээ) -->
 <div class="modal-bg" id="hist-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hist-title">
     <h3 id="hist-title">Түүх</h3>
     <div class="section-label"><i class="ti ti-gauge"></i> Заалтууд</div>
     <div id="hist-readings"></div>
@@ -503,7 +508,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: тогтмол зардлын зүйл нэмэх/засах -->
 <div class="modal-bg" id="fixed-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fx-modal-title">
     <h3 id="fx-modal-title">Зардлын зүйл нэмэх</h3>
     <div class="field">
       <label>Нэр</label>
@@ -541,7 +546,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: орлого нэмэх/засах -->
 <div class="modal-bg" id="income-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="in-modal-title">
     <h3 id="in-modal-title">Орлого нэмэх</h3>
     <div class="field">
       <label>Огноо</label>
@@ -573,7 +578,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: хувьсах зардал нэмэх/засах -->
 <div class="modal-bg" id="variable-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="vx-modal-title">
     <h3 id="vx-modal-title">Зардал нэмэх</h3>
     <div class="field">
       <label>Огноо</label>
@@ -601,7 +606,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: ангилал удирдах -->
 <div class="modal-bg" id="category-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true">
     <h3>Ангилал удирдах</h3>
     <div id="cat-list" style="margin-bottom:1rem"></div>
     <div class="mini-add">
@@ -616,7 +621,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: машин нэмэх/засах -->
 <div class="modal-bg" id="vehicle-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="vh-modal-title">
     <h3 id="vh-modal-title">Машин нэмэх</h3>
     <div class="field">
       <label>Нэр / марк</label>
@@ -640,7 +645,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: засвар нэмэх/засах -->
 <div class="modal-bg" id="repair-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rp-modal-title">
     <h3 id="rp-modal-title">Засвар нэмэх</h3>
     <div class="field">
       <label>Огноо</label>
@@ -664,7 +669,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: засварын түүх -->
 <div class="modal-bg" id="repairs-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rps-title">
     <h3 id="rps-title">Засварын түүх</h3>
     <div id="rps-list"></div>
     <button class="add-reading-btn" id="rps-add"><i class="ti ti-plus"></i> Засвар нэмэх</button>
@@ -676,7 +681,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: гишүүн нэмэх/засах -->
 <div class="modal-bg" id="member-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mb-modal-title">
     <h3 id="mb-modal-title">Гишүүн нэмэх</h3>
     <div class="field">
       <label>Нэр</label>
@@ -700,7 +705,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: эмчилгээ нэмэх/засах -->
 <div class="modal-bg" id="treat-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tr-modal-title">
     <h3 id="tr-modal-title">Эмчилгээ нэмэх</h3>
     <div class="field">
       <label>Огноо</label>
@@ -724,7 +729,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: эмчилгээний түүх -->
 <div class="modal-bg" id="treats-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="trs-title">
     <h3 id="trs-title">Эмчилгээний түүх</h3>
     <div id="trs-list"></div>
     <button class="add-reading-btn" id="trs-add"><i class="ti ti-plus"></i> Эмчилгээ нэмэх</button>
@@ -736,7 +741,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: зээл нэмэх/засах -->
 <div class="modal-bg" id="loan-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ln-modal-title">
     <h3 id="ln-modal-title">Зээл нэмэх</h3>
     <div class="field">
       <label>Нэр</label>
@@ -775,7 +780,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: хуримтлал нэмэх/засах -->
 <div class="modal-bg" id="saving-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sv-modal-title">
     <h3 id="sv-modal-title">Хуримтлал нэмэх</h3>
     <div class="field"><label>Нэр</label><input type="text" id="sv-name" placeholder="Жишээ: Зуны аялал"></div>
     <div class="field"><label>Зорилтот дүн (₮)</label><input type="number" id="sv-target" inputmode="decimal"></div>
@@ -791,7 +796,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <!-- MODAL: сануулга нэмэх/засах -->
 <div class="modal-bg" id="reminder-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rm-modal-title">
     <h3 id="rm-modal-title">Сануулга нэмэх</h3>
     <div class="field">
       <label>Юуны сануулга</label>
@@ -1301,8 +1306,8 @@ function openHistory(meterId){
         <span class="hd num">${r.date}</span>
         <span class="hmain"><b class="num">${r.value}</b> ${label}</span>
         <span class="hacts">
-          <span class="ic" onclick="openReadingModal(null,'${r.id}')"><i class="ti ti-pencil"></i></span>
-          <span class="ic" onclick="deleteReading('${r.id}')"><i class="ti ti-trash"></i></span>
+          <button type="button" class="ic" onclick="openReadingModal(null,'${r.id}')" aria-label="Заалт засах"><i class="ti ti-pencil"></i></button>
+          <button type="button" class="ic" onclick="deleteReading('${r.id}')" aria-label="Заалт устгах"><i class="ti ti-trash"></i></button>
         </span></div>`;
     }).join('');
   }
@@ -1317,7 +1322,7 @@ function renderNotes(meterId){
   wrap.innerHTML=ns.map(n=>`<div class="hist-row">
     <span class="hd num">${n.date}</span>
     <span class="hmain">${escapeHtml(n.text)}</span>
-    <span class="hacts"><span class="ic" onclick="deleteNote('${n.id}')"><i class="ti ti-trash"></i></span></span>
+    <span class="hacts"><button type="button" class="ic" onclick="deleteNote('${n.id}')" aria-label="Тэмдэглэгээ устгах"><i class="ti ti-trash"></i></button></span>
   </div>`).join('');
 }
 function addNote(){
@@ -1516,8 +1521,8 @@ function renderFinance(){
         const done=paid>=parts&&parts>0;
         return `<div class="fin-card">
           <div class="fin-head"><span class="fin-name">${escapeHtml(l.name)}</span>
-            <span class="card-actions"><span class="ic" onclick="openLoanModal('${l.id}')"><i class="ti ti-pencil"></i></span>
-            <span class="ic" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i></span></span></div>
+            <span class="card-actions"><button type="button" class="ic" onclick="openLoanModal('${l.id}')" aria-label="Зээл засах"><i class="ti ti-pencil"></i></button>
+            <button type="button" class="ic" onclick="deleteLoan('${l.id}')" aria-label="Зээл устгах"><i class="ti ti-trash"></i></button></span></div>
           <div class="progress"><div class="fill" style="width:${pct}%"></div></div>
           <div class="fin-line"><b class="num">${paid}/${parts}</b> хэсэг төлөгдсөн · Үлдсэн: <b class="num">${fmt(remain)}₮</b></div>
           ${l.next&&!done?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b> (${fmt(l.partAmount)}₮)</div>`:''}
@@ -1527,8 +1532,8 @@ function renderFinance(){
       }else{
         return `<div class="fin-card">
           <div class="fin-head"><span class="fin-name">${escapeHtml(l.name)}</span>
-            <span class="card-actions"><span class="ic" onclick="openLoanModal('${l.id}')"><i class="ti ti-pencil"></i></span>
-            <span class="ic" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i></span></span></div>
+            <span class="card-actions"><button type="button" class="ic" onclick="openLoanModal('${l.id}')" aria-label="Зээл засах"><i class="ti ti-pencil"></i></button>
+            <button type="button" class="ic" onclick="deleteLoan('${l.id}')" aria-label="Зээл устгах"><i class="ti ti-trash"></i></button></span></div>
           <div class="fin-line">Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
           ${l.next?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b></div>`:''}
           ${l.due?`<div class="fin-line">Дуусах: <b class="num">${l.due}</b></div>`:''}
@@ -1547,8 +1552,8 @@ function renderFinance(){
       const remain=Math.max(0,target-cur);
       return `<div class="fin-card">
         <div class="fin-head"><span class="fin-name">${escapeHtml(s.name)}</span>
-          <span class="card-actions"><span class="ic" onclick="openSavingModal('${s.id}')"><i class="ti ti-pencil"></i></span>
-          <span class="ic" onclick="deleteSaving('${s.id}')"><i class="ti ti-trash"></i></span></span></div>
+          <span class="card-actions"><button type="button" class="ic" onclick="openSavingModal('${s.id}')" aria-label="Хуримтлал засах"><i class="ti ti-pencil"></i></button>
+          <button type="button" class="ic" onclick="deleteSaving('${s.id}')" aria-label="Хуримтлал устгах"><i class="ti ti-trash"></i></button></span></div>
         <div class="progress"><div class="fill sv" style="width:${pct}%"></div></div>
         <div class="fin-line"><b class="num">${fmt(cur)}₮</b> / ${fmt(target)}₮ &nbsp;(<b>${pct}%</b>) · Үлдсэн: <b class="num">${fmt(remain)}₮</b></div>
         ${s.date?`<div class="fin-line">Зорилтот огноо: <b class="num">${s.date}</b></div>`:''}
@@ -1676,8 +1681,8 @@ function renderHealth(){
         <div style="flex:1"><div class="veh-title">${escapeHtml(mb.name)}</div>
           <div class="veh-sub">${mb.birth?'Төрсөн: '+mb.birth:''}${mb.note?(mb.birth?' · ':'')+escapeHtml(mb.note):''}</div></div>
         <span class="card-actions">
-          <span class="ic" onclick="openMemberModal('${mb.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
-          <span class="ic" onclick="deleteMember('${mb.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+          <button type="button" class="ic" onclick="openMemberModal('${mb.id}')" aria-label="Гишүүн засах"><i class="ti ti-pencil"></i></button>
+          <button type="button" class="ic" onclick="deleteMember('${mb.id}')" aria-label="Гишүүн устгах"><i class="ti ti-trash"></i></button>
         </span>
       </div>
       <div class="veh-total"><span class="l">Нийт зардал (${ts.length} эмчилгээ)</span><span class="v num">${fmt(total)}₮</span></div>
@@ -1749,8 +1754,8 @@ function openTreatsModal(memberId){
       <span class="hd num">${t.date}</span>
       <span class="hmain">${escapeHtml(t.desc||'')} <span class="hsub num">${fmt(t.amount)}₮</span></span>
       <span class="hacts">
-        <span class="ic" onclick="openTreatModal('${t.id}')"><i class="ti ti-pencil"></i></span>
-        <span class="ic" onclick="deleteTreat('${t.id}')"><i class="ti ti-trash"></i></span>
+        <button type="button" class="ic" onclick="openTreatModal('${t.id}')" aria-label="Эмчилгээ засах"><i class="ti ti-pencil"></i></button>
+        <button type="button" class="ic" onclick="deleteTreat('${t.id}')" aria-label="Эмчилгээ устгах"><i class="ti ti-trash"></i></button>
       </span></div>`).join('');
   }
   openModal('treats-modal');
@@ -1822,8 +1827,8 @@ function renderVehicles(){
         <div style="flex:1"><div class="veh-title">${escapeHtml(v.name)}</div>
           <div class="veh-sub">${escapeHtml(v.plate||'')}${v.brand?' · '+escapeHtml(v.brand):''}</div></div>
         <span class="card-actions">
-          <span class="ic" onclick="openVehicleModal('${v.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
-          <span class="ic" onclick="deleteVehicle('${v.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+          <button type="button" class="ic" onclick="openVehicleModal('${v.id}')" aria-label="Машин засах"><i class="ti ti-pencil"></i></button>
+          <button type="button" class="ic" onclick="deleteVehicle('${v.id}')" aria-label="Машин устгах"><i class="ti ti-trash"></i></button>
         </span>
       </div>
       <div class="veh-total"><span class="l">Нийт зардал (${reps.length} засвар)</span><span class="v num">${fmt(total)}₮</span></div>
@@ -1895,8 +1900,8 @@ function openRepairsModal(vehicleId){
       <span class="hd num">${r.date}</span>
       <span class="hmain">${escapeHtml(r.desc||'')} <span class="hsub num">${fmt(r.amount)}₮</span></span>
       <span class="hacts">
-        <span class="ic" onclick="openRepairModal('${r.id}')"><i class="ti ti-pencil"></i></span>
-        <span class="ic" onclick="deleteRepair('${r.id}')"><i class="ti ti-trash"></i></span>
+        <button type="button" class="ic" onclick="openRepairModal('${r.id}')" aria-label="Засвар засах"><i class="ti ti-pencil"></i></button>
+        <button type="button" class="ic" onclick="deleteRepair('${r.id}')" aria-label="Засвар устгах"><i class="ti ti-trash"></i></button>
       </span></div>`).join('');
   }
   openModal('repairs-modal');
@@ -1952,7 +1957,7 @@ function renderCatList(){
   const wrap=document.getElementById('cat-list');
   if(data.categories.length===0){ wrap.innerHTML='<div class="empty-line">Ангилал алга. Доор нэмнэ үү.</div>'; return; }
   wrap.innerHTML=data.categories.map(c=>`<span class="cat-chip">${escapeHtml(c.name)}
-    <span class="ic" onclick="deleteCategory('${c.id}')"><i class="ti ti-x"></i></span></span>`).join('');
+    <button type="button" class="ic" onclick="deleteCategory('${c.id}')" aria-label="Ангилал устгах"><i class="ti ti-x"></i></button></span>`).join('');
 }
 function addCategory(){
   const name=document.getElementById('cat-new').value.trim();
@@ -2019,10 +2024,10 @@ function renderVariable(){
   else{
     rows=list.map(v=>`<div class="vx-row">
       <div class="vx-icon"><i class="ti ti-shopping-cart"></i></div>
-      <div class="vx-main" onclick="openVariableModal('${v.id}')">
+      <button type="button" class="vx-main" onclick="openVariableModal('${v.id}')" aria-label="Зардал засах">
         <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}</div>
         <div class="vx-sub num">${v.date}</div>
-      </div>
+      </button>
       <span class="vx-amt">${fmt(v.amount)}₮</span>
     </div>`).join('');
   }
@@ -2110,10 +2115,10 @@ function renderIncome(){
   }else{
     rows=list.map(i=>`<div class="inc-row">
       <div class="inc-icon"><i class="ti ti-${i.type==='Цалин'?'cash':'plus'}"></i></div>
-      <div class="inc-main" onclick="openIncomeModal('${i.id}')">
+      <button type="button" class="inc-main" onclick="openIncomeModal('${i.id}')" aria-label="Орлого засах">
         <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}</div>
         <div class="inc-sub num">${i.date}</div>
-      </div>
+      </button>
       <span class="inc-amt">+${fmt(i.amount)}₮</span>
     </div>`).join('');
   }
@@ -2241,10 +2246,10 @@ function renderFixed(){
           : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
         return `<div class="fx-row">
           <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
-          <div class="fx-main" onclick="openFixedModal('${it.id}')">
+          <button type="button" class="fx-main" onclick="openFixedModal('${it.id}')" aria-label="Зардлын зүйл засах: ${escapeHtml(it.name)}">
             <div class="fx-name">${escapeHtml(it.name)}</div>
             <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
-          </div>
+          </button>
           ${amtCell}
           <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
         </div>`;
@@ -2556,9 +2561,9 @@ function renderMeters(){
         <div class="mc-icon${hot?' hot':''}"><i class="ti ti-droplet"></i></div>
         <div><div class="mc-title">${escapeHtml(m.name)}</div><div class="mc-date">${last?last.date:''}${noteCount?' · '+noteCount+' тэмдэглэгээ':''}</div></div>
         <span class="card-actions">
-          <span class="ic" onclick="openHistory('${m.id}')" title="Түүх"><i class="ti ti-history"></i></span>
-          <span class="ic" onclick="openMeterModal('${m.id}')" title="Засах"><i class="ti ti-pencil"></i></span>
-          <span class="ic" onclick="deleteMeter('${m.id}')" title="Устгах"><i class="ti ti-trash"></i></span>
+          <button type="button" class="ic" onclick="openHistory('${m.id}')" aria-label="Түүх харах"><i class="ti ti-history"></i></button>
+          <button type="button" class="ic" onclick="openMeterModal('${m.id}')" aria-label="Тоолуур засах"><i class="ti ti-pencil"></i></button>
+          <button type="button" class="ic" onclick="deleteMeter('${m.id}')" aria-label="Тоолуур устгах"><i class="ti ti-trash"></i></button>
         </span>
       </div>
       ${body}
@@ -2572,16 +2577,48 @@ function renderMeters(){
 /* ═══ Туслах ═══ */
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('en-US'); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function openModal(id){ document.getElementById(id).classList.add('show'); }
-function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
 let toastTimer=null;
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
+/* ═══ Модалын хүртээмж: Escape, focus trap, фокус буцаах ═══ */
+let lastFocused=null;
+function focusablesIn(el){
+  return [...el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(x=>!x.disabled && x.offsetParent!==null);
+}
+function openModal(id){
+  lastFocused=document.activeElement;
+  const bg=document.getElementById(id);
+  bg.classList.add('show');
+  const f=focusablesIn(bg);
+  if(f.length)setTimeout(()=>f[0].focus(),50);
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+  if(lastFocused && lastFocused.focus){ lastFocused.focus(); lastFocused=null; }
+}
+function topOpenModal(){
+  const open=[...document.querySelectorAll('.modal-bg.show')];
+  return open.length?open[open.length-1]:null;
+}
+document.addEventListener('keydown',e=>{
+  const bg=topOpenModal();
+  if(!bg)return;
+  if(e.key==='Escape'){ e.preventDefault(); closeModal(bg.id); return; }
+  if(e.key==='Tab'){
+    const f=focusablesIn(bg);
+    if(!f.length)return;
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+});
 document.querySelectorAll('.modal-bg').forEach(bg=>{
-  bg.addEventListener('click',e=>{ if(e.target===bg)bg.classList.remove('show'); });
+  bg.addEventListener('click',e=>{ if(e.target===bg)closeModal(bg.id); });
 });
 
 /* ═══ Эхлэл ═══ */
