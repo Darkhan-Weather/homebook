@@ -1128,7 +1128,27 @@ function migrate(){
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
+  migratePayments();
   purgeTombstones();
+}
+/* Хуучин санамсаргүй id-тай төлбөрүүдийг композит id рүү шилжүүлж,
+   ижил зүйл+сарын давхардлыг нэгтгэнэ (сүүлд өөрчилсөн нь давамгайлна). */
+function migratePayments(){
+  const byKey={};
+  (data.payments||[]).forEach(p=>{
+    if(!p.itemId||!p.month)return;
+    const key=paymentId(p.itemId,p.month);
+    const cur=byKey[key];
+    if(!cur){ byKey[key]=p; return; }
+    // давхардсан — шинэчилсэн цагаар нь шүүж нэгтгэх
+    const winner=(p.updatedAt||0)>(cur.updatedAt||0)?p:cur;
+    const loser =winner===p?cur:p;
+    // алдагдал багатай нэгтгэл: аль нэгэнд нь дүн/төлөлт байвал хадгална
+    if(winner.amount==null && loser.amount!=null) winner.amount=loser.amount;
+    if(!winner.paid && loser.paid) winner.paid=true;
+    byKey[key]=winner;
+  });
+  data.payments=Object.values(byKey).map(p=>{ p.id=paymentId(p.itemId,p.month); return p; });
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -2156,9 +2176,12 @@ function changeFixedMonth(delta){
   renderFixed();
 }
 function getPayment(itemId, month){ return data.payments.find(p=>p.itemId===itemId&&p.month===month)||null; }
+function paymentId(itemId, month){ return 'p_'+itemId+'_'+month; }
 function setPayment(itemId, month, patch){
   let p=getPayment(itemId, month);
-  if(!p){ p={ id:'p'+Date.now()+Math.floor(Math.random()*1000), itemId, month, paid:false }; data.payments.push(p); }
+  // Композит id — хоёр төхөөрөмж ижил зүйл+сарыг тэмдэглэвэл
+  // ижил id үүсч, merge үедээ давхардахгүй нэгдэнэ.
+  if(!p){ p={ id:paymentId(itemId,month), itemId, month, paid:false }; data.payments.push(p); }
   Object.assign(p, patch); p.updatedAt=Date.now();
   return p;
 }
