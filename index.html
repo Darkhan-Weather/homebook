@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>HomeBook</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d9488">
+<meta name="description" content="Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HomeBook">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -1099,6 +1107,8 @@ function mergeById(local, remote){
 }
 function setSync(text,color){
   const b=document.getElementById('sync-badge');
+  if(!b)return;
+  if(!navigator.onLine){ b.querySelector('span').textContent='Офлайн'; b.style.color='#a8a29e'; return; }
   b.querySelector('span').textContent=text; b.style.color=color;
 }
 function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
@@ -2368,7 +2378,7 @@ function buildBreakdown(ym){
 
 /* ── Excel экспорт (SheetJS) ── */
 function exportExcel(){
-  if(!window.XLSX){ toast('Excel сан ачаалагдаагүй байна, түр хүлээгээд дахин оролдоно уу'); return; }
+  if(!window.XLSX){ toast(navigator.onLine?'Excel сан ачаалагдаж байна, түр хүлээнэ үү':'Excel экспорт хийхэд нэг удаа онлайн байх шаардлагатай'); return; }
   const wb=XLSX.utils.book_new();
   const add=(name,rows)=>{ if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name); };
   add('Орлого', data.income.map(i=>({Огноо:i.date,Төрөл:i.type,Тайлбар:i.note||'',Дүн:i.amount})));
@@ -2575,6 +2585,20 @@ document.querySelectorAll('.modal-bg').forEach(bg=>{
 });
 
 /* ═══ Эхлэл ═══ */
+/* ═══ Сүлжээний төлөв ═══ */
+window.addEventListener('offline',()=>setSync('Офлайн','#a8a29e'));
+window.addEventListener('online',()=>{
+  setSync('Синк хийж байна...','#f39c12');
+  if(accessToken){ loadFromDrive().then(()=>saveToDrive()); }
+});
+
+/* ═══ Service worker — офлайн ажиллагаа ═══ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW бүртгэгдсэнгүй:',e));
+  });
+}
+
 window.addEventListener('load',()=>{
   loadLocal();
   const tok=localStorage.getItem('hb_tok');
