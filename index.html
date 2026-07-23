@@ -924,10 +924,11 @@ function initGSI(){
       accessToken=resp.access_token;
       const expiresIn=resp.expires_in?parseInt(resp.expires_in):3600;
       tokenExpiresAt=Date.now()+expiresIn*1000;
-      // Токеныг зөвхөн энэ табын хугацаанд хадгална (таб хаагдахад устана).
-      // localStorage-д хадгалбал XSS гарсан үед удаан хугацаагаар задрах эрсдэлтэй.
-      sessionStorage.setItem('hb_tok',accessToken);
-      sessionStorage.setItem('hb_tok_exp',String(tokenExpiresAt));
+      // Токен 1 цагийн настай тул хадгалалтын хугацаа ямар ч байсан богино.
+      // localStorage ашигласнаар шинэ таб/дахин нээхэд дахин нэвтрэхгүй.
+      // XSS-ийн эсрэг гол хамгаалалт нь CSP (connect-src) — өгөгдөл гадагш гарахгүй.
+      localStorage.setItem('hb_tok',accessToken);
+      localStorage.setItem('hb_tok_exp',String(tokenExpiresAt));
       try{
         const info=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
           {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
@@ -974,8 +975,8 @@ function login(){
 function logout(){
   if(!confirm('Гарах уу?'))return;
   accessToken=null; tokenExpiresAt=0; currentUser=null;
-  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
+  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
   goScreen('home-screen');
 }
 function enterApp(){
@@ -997,9 +998,14 @@ function enterApp(){
    хадгалалтыг дараа нь давтана. */
 let reauthPending=false, pendingSave=false;
 function tokenExpiringSoon(){ return !tokenExpiresAt || Date.now() > tokenExpiresAt-60000; }
+function clearStoredToken(){
+  localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp');
+  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
+}
 function requestReauth(){
   if(reauthPending)return;
   reauthPending=true;
+  clearStoredToken();   // хүчингүй болсон токеныг хадгалахгүй
   setSync('Дахин нэвтэрч байна...','#f39c12');
   // Эхлээд чимээгүй (hint-тэй) — chooser гарахгүй
   if(!requestToken({silent:true})) setSync('Дахин нэвтрэх','#dc2626');
@@ -2785,10 +2791,11 @@ if('serviceWorker' in navigator){
 
 window.addEventListener('load',()=>{
   loadLocal();
-  const tok=sessionStorage.getItem('hb_tok');
-  const exp=parseInt(sessionStorage.getItem('hb_tok_exp')||'0');
-  // Хуучин хувилбарын үлдэгдэл токеныг цэвэрлэх
-  localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp');
+  const tok=localStorage.getItem('hb_tok');
+  const exp=parseInt(localStorage.getItem('hb_tok_exp')||'0');
+  // Хугацаа дууссан токеныг шууд цэвэрлэх — хэрэггүй мэдээлэл хадгалахгүй
+  if(tok && exp<=Date.now()){ localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); }
+  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
   const usr=localStorage.getItem('hb_usr');
   if(tok && exp>Date.now()){
     // Хүчинтэй токен бий — шууд орно
