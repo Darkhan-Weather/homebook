@@ -824,7 +824,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[] };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -915,7 +915,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
@@ -941,6 +941,7 @@ async function loadFromDrive(){
       const text=await fetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
         {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
       const remote=JSON.parse(text);
+      mergeTombstones(remote.tombstones);   // эхлээд устгалтууд, дараа нь бичлэгүүд
       data.meters=mergeById(data.meters, remote.meters||[]);
       data.readings=mergeById(data.readings, remote.readings||[]);
       data.notes=mergeById(data.notes, remote.notes||[]);
@@ -991,7 +992,7 @@ async function doBackup(){
     const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
       const meta=await fetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -1016,11 +1017,32 @@ async function cleanupBackups(bf){
     }
   }catch(e){ console.error('Backup цэвэрлэх алдаа:',e); }
 }
+/* ═══ Tombstone — устгалтыг төхөөрөмж хооронд зөв дамжуулах ═══
+   Устгасан бичлэгийн id-г цагтай нь бүртгэнэ. Синк хийхэд нөгөө
+   төхөөрөмжөөс ирсэн тэр бичлэгийг буцааж нэмэхгүй ("амилахгүй"). */
+const TOMB_KEEP_DAYS=180;
+function tombstone(id){ if(id)data.tombstones[id]=Date.now(); }
+function tombstoneAll(ids){ ids.forEach(tombstone); }
+function isTombstoned(item){
+  const t=data.tombstones[item.id];
+  // Устгасны дараа засварласан бол (updatedAt > устгасан цаг) бичлэг хүчинтэй хэвээр
+  return t!=null && t>=(item.updatedAt||0);
+}
+function mergeTombstones(remoteT){
+  if(!remoteT)return;
+  for(const id in remoteT){
+    if(!data.tombstones[id] || data.tombstones[id]<remoteT[id]) data.tombstones[id]=remoteT[id];
+  }
+}
+function purgeTombstones(){
+  const cutoff=Date.now()-TOMB_KEEP_DAYS*86400000;
+  for(const id in data.tombstones){ if(data.tombstones[id]<cutoff) delete data.tombstones[id]; }
+}
 function mergeById(local, remote){
   const byId={};
   local.forEach(x=>byId[x.id]=x);
   remote.forEach(r=>{ const l=byId[r.id]; if(!l||(r.updatedAt||0)>(l.updatedAt||0))byId[r.id]=r; });
-  return Object.values(byId).filter(x=>!x.deleted);
+  return Object.values(byId).filter(x=>!x.deleted && !isTombstoned(x));
 }
 function setSync(text,color){
   const b=document.getElementById('sync-badge');
@@ -1037,7 +1059,7 @@ function loadLocal(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[];
+  if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -1051,7 +1073,8 @@ function migrate(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[];
+  if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
+  purgeTombstones();
 }
 
 /* ═══ Тоолуур нэмэх/засах ═══ */
@@ -1087,11 +1110,13 @@ function deleteMeter(id){
   const m=data.meters.find(x=>x.id===id);
   if(!m)return;
   if(!confirm('"'+m.name+'" тоолуурыг устгах уу? Заалт, тэмдэглэгээ нь бас устана.'))return;
+  tombstone(id);
+  tombstoneAll(data.readings.filter(r=>r.meterId===id).map(r=>r.id));
+  tombstoneAll(data.notes.filter(n=>n.meterId===id).map(n=>n.id));
   data.meters=data.meters.filter(x=>x.id!==id);
   data.readings=data.readings.filter(r=>r.meterId!==id);
   data.notes=data.notes.filter(n=>n.meterId!==id);
-  m.deleted=true; m.updatedAt=Date.now(); data.meters.push(m); // tombstone sync-д
-  persist(); saveLocal(); data.meters=data.meters.filter(x=>!x.deleted); render();
+  persist(); render();
 }
 
 /* ═══ Заалт ═══ */
@@ -1164,6 +1189,7 @@ function saveReading(){
 }
 function deleteReading(id){
   if(!confirm('Энэ заалтыг устгах уу?'))return;
+  tombstone(id);
   data.readings=data.readings.filter(r=>r.id!==id);
   persist(); render();
   if(document.getElementById('hist-modal').classList.contains('show'))openHistory(histMeterId);
@@ -1220,6 +1246,7 @@ function addNote(){
   persist(); renderNotes(histMeterId); render(); toast('Тэмдэглэгээ нэмэгдлээ');
 }
 function deleteNote(id){
+  tombstone(id);
   data.notes=data.notes.filter(n=>n.id!==id);
   persist(); renderNotes(histMeterId); render();
 }
@@ -1332,6 +1359,7 @@ function saveReminder(){
 }
 function deleteReminder(id){
   if(!confirm('Энэ сануулгыг устгах уу?'))return;
+  tombstone(id);
   data.reminders=data.reminders.filter(x=>x.id!==id);
   persist(); closeModal('reminder-modal'); render();
 }
@@ -1494,6 +1522,7 @@ function saveLoan(){
 }
 function deleteLoan(id){
   if(!confirm('Энэ зээлийг устгах уу?'))return;
+  tombstone(id);
   data.loans=data.loans.filter(x=>x.id!==id);
   persist(); closeModal('loan-modal'); renderFinance();
 }
@@ -1535,6 +1564,7 @@ function saveSaving(){
 }
 function deleteSaving(id){
   if(!confirm('Энэ хуримтлалыг устгах уу?'))return;
+  tombstone(id);
   data.savings=data.savings.filter(x=>x.id!==id);
   persist(); closeModal('saving-modal'); renderFinance();
 }
@@ -1614,6 +1644,8 @@ function saveMember(){
 function deleteMember(id){
   const mb=data.members.find(x=>x.id===id);
   if(!confirm('"'+mb.name+'"-г устгах уу? Эмчилгээний түүх нь бас устана.'))return;
+  tombstone(id);
+  tombstoneAll(data.treatments.filter(t=>t.memberId===id).map(t=>t.id));
   data.members=data.members.filter(x=>x.id!==id);
   data.treatments=data.treatments.filter(t=>t.memberId!==id);
   persist(); closeModal('member-modal'); render();
@@ -1677,6 +1709,7 @@ function saveTreat(){
 }
 function deleteTreat(id){
   if(!confirm('Энэ эмчилгээг устгах уу?'))return;
+  tombstone(id);
   data.treatments=data.treatments.filter(x=>x.id!==id);
   persist(); render();
   if(document.getElementById('treats-modal').classList.contains('show'))openTreatsModal(treatMemberId);
@@ -1757,6 +1790,8 @@ function saveVehicle(){
 function deleteVehicle(id){
   const v=data.vehicles.find(x=>x.id===id);
   if(!confirm('"'+v.name+'"-г устгах уу? Засварын түүх нь бас устана.'))return;
+  tombstone(id);
+  tombstoneAll(data.repairs.filter(r=>r.vehicleId===id).map(r=>r.id));
   data.vehicles=data.vehicles.filter(x=>x.id!==id);
   data.repairs=data.repairs.filter(r=>r.vehicleId!==id);
   persist(); closeModal('vehicle-modal'); render();
@@ -1820,6 +1855,7 @@ function saveRepair(){
 }
 function deleteRepair(id){
   if(!confirm('Энэ засварыг устгах уу?'))return;
+  tombstone(id);
   data.repairs=data.repairs.filter(x=>x.id!==id);
   persist(); render();
   if(document.getElementById('repairs-modal').classList.contains('show'))openRepairsModal(repairVehicleId);
@@ -1845,6 +1881,7 @@ function deleteCategory(id){
   const used=data.variable.filter(v=>v.categoryId===id).length;
   const c=data.categories.find(x=>x.id===id);
   if(used>0){ if(!confirm('"'+c.name+'" ангилалд '+used+' зардал байна. Ангиллыг устгавал тэдгээр "ангилалгүй" болно. Үргэлжлүүлэх үү?'))return; }
+  tombstone(id);
   data.categories=data.categories.filter(x=>x.id!==id);
   persist(); renderCatList(); renderVariable();
 }
@@ -1961,6 +1998,7 @@ function saveVariable(){
 }
 function deleteVariable(id){
   if(!confirm('Энэ зардлыг устгах уу?'))return;
+  tombstone(id);
   data.variable=data.variable.filter(x=>x.id!==id);
   persist(); closeModal('variable-modal'); render();
 }
@@ -2047,6 +2085,7 @@ function saveIncome(){
 }
 function deleteIncome(id){
   if(!confirm('Энэ орлогыг устгах уу?'))return;
+  tombstone(id);
   data.income=data.income.filter(x=>x.id!==id);
   persist(); closeModal('income-modal'); render();
 }
@@ -2182,6 +2221,8 @@ function saveFixedItem(){
 function deleteFixedItem(id){
   const it=data.fixedItems.find(x=>x.id===id);
   if(!confirm('"'+it.name+'"-г устгах уу? Төлбөрийн түүх нь бас устана.'))return;
+  tombstone(id);
+  tombstoneAll(data.payments.filter(p=>p.itemId===id).map(p=>p.id));
   data.fixedItems=data.fixedItems.filter(x=>x.id!==id);
   data.payments=data.payments.filter(p=>p.itemId!==id);
   persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
