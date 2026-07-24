@@ -506,7 +506,7 @@ input,select{font-family:inherit;font-size:15px}
 .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .money-grid .mc,.stat-grid .stat{min-width:0}
 .money-grid .mv,.stat .sv{overflow-wrap:anywhere}
-/* Нарийн дэлгэц: Орлого | Зардал дээр, Үлдэгдэл доор бүтэн өргөнөөр */
+/* Нарийн дэлгэц: Орлого | Зардал дээр, хэмнэлт доор бүтэн өргөнөөр */
 @media(max-width:460px){
   .money-grid{grid-template-columns:1fr 1fr}
   .money-grid .mc:nth-child(3){grid-column:1 / -1}
@@ -3961,7 +3961,7 @@ function exportReport(){
       ${row('Машины засвар',fmt(t.repairs)+'₮')}
       ${row('Эрүүл мэнд',fmt(t.treats)+'₮')}
       ${row('<b>Нийт зардал</b>','<b>'+fmt(t.expense)+'₮</b>')}
-      ${row('<b>Үлдэгдэл</b>','<b>'+fmt(balance)+'₮</b>')}
+      ${row('<b>'+(balance>=0?'Хэмнэлт':'Хэтрэлт')+'</b>','<b>'+fmt(balance)+'₮</b>')}
     </table>`;
   if(incList.length){ html+='<h3>Орлого</h3><table style="border-collapse:collapse;width:100%">'+incList.map(i=>row(i.date+' · '+i.type+(i.note?' · '+i.note:''),fmt(i.amount)+'₮')).join('')+'</table>'; }
   if(varList.length){ html+='<h3>Хувьсах зардал</h3><table style="border-collapse:collapse;width:100%">'+varList.map(v=>row(v.date+' · '+catName(v.categoryId)+(v.note?' · '+v.note:''),fmt(v.amount)+'₮')).join('')+'</table>'; }
@@ -4037,7 +4037,7 @@ function renderHome(){
   const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
   const moneyCard = hasMoney
     ? `<div class="hero${balance<0?' neg':''}">
-        <div class="hero-label">${fxMonthLabel(ym)} · үлдэгдэл</div>
+        <div class="hero-label">${fxMonthLabel(ym)} · ${balance>=0?'хэмнэлт':'хэтрэлт'}</div>
         <div class="hero-val">${fmt(balance)}₮</div>
         <div class="hero-split">
           <div class="hs inc"><div class="hl"><i class="ti ti-arrow-down-left"></i>Орлого</div><div class="hv">${fmt(incomeTotal)}₮</div></div>
@@ -4045,7 +4045,7 @@ function renderHome(){
         </div>
         ${chips.length?`<div class="hero-chips">${chips.join('')}</div>`:''}
        </div>`
-    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
+    : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, хэмнэлт энд гарч ирнэ.</div>`;
   // 6 сарын график
   const chartPanel = hasMoney ? `<div class="chart-panel"><h4>Сүүлийн 6 сар</h4>
     <div class="chart-legend"><span><span class="dot" style="background:var(--m-income)"></span>Орлого</span><span><span class="dot" style="background:var(--m-expense)"></span>Зардал</span></div>
