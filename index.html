@@ -141,6 +141,22 @@ input,select{font-family:inherit;font-size:15px}
 .bk-row:last-child{border-bottom:none}
 .bk-date{flex:1;font-size:14px;font-variant-numeric:tabular-nums}
 .bk-sub{font-size:12px;color:var(--text-2)}
+
+/* ── Төлбөрийн туслах ── */
+.pay-btn{padding:6px 9px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);
+  color:var(--accent-text);font-size:13px;flex-shrink:0;display:inline-flex;align-items:center;
+  justify-content:center;min-width:34px;min-height:34px}
+.pay-btn:hover{background:var(--accent-bg)}
+.copy-row{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:var(--radius-sm);
+  padding:9px 11px;margin-bottom:.6rem}
+.copy-row .cl{font-size:12px;color:var(--text-2);width:52px;flex-shrink:0}
+.copy-row .cv{flex:1;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;word-break:break-all}
+.copy-row .cb{padding:5px 11px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);
+  font-size:12px;color:var(--accent-text);white-space:nowrap;flex-shrink:0}
+.copy-row .cb:hover{background:var(--accent-bg)}
+.copy-row.note{background:#fef3c7}
+.copy-row.note .cv{font-size:13px;font-weight:400;color:#92400e}
+.pay-step{font-size:11px;color:var(--text-muted);margin:-.3rem 0 .8rem;line-height:1.5}
 .bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
@@ -597,6 +613,38 @@ input,select{font-family:inherit;font-size:15px}
       <input type="number" min="0" id="fx-amount" inputmode="decimal" placeholder="Жишээ: 35000">
       <div class="hint">Хэлбэлзэх зардлын дүнг сар бүр жагсаалтад бичнэ</div>
     </div>
+
+    <div class="section-label"><i class="ti ti-credit-card"></i> Төлбөрийн тохиргоо</div>
+    <div class="field">
+      <label for="fx-billapp">Нэхэмжлэл харах апп</label>
+      <select id="fx-billapp">
+        <option value="">— байхгүй —</option>
+        <option value="billcenter">BillCenter</option>
+        <option value="dds">DDS.mn (дулаан)</option>
+        <option value="mobicom">Mobicom</option>
+        <option value="looktv">LookTV</option>
+        <option value="ddishtv">ДДШ-TV</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fx-paymode">Хэрхэн төлдөг вэ</label>
+      <select id="fx-paymode" onchange="fxPayModeChanged()">
+        <option value="">— тохируулаагүй —</option>
+        <option value="bank">Хаан банкаар (данс + утга)</option>
+        <option value="inapp">Апп дотроосоо (карт/QPay)</option>
+      </select>
+    </div>
+    <div id="fx-bank-fields" style="display:none">
+      <div class="field">
+        <label for="fx-account">Хүлээн авагчийн данс</label>
+        <input type="text" id="fx-account" inputmode="numeric" placeholder="Жишээ: 5108078914">
+      </div>
+      <div class="field">
+        <label for="fx-memo">Гүйлгээний утга</label>
+        <input type="text" id="fx-memo" placeholder="Хэрэглэгчийн код эсвэл тайлбар">
+        <div class="hint">Дулаан шиг апп өөрөө утга үүсгэдэг бол хоосон орхи</div>
+      </div>
+    </div>
     <div class="modal-actions" id="fx-modal-actions">
       <button class="btn" onclick="closeModal('fixed-modal')">Болих</button>
       <button class="btn acc" onclick="saveFixedItem()">Хадгалах</button>
@@ -886,6 +934,32 @@ input,select{font-family:inherit;font-size:15px}
       <button class="btn acc" onclick="saveReminder()">Хадгалах</button>
     </div>
     <div style="margin-top:10px" id="rm-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: Төлбөрийн туслах -->
+<div class="modal-bg" id="pay-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+    <h3 id="pay-title">Төлбөр</h3>
+    <div id="pay-body"></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('pay-modal')">Хаах</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Төлсөн эсэхийг асуух (гогцоо хаах) -->
+<div class="modal-bg" id="paid-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pd-title">
+    <h3 id="pd-title">Төлбөр хийгдсэн үү?</h3>
+    <p id="pd-sub" style="font-size:14px;color:var(--text-2);margin-bottom:1rem"></p>
+    <div class="field">
+      <label for="pd-amount">Төлсөн дүн (₮)</label>
+      <input type="number" id="pd-amount" min="0" inputmode="decimal" placeholder="Жишээ: 31756">
+      <div class="hint">Нэхэмжлэлийн дүн биш, бодитоор төлсөн дүнг бичнэ</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('paid-modal')">Одоохондоо үгүй</button>
+      <button class="btn acc" onclick="confirmPaid()"><i class="ti ti-check"></i> Төлсөн</button>
+    </div>
   </div>
 </div>
 
@@ -1581,6 +1655,158 @@ function deleteNote(id){
   persist(); renderNotes(histMeterId); render();
 }
 
+/* ═══ Төлбөрийн апп холбоос ═══
+   Android дээр intent:// ашиглан апп нээнэ. Апп суулгаагүй бол Play Store руу.
+   iOS болон компьютер дээр Play Store хуудсыг шинэ табд нээнэ. */
+const PAY_APPS={
+  billcenter:{ name:'BillCenter', pkg:'com.bc4' },
+  dds:       { name:'DDS.mn',     pkg:'mn.ritus.dds' },
+  mobicom:   { name:'Mobicom',    pkg:'mn.mobicom.onemediastore' },
+  looktv:    { name:'LookTV',     pkg:'net.giitd.looktv.main' },
+  ddishtv:   { name:'ДДШ-TV',     pkg:'mn.ddishtv.ddish' },
+  khanbank:  { name:'Хаан банк',  pkg:'com.khanbank.retail' }
+};
+const IS_ANDROID=/Android/i.test(navigator.userAgent||'');
+function storeUrl(pkg){ return 'https://play.google.com/store/apps/details?id='+pkg; }
+function openApp(key){
+  const a=PAY_APPS[key];
+  if(!a){ toast('Апп тохируулаагүй байна'); return false; }
+  if(IS_ANDROID){
+    window.location.href='intent://#Intent;package='+a.pkg+
+      ';S.browser_fallback_url='+encodeURIComponent(storeUrl(a.pkg))+';end';
+  }else{
+    window.open(storeUrl(a.pkg),'_blank','noopener');
+    toast(a.name+' — зөвхөн гар утсан дээр шууд нээгдэнэ');
+  }
+  return true;
+}
+/* Clipboard — HTTPS дээр ажиллана, эс бөгөөс хуучин аргаар */
+async function copyText(text, label){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast((label||'Утга')+' хуулагдлаа');
+    return true;
+  }catch(e){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      const ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast(ok?((label||'Утга')+' хуулагдлаа'):'Хуулж чадсангүй — гараар бичнэ үү');
+      return ok;
+    }catch(e2){ toast('Хуулж чадсангүй — гараар бичнэ үү'); return false; }
+  }
+}
+
+/* ═══ Төлбөрийн туслах цонх ═══ */
+let payItemId=null;
+function hasPayInfo(it){ return !!(it.billApp || it.bankAccount || it.payMode); }
+function openPayModal(itemId){
+  const it=data.fixedItems.find(x=>x.id===itemId);
+  if(!it)return;
+  payItemId=itemId;
+  const amt=monthAmount(it, fixedMonth);
+  const paid=isPaid(it, fixedMonth);
+  const app=it.billApp?PAY_APPS[it.billApp]:null;
+  document.getElementById('pay-title').textContent=it.name;
+
+  let h=`<p style="font-size:13px;color:var(--text-2);margin:-.5rem 0 1rem">${fxMonthLabel(fixedMonth)}${paid?' · <span style="color:var(--success)">төлсөн</span>':''}</p>`;
+
+  // 1. Нэхэмжлэл харах
+  if(app){
+    h+=`<button class="btn" style="width:100%;justify-content:center;margin-bottom:.4rem" onclick="payOpenApp('${it.billApp}')">
+      <i class="ti ti-file-invoice"></i> Нэхэмжлэл харах — ${escapeHtml(app.name)}</button>
+      <p class="pay-step">Аппаас дүнгээ хараад буцаж ирнэ үү</p>`;
+  }
+
+  // 2. Дүн
+  if(it.type==='helbelzeh'){
+    h+=`<div class="field"><label for="pay-amount">Энэ сарын дүн (₮)</label>
+      <input type="number" min="0" id="pay-amount" inputmode="decimal" value="${amt||''}" placeholder="Нэхэмжлэлээс бичнэ"
+      onchange="setHelbelzehAmount('${it.id}',this.value)"></div>`;
+  }else{
+    h+=`<div class="copy-row"><span class="cl">Дүн</span><span class="cv">${fmt(amt)}₮</span></div>`;
+  }
+
+  // 3. Төлөх
+  if(it.payMode==='bank'){
+    if(it.bankAccount){
+      h+=`<div class="copy-row"><span class="cl">Данс</span><span class="cv">${escapeHtml(it.bankAccount)}</span>
+        <button class="cb" onclick="copyText('${escapeHtml(it.bankAccount)}','Данс')">Хуулах</button></div>`;
+    }
+    if(it.bankMemo){
+      h+=`<div class="copy-row"><span class="cl">Утга</span><span class="cv">${escapeHtml(it.bankMemo)}</span>
+        <button class="cb" onclick="copyText('${escapeHtml(it.bankMemo)}','Гүйлгээний утга')">Хуулах</button></div>`;
+    }else{
+      h+=`<div class="copy-row note"><span class="cl">Утга</span><span class="cv">Тохируулаагүй — ${app?escapeHtml(app.name)+' аппаас хуулж авна':'гараар бичнэ'}</span></div>`;
+    }
+    h+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:.5rem" onclick="payOpenApp('khanbank')">
+      <i class="ti ti-building-bank"></i> Хаан банк нээх</button>`;
+  }else if(it.payMode==='inapp'&&app){
+    h+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:.5rem" onclick="payOpenApp('${it.billApp}')">
+      <i class="ti ti-external-link"></i> ${escapeHtml(app.name)} нээх</button>
+      <p class="pay-step">Төлбөрөө апп дотроосоо картаар / QPay-ээр төлнө</p>`;
+  }else if(!app){
+    h+=`<div class="hint-box">Төлбөрийн тохиргоо хийгээгүй байна. Зүйлийн нэр дээр дарж апп, данс, гүйлгээний утгыг оруулна уу.</div>`;
+  }
+
+  // 4. Гараар тэмдэглэх
+  h+=`<button class="btn${paid?'':' '}" style="width:100%;justify-content:center;margin-top:.75rem" onclick="togglePaidFromPay('${it.id}')">
+    <i class="ti ti-${paid?'x':'check'}"></i> ${paid?'Төлөөгүй болгох':'Төлсөн гэж тэмдэглэх'}</button>`;
+
+  document.getElementById('pay-body').innerHTML=h;
+  openModal('pay-modal');
+}
+function togglePaidFromPay(id){ togglePaid(id); closeModal('pay-modal'); }
+
+/* Апп нээхийн өмнө "буцаж ирэхэд асуух" тэмдэглэгээ тавина */
+let pendingPay=null;
+function payOpenApp(appKey){
+  const it=data.fixedItems.find(x=>x.id===payItemId);
+  if(it && !isPaid(it, fixedMonth)){
+    pendingPay={ itemId:it.id, month:fixedMonth, at:Date.now() };
+  }
+  openApp(appKey);
+}
+
+/* ═══ Гогцоо хаах — апп-аас буцаж ирэхэд асуух ═══ */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  if(!pendingPay)return;
+  const dt=Date.now()-pendingPay.at;
+  // 3 секундээс бага = апп нээгдээгүй; 30 минутаас их = өөр ажил хийчихсэн
+  if(dt<3000 || dt>30*60*1000){ pendingPay=null; return; }
+  const p=pendingPay; pendingPay=null;
+  askPaid(p);
+});
+let askPaidCtx=null;
+function askPaid(ctx){
+  const it=data.fixedItems.find(x=>x.id===ctx.itemId);
+  if(!it)return;
+  askPaidCtx=ctx;
+  document.getElementById('pd-sub').textContent=it.name+' · '+fxMonthLabel(ctx.month);
+  const cur=monthAmount(it, ctx.month);
+  document.getElementById('pd-amount').value=cur||'';
+  closeIfOpen('pay-modal');
+  openModal('paid-modal');
+}
+function confirmPaid(){
+  if(!askPaidCtx)return closeModal('paid-modal');
+  const it=data.fixedItems.find(x=>x.id===askPaidCtx.itemId);
+  const raw=document.getElementById('pd-amount').value;
+  const amt=parseFloat(raw);
+  if(raw!=='' ){
+    const va=validAmount(amt); if(!va.ok){ toast(va.msg); return; }
+  }
+  const patch={ paid:true };
+  if(!isNaN(amt) && it && it.type==='helbelzeh') patch.amount=amt;
+  setPayment(askPaidCtx.itemId, askPaidCtx.month, patch);
+  askPaidCtx=null;
+  persist(); closeModal('paid-modal'); render();
+  toast('Төлбөр бүртгэгдлээ');
+}
+
 /* ═══ Нөөц ба сэргээх ═══ */
 async function openBackupModal(){
   closeIfOpen('settings-modal');
@@ -1851,29 +2077,51 @@ function openSettings(){
 }
 
 /* ═══ Монгол өрхийн загвар ═══ */
+/* Загварт зөвхөн НИЙТИЙН мэдээлэл (байгууллагын данс) орно.
+   Хэрэглэгчийн код, хаяг зэрэг хувийн зүйлийг апп дотроос өөрөө бөглөнө —
+   ингэснээр нийтэд ил репод хувийн мэдээлэл орохгүй. */
 const MN_TEMPLATE=[
-  { name:'Цахилгаан',   group:'Ашиглалт',   type:'helbelzeh' },
-  { name:'Ус суваг',    group:'Ашиглалт',   type:'helbelzeh' },
-  { name:'Дулаан',      group:'Ашиглалт',   type:'helbelzeh' },
-  { name:'Интернэт',    group:'Холбоо/ТВ',  type:'togtmol'   },
-  { name:'Гар утас',    group:'Холбоо/ТВ',  type:'togtmol'   },
-  { name:'LookTV',      group:'Холбоо/ТВ',  type:'togtmol'   },
-  { name:'ДДШ-TV',      group:'Холбоо/ТВ',  type:'togtmol'   },
-  { name:'СӨХ',         group:'Орон сууц',  type:'togtmol'   },
-  { name:'Хог, тээвэр', group:'Орон сууц',  type:'togtmol'   },
-  { name:'Цэцэрлэг',    group:'Хүүхэд',     type:'togtmol'   }
+  { name:'Цахилгаан',   group:'Ашиглалт',  type:'helbelzeh', billApp:'billcenter', payMode:'bank',  bankAccount:'5108078914' },
+  { name:'Ус суваг',    group:'Ашиглалт',  type:'helbelzeh', billApp:'billcenter', payMode:'bank',  bankAccount:'5045952676' },
+  { name:'Дулаан',      group:'Ашиглалт',  type:'helbelzeh', billApp:'dds',        payMode:'bank',  bankAccount:'5119001584' },
+  { name:'Интернэт',    group:'Холбоо/ТВ', type:'togtmol',   billApp:'mobicom',    payMode:'inapp' },
+  { name:'Гар утас',    group:'Холбоо/ТВ', type:'togtmol',   billApp:'mobicom',    payMode:'inapp' },
+  { name:'LookTV',      group:'Холбоо/ТВ', type:'togtmol',   billApp:'looktv',     payMode:'inapp' },
+  { name:'ДДШ-TV',      group:'Холбоо/ТВ', type:'togtmol',   billApp:'ddishtv',    payMode:'inapp' },
+  { name:'СӨХ',         group:'Орон сууц', type:'togtmol',   billApp:'',           payMode:'bank',  bankAccount:'5119613189' },
+  { name:'Хог, тээвэр', group:'Орон сууц', type:'togtmol',   billApp:'billcenter', payMode:'bank',  bankAccount:'5108479620' },
+  { name:'Цэцэрлэг',    group:'Хүүхэд',    type:'togtmol',   billApp:'',           payMode:'' }
 ];
 function addMongolTemplate(){
-  const exist=new Set(data.fixedItems.map(i=>i.name.trim().toLowerCase()));
-  const toAdd=MN_TEMPLATE.filter(t=>!exist.has(t.name.toLowerCase()));
-  if(toAdd.length===0){ toast('Бүх зүйл аль хэдийн нэмэгдсэн байна'); return; }
-  if(!confirm(toAdd.length+' зардлын зүйл нэмэх үү?\n\n'+toAdd.map(t=>'· '+t.name).join('\n')+'\n\nДүнг нь дараа өөрөө оруулна.'))return;
+  const byName={};
+  data.fixedItems.forEach(i=>byName[i.name.trim().toLowerCase()]=i);
+  const toAdd=MN_TEMPLATE.filter(t=>!byName[t.name.toLowerCase()]);
+  // Аль хэдийн байгаа зүйлүүдийн дутуу төлбөрийн тохиргоог нөхөх
+  const toFill=MN_TEMPLATE.filter(t=>{
+    const it=byName[t.name.toLowerCase()];
+    return it && !it.payMode && (t.payMode||t.billApp);
+  });
+  if(toAdd.length===0 && toFill.length===0){ toast('Бүх зүйл аль хэдийн тохируулагдсан байна'); return; }
+  let msg='';
+  if(toAdd.length)msg+=toAdd.length+' зардлын зүйл нэмэгдэнэ:\n'+toAdd.map(t=>'· '+t.name).join('\n')+'\n\n';
+  if(toFill.length)msg+=toFill.length+' зүйлийн төлбөрийн тохиргоо нөхөгдөнө:\n'+toFill.map(t=>'· '+t.name).join('\n')+'\n\n';
+  msg+='Дүн, хэрэглэгчийн кодыг дараа өөрөө оруулна.';
+  if(!confirm(msg))return;
   const now=Date.now();
   toAdd.forEach((t,i)=>{
-    data.fixedItems.push({ id:'f'+(now+i), name:t.name, type:t.type, group:t.group, amount:0, updatedAt:now+i });
+    data.fixedItems.push({ id:'f'+(now+i), name:t.name, type:t.type, group:t.group, amount:0,
+      billApp:t.billApp||'', payMode:t.payMode||'', bankAccount:t.bankAccount||'', bankMemo:'',
+      updatedAt:now+i });
+  });
+  toFill.forEach(t=>{
+    const it=byName[t.name.toLowerCase()];
+    it.billApp=it.billApp||t.billApp||'';
+    it.payMode=t.payMode||'';
+    it.bankAccount=it.bankAccount||t.bankAccount||'';
+    it.updatedAt=Date.now();
   });
   persist(); closeIfOpen('settings-modal'); showView('fixed');
-  toast(toAdd.length+' зүйл нэмэгдлээ');
+  toast((toAdd.length+toFill.length)+' зүйл тохируулагдлаа');
 }
 
 /* ═══ Навигаци ═══ */
@@ -2799,6 +3047,7 @@ function renderFixed(){
             <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
           </button>
           ${amtCell}
+          ${hasPayInfo(it)?`<button type="button" class="pay-btn" onclick="openPayModal('${it.id}')" aria-label="Төлбөрийн туслах"><i class="ti ti-external-link"></i></button>`:''}
           <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
         </div>`;
       }).join('');
@@ -2833,6 +3082,10 @@ function renderFixedTotals(){
 }
 
 /* ── Зардлын зүйл модал ── */
+function fxPayModeChanged(){
+  const m=document.getElementById('fx-paymode').value;
+  document.getElementById('fx-bank-fields').style.display=(m==='bank')?'block':'none';
+}
 function fxTypeChanged(){
   const t=document.getElementById('fx-type').value;
   document.getElementById('fx-amt-field').style.display=(t==='helbelzeh')?'none':'block';
@@ -2847,6 +3100,10 @@ function openFixedModal(editId){
     document.getElementById('fx-type').value=it.type;
     document.getElementById('fx-group').value=it.group||'Бусад';
     document.getElementById('fx-amount').value=it.amount||'';
+    document.getElementById('fx-billapp').value=it.billApp||'';
+    document.getElementById('fx-paymode').value=it.payMode||'';
+    document.getElementById('fx-account').value=it.bankAccount||'';
+    document.getElementById('fx-memo').value=it.bankMemo||'';
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteFixedItem('${it.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('fx-modal-title').textContent='Зардлын зүйл нэмэх';
@@ -2854,9 +3111,13 @@ function openFixedModal(editId){
     document.getElementById('fx-type').value='togtmol';
     document.getElementById('fx-group').value='Ашиглалт';
     document.getElementById('fx-amount').value='';
+    document.getElementById('fx-billapp').value='';
+    document.getElementById('fx-paymode').value='';
+    document.getElementById('fx-account').value='';
+    document.getElementById('fx-memo').value='';
     delWrap.innerHTML='';
   }
-  fxTypeChanged();
+  fxTypeChanged(); fxPayModeChanged();
   openModal('fixed-modal');
 }
 function saveFixedItem(){
@@ -2866,12 +3127,19 @@ function saveFixedItem(){
   const amount=parseFloat(document.getElementById('fx-amount').value)||0;
   if(!name){ toast('Нэр оруулна уу'); return; }
   const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
+  const billApp=document.getElementById('fx-billapp').value;
+  const payMode=document.getElementById('fx-paymode').value;
+  const bankAccount=payMode==='bank'?document.getElementById('fx-account').value.trim():'';
+  const bankMemo=payMode==='bank'?document.getElementById('fx-memo').value.trim():'';
   if(editingFixedId){
     const it=data.fixedItems.find(x=>x.id===editingFixedId);
-    it.name=name; it.type=type; it.group=group; it.amount=amount; it.updatedAt=Date.now();
+    it.name=name; it.type=type; it.group=group; it.amount=amount;
+    it.billApp=billApp; it.payMode=payMode; it.bankAccount=bankAccount; it.bankMemo=bankMemo;
+    it.updatedAt=Date.now();
     toast('Засагдлаа');
   }else{
-    data.fixedItems.push({ id:'f'+Date.now(), name, type, group, amount, updatedAt:Date.now() });
+    data.fixedItems.push({ id:'f'+Date.now(), name, type, group, amount,
+      billApp, payMode, bankAccount, bankMemo, updatedAt:Date.now() });
     toast('Нэмэгдлээ');
   }
   persist(); closeModal('fixed-modal'); renderFixed(); renderHome();
