@@ -33,9 +33,10 @@
   --accent:#0d9488; --accent-hover:#0f766e; --accent-bg:#ccfbf1; --accent-text:#0f766e;
 
   /* Утга илэрхийлэх өнгө */
-  --success:#15803d; --success-bg:#dcfce7;
-  --danger:#dc2626;  --danger-bg:#fee2e2;
-  --warn:#b45309;    --warn-bg:#fef3c7;
+  --success:#15803d; --success-bg:#dcfce7; --success-br:#bbf7d0;
+  --danger:#dc2626;  --danger-bg:#fee2e2;  --danger-br:#fecaca; --danger-fg:#b91c1c;
+  --warn:#b45309;    --warn-bg:#fef3c7;    --warn-fg:#92400e;   --warn-strong:#f59e0b;
+  --soft-yellow-bg:#fef9c3; --soft-yellow-fg:#ca8a04;
 
   /* Модуль бүрийн өнгө — карт, дүрс, график бүгд эндээс */
   --m-income:#15803d;   --m-income-bg:#dcfce7;
@@ -154,7 +155,7 @@ input,select{font-family:inherit;font-size:15px}
 .mem-icon{ background:var(--m-health-bg) !important } .mem-icon i{ color:var(--m-health) !important }
 .mc-icon.hot{background:var(--danger-bg)}    .mc-icon.hot i{color:var(--danger)}
 .mc-icon.heat{background:var(--m-remind-bg)} .mc-icon.heat i{color:var(--m-remind)}
-.mc-icon.elec{background:#fef9c3}            .mc-icon.elec i{color:#ca8a04}
+.mc-icon.elec{background:var(--soft-yellow-bg)}            .mc-icon.elec i{color:var(--soft-yellow-fg)}
 
 /* Дүнгийн өнгө */
 .inc-amt{ color:var(--m-income) }
@@ -174,13 +175,13 @@ input,select{font-family:inherit;font-size:15px}
 .act-item .ai i{font-size:20px}
 .act-item .at{font-size:14px;font-weight:500}
 .act-item .ad2{font-size:12px;color:var(--text-2)}
-.ai-inc{background:#dcfce7}.ai-inc i{color:#15803d}
-.ai-exp{background:#fef3c7}.ai-exp i{color:#92400e}
+.ai-inc{background:var(--success-bg)}.ai-inc i{color:var(--success)}
+.ai-exp{background:var(--warn-bg)}.ai-exp i{color:var(--warn-fg)}
 .ai-met{background:var(--accent-bg)}.ai-met i{color:var(--accent-text)}
-.ai-rem{background:#fef3c7}.ai-rem i{color:#b45309}
-.ai-veh{background:#e0e7ff}.ai-veh i{color:#4338ca}
-.ai-hel{background:#fce7f3}.ai-hel i{color:#be185d}
-.ai-fix{background:#e0f2fe}.ai-fix i{color:#0369a1}
+.ai-rem{background:var(--warn-bg)}.ai-rem i{color:var(--warn)}
+.ai-veh{background:var(--m-vehicle-bg)}.ai-veh i{color:var(--m-vehicle)}
+.ai-hel{background:var(--m-health-bg)}.ai-hel i{color:var(--m-health)}
+.ai-fix{background:var(--m-fixed-bg)}.ai-fix i{color:var(--m-fixed)}
 .ai-gray{background:var(--surface-2)}.ai-gray i{color:var(--text-2)}
 
 /* ── Импорт ── */
@@ -192,9 +193,9 @@ input,select{font-family:inherit;font-size:15px}
   color:var(--text-2);line-height:1.6;margin-bottom:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   overflow-x:auto;white-space:pre}
 .imp-result{border-radius:var(--radius-sm);padding:11px 12px;font-size:13px;margin-top:.75rem;line-height:1.5}
-.imp-result.ok{background:#dcfce7;color:#15803d}
-.imp-result.warn{background:#fef3c7;color:#92400e}
-.imp-result.err{background:#fee2e2;color:#b91c1c}
+.imp-result.ok{background:var(--success-bg);color:var(--success)}
+.imp-result.warn{background:var(--warn-bg);color:var(--warn-fg)}
+.imp-result.err{background:var(--danger-bg);color:var(--danger-fg)}
 .file-btn{display:block;width:100%;padding:11px;border-radius:var(--radius-sm);border:1px dashed var(--border-strong);
   background:transparent;color:var(--accent-text);font-size:14px;font-weight:500;text-align:center;cursor:pointer;margin-bottom:.75rem}
 .file-btn:hover{background:var(--accent-bg)}
@@ -217,19 +218,19 @@ input,select{font-family:inherit;font-size:15px}
 .copy-row .cb{padding:5px 11px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);
   font-size:12px;color:var(--accent-text);white-space:nowrap;flex-shrink:0}
 .copy-row .cb:hover{background:var(--accent-bg)}
-.copy-row.note{background:#fef3c7}
-.copy-row.note .cv{font-size:13px;font-weight:400;color:#92400e}
+.copy-row.note{background:var(--warn-bg)}
+.copy-row.note .cv{font-size:13px;font-weight:400;color:var(--warn-fg)}
 .pay-step{font-size:11px;color:var(--text-muted);margin:-.3rem 0 .8rem;line-height:1.5}
 
 /* ── Ангиллын төсөв ── */
 .bud-bar{height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
 .bud-bar .fill{height:100%;border-radius:4px;transition:width .3s}
 .bud-ok .fill{background:var(--accent)}
-.bud-warn .fill{background:#f59e0b}
+.bud-warn .fill{background:var(--warn-strong)}
 .bud-over .fill{background:var(--danger)}
 .bud-meta{display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:var(--text-muted)}
 .bud-meta .st{font-weight:500}
-.bud-meta .st.warn{color:#b45309}
+.bud-meta .st.warn{color:var(--warn)}
 .bud-meta .st.over{color:var(--danger)}
 .cat-edit{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
 .cat-edit:last-of-type{border-bottom:none}
@@ -240,7 +241,7 @@ input,select{font-family:inherit;font-size:15px}
   display:inline-flex;align-items:center;justify-content:center}
 .cat-edit .ic:hover{color:var(--danger)}
 .mem-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;
-  background:#fce7f3;color:#be185d;margin-left:6px}
+  background:var(--m-health-bg);color:var(--m-health);margin-left:6px}
 
 /* ── Давтагдах бичлэг ── */
 .rc-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
@@ -278,7 +279,9 @@ input,select{font-family:inherit;font-size:15px}
 .act-row .am{flex:1;font-size:14px}
 .act-row .av{font-size:14px;font-weight:500}
 .hint-box{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius);
-  padding:1rem 1.2rem;font-size:13px;color:var(--text-2);line-height:1.5}
+  padding:1rem 1.2rem;font-size:13px;color:var(--text-2);line-height:1.6}
+.section-label{border-top:1px solid var(--border);padding-top:1.1rem;margin-top:1.35rem;color:var(--text-2)}
+.section-label:first-child{border-top:none;padding-top:0;margin-top:0}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1.25rem 0 1rem}
 .topbar h2{font-size:19px;letter-spacing:-.01em}
 .topbar h2{font-size:18px;font-weight:600}
@@ -298,9 +301,9 @@ input,select{font-family:inherit;font-size:15px}
 .mc-icon{width:38px;height:38px;border-radius:10px;background:var(--accent-bg);
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mc-icon i{font-size:20px;color:var(--accent-text)}
-.mc-icon.hot{background:#fee2e2}.mc-icon.hot i{color:#dc2626}
-.mc-icon.heat{background:#ffedd5}.mc-icon.heat i{color:#ea580c}
-.mc-icon.elec{background:#fef9c3}.mc-icon.elec i{color:#ca8a04}
+.mc-icon.hot{background:var(--danger-bg)}.mc-icon.hot i{color:var(--danger)}
+.mc-icon.heat{background:var(--m-remind-bg)}.mc-icon.heat i{color:var(--m-remind)}
+.mc-icon.elec{background:var(--soft-yellow-bg)}.mc-icon.elec i{color:var(--soft-yellow-fg)}
 .mc-title{font-size:15px;font-weight:500}
 .mc-date{font-size:12px;color:var(--text-2)}
 .card-actions{margin-left:auto;display:flex;gap:1px}
@@ -326,17 +329,21 @@ input,select{font-family:inherit;font-size:15px}
 .btn:hover{background:var(--surface-2)}
 .btn.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn.acc:hover{background:var(--accent-hover)}
-.btn.danger{color:var(--danger);border-color:#fecaca}
-.btn.danger:hover{background:#fef2f2}
+.btn.danger{color:var(--danger);border-color:var(--danger-br)}
+.btn.danger:hover{background:var(--danger-bg)}
 .add-reading-btn{width:100%;margin-top:8px;padding:10px;border-radius:var(--radius-sm);
   border:1px dashed var(--border-strong);background:transparent;color:var(--accent-text);
   font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}
 .add-reading-btn:hover{background:var(--accent-bg)}
 
-.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-2)}
-.empty-state i{font-size:48px;color:var(--border-strong);margin-bottom:1rem;display:block}
-.empty-state h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
-.empty-state p{font-size:14px;margin-bottom:1.25rem;line-height:1.5}
+.empty-state{text-align:center;padding:2.75rem 1.25rem;color:var(--text-2);
+  background:var(--surface);border:1px dashed var(--border-strong);border-radius:var(--radius-lg)}
+.empty-state > i{font-size:30px;color:var(--text-muted);margin:0 auto 1rem;display:flex;
+  width:64px;height:64px;align-items:center;justify-content:center;border-radius:20px;
+  background:var(--surface-2);border:1px solid var(--border)}
+.empty-state h3{font-size:17px;font-weight:600;color:var(--text);margin-bottom:7px;letter-spacing:-.01em}
+.empty-state p{font-size:14px;margin:0 auto 1.4rem;line-height:1.6;max-width:300px}
+.empty-state .btn{min-width:200px;justify-content:center;padding:11px 18px}
 
 /* Modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(28,25,23,.45);backdrop-filter:blur(3px);
@@ -349,20 +356,24 @@ input,select{font-family:inherit;font-size:15px}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(min-width:520px){.modal-bg{align-items:center}.modal{border-radius:var(--radius-lg)}}
 .modal h3{font-size:18px;font-weight:600;margin-bottom:1.25rem}
-.field{margin-bottom:1rem}
-.field label{display:block;font-size:13px;color:var(--text-2);margin-bottom:6px;font-weight:500}
-.field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--border-strong);
+.field{margin-bottom:1.05rem}
+.field label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:600;
+  letter-spacing:.01em}
+.field input,.field select{width:100%;padding:12px 13px;border:1px solid var(--border-strong);
   border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+.field input::placeholder{color:var(--text-muted)}
 .field input,.field select{transition:border-color .15s, box-shadow .15s}
 .field input:focus,.field select:focus{outline:none;border-color:var(--accent);
   box-shadow:0 0 0 3px rgba(13,148,136,.14)}
 .field .hint{font-size:12px;color:var(--text-muted);margin-top:5px}
-.preview{background:var(--accent-bg);border-radius:var(--radius-sm);padding:12px;
+.preview{background:var(--accent-bg);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:var(--radius-sm);padding:12px 14px;line-height:1.5;
   font-size:14px;color:var(--accent-text);margin-bottom:1rem;display:none}
 .preview.show{display:block}
 .preview .warn{color:var(--danger)}
-.modal-actions{display:flex;gap:10px;margin-top:1.25rem}
-.modal-actions .btn{flex:1;justify-content:center;padding:12px}
+.modal-actions{display:flex;gap:10px;margin-top:1.4rem;padding-top:1.1rem;border-top:1px solid var(--border)}
+.modal-actions .btn{flex:1;justify-content:center;padding:13px;font-weight:600}
+.modal-actions .btn.acc{flex:1.35}
 
 /* Тариф түүх засварлагч */
 .section-label{font-size:13px;font-weight:600;margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:6px}
@@ -387,7 +398,7 @@ input,select{font-family:inherit;font-size:15px}
 .hist-row .hacts .ic{color:var(--text-muted);font-size:16px;padding:5px}
 .hist-row .hacts .ic:hover{color:var(--text)}
 .tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-text)}
-.tag.note{background:#fef3c7;color:#92400e}
+.tag.note{background:var(--warn-bg);color:var(--warn-fg)}
 .empty-line{font-size:13px;color:var(--text-muted);padding:10px 0}
 
 .fab{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);z-index:55;width:min(608px,calc(100% - 2rem))}
@@ -400,8 +411,8 @@ input,select{font-family:inherit;font-size:15px}
 .sync-badge{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--surface-2);
   color:var(--text-2);display:inline-flex;align-items:center;gap:5px}
 .sync-badge i{font-size:13px}
-.sync-badge.need-auth{background:#fee2e2;color:#b91c1c!important;font-weight:500;cursor:pointer}
-.sync-badge.need-auth:hover{background:#fecaca}
+.sync-badge.need-auth{background:var(--danger-bg);color:var(--danger-fg)!important;font-weight:500;cursor:pointer}
+.sync-badge.need-auth:hover{background:var(--danger-br)}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(8px);z-index:200;
   background:var(--text);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;
   opacity:0;pointer-events:none;transition:opacity .22s, transform .22s;max-width:90%;text-align:center;
@@ -431,7 +442,7 @@ input,select{font-family:inherit;font-size:15px}
   text-align:right;font-weight:500;font-variant-numeric:tabular-nums;font-size:14px}
 .paid-btn{padding:6px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border-strong);
   background:var(--surface);color:var(--text-2);white-space:nowrap;flex-shrink:0}
-.paid-btn.on{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+.paid-btn.on{background:var(--success-bg);color:var(--success);border-color:var(--success-br)}
 .fx-total{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:1rem 1.2rem;margin:12px 0;box-shadow:var(--shadow)}
 .fx-total .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;color:var(--text-2)}
@@ -447,6 +458,31 @@ input,select{font-family:inherit;font-size:15px}
 .grp-head .gv{color:var(--text);font-variant-numeric:tabular-nums}
 
 /* ── Орлого + мөнгөний нэгтгэл ── */
+/* ── Дашбоардын гол карт ── */
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:1.35rem 1.4rem 1.2rem;box-shadow:var(--shadow-md);margin-bottom:var(--gap);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;
+  background:linear-gradient(90deg,var(--m-income),var(--accent))}
+.hero.neg::before{background:linear-gradient(90deg,var(--m-expense),var(--warn-strong))}
+.hero-label{font-size:13px;color:var(--text-2);margin-bottom:5px}
+.hero-val{font-size:clamp(28px,8vw,36px);font-weight:700;letter-spacing:-.03em;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:var(--success)}
+.hero.neg .hero-val{color:var(--danger)}
+.hero-split{display:flex;gap:10px;margin-top:1.1rem}
+.hero-split .hs{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:.6rem .75rem}
+.hero-split .hl{font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.hero-split .hv{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.hero-split .hs.inc .hl i,.hero-split .hs.inc .hv{color:var(--m-income)}
+.hero-split .hs.exp .hl i,.hero-split .hs.exp .hv{color:var(--m-expense)}
+.hero-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:.9rem}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;
+  padding:4px 10px;border-radius:20px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.chip i{font-size:14px}
+.chip.up{background:var(--danger-bg);color:var(--danger-fg);border-color:var(--danger-br)}
+.chip.down{background:var(--success-bg);color:var(--success);border-color:var(--success-br)}
+.chip.top{background:var(--m-variable-bg);color:var(--warn-fg);border-color:transparent}
+
 .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .money-grid .mc,.stat-grid .stat{min-width:0}
 .money-grid .mv,.stat .sv{overflow-wrap:anywhere}
@@ -466,9 +502,9 @@ input,select{font-family:inherit;font-size:15px}
 .mv.pos{color:var(--success)} .mv.neg{color:var(--danger)}
 .inc-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
-.inc-icon{width:36px;height:36px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;
+.inc-icon{width:36px;height:36px;border-radius:9px;background:var(--success-bg);display:flex;align-items:center;
   justify-content:center;flex-shrink:0}
-.inc-icon i{font-size:18px;color:#15803d}
+.inc-icon i{font-size:18px;color:var(--success)}
 .inc-main{flex:1;min-width:0;cursor:pointer}
 .inc-name{font-size:14px;font-weight:500}
 .inc-sub{font-size:12px;color:var(--text-muted)}
@@ -485,9 +521,9 @@ input,select{font-family:inherit;font-size:15px}
 .cat-bar{height:7px;border-radius:4px;background:var(--accent);min-width:4px}
 .vx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
-.vx-icon{width:36px;height:36px;border-radius:9px;background:#fef3c7;display:flex;align-items:center;
+.vx-icon{width:36px;height:36px;border-radius:9px;background:var(--warn-bg);display:flex;align-items:center;
   justify-content:center;flex-shrink:0}
-.vx-icon i{font-size:18px;color:#92400e}
+.vx-icon i{font-size:18px;color:var(--warn-fg)}
 .vx-main{flex:1;min-width:0;cursor:pointer}
 .vx-name{font-size:14px;font-weight:500}
 .vx-sub{font-size:12px;color:var(--text-muted)}
@@ -501,9 +537,9 @@ input,select{font-family:inherit;font-size:15px}
 .veh-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:1.1rem 1.2rem;margin-bottom:12px;box-shadow:var(--shadow)}
 .veh-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
-.veh-icon{width:40px;height:40px;border-radius:10px;background:#e0e7ff;display:flex;align-items:center;
+.veh-icon{width:40px;height:40px;border-radius:10px;background:var(--m-vehicle-bg);display:flex;align-items:center;
   justify-content:center;flex-shrink:0}
-.veh-icon i{font-size:22px;color:#4338ca}
+.veh-icon i{font-size:22px;color:var(--m-vehicle)}
 .veh-title{font-size:15px;font-weight:600}
 .veh-sub{font-size:12px;color:var(--text-2)}
 .veh-total{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
@@ -513,8 +549,8 @@ input,select{font-family:inherit;font-size:15px}
 .veh-empty{font-size:13px;color:var(--text-muted);padding:4px 0 1rem}
 
 /* ── Эрүүл мэнд (машинтай ижил бүтэц) ── */
-.mem-icon{background:#fce7f3 !important}
-.mem-icon i{color:#be185d !important}
+.mem-icon{background:var(--m-health-bg) !important}
+.mem-icon i{color:var(--m-health) !important}
 
 /* ── Санхүү: зээл, хуримтлал ── */
 .sec-title{font-size:15px;font-weight:600;margin:1.25rem 0 .75rem;display:flex;align-items:center;gap:8px}
@@ -536,15 +572,15 @@ input,select{font-family:inherit;font-size:15px}
 /* ── Сануулга ── */
 .rm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:1rem 1.1rem;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--border-strong)}
-.rm-card.soon{border-left-color:#f59e0b}
+.rm-card.soon{border-left-color:var(--warn-strong)}
 .rm-card.over{border-left-color:var(--danger)}
 .rm-card.done{border-left-color:var(--success);opacity:.7}
 .rm-head{display:flex;align-items:center;gap:8px}
 .rm-title{font-size:15px;font-weight:600;flex:1}
 .rm-when{font-size:13px;color:var(--text-2);margin-top:3px}
 .rm-badge{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:var(--surface-2);color:var(--text-2)}
-.rm-badge.soon{background:#fef3c7;color:#92400e}
-.rm-badge.over{background:#fee2e2;color:#b91c1c}
+.rm-badge.soon{background:var(--warn-bg);color:var(--warn-fg)}
+.rm-badge.over{background:var(--danger-bg);color:var(--danger-fg)}
 .rm-days-info{font-size:12px;color:var(--text-muted);margin-top:4px}
 .rm-cal{font-size:12px;margin-top:8px}
 .rm-cal.on{color:var(--success)}
@@ -555,8 +591,8 @@ input,select{font-family:inherit;font-size:15px}
 .up-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
 .up-row:last-child{border-bottom:none}
 .up-row .ut{flex:1;font-size:14px}
-.up-row .ub{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap}
-.up-row .ub.over{background:#fee2e2;color:#b91c1c}
+.up-row .ub{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:var(--warn-bg);color:var(--warn-fg);white-space:nowrap}
+.up-row .ub.over{background:var(--danger-bg);color:var(--danger-fg)}
 
 /* ═══════════════════════════════════════════
    Desktop — 900px-ээс дээш: хажуугийн навигаци
@@ -599,6 +635,84 @@ input,select{font-family:inherit;font-size:15px}
 }
 @media(min-width:1280px){
   #app{ max-width:1080px }
+}
+
+
+/* ═══════════════════════════════════════════
+   Dark mode — CSS хувьсагчаар бүрэн удирдана.
+   data-theme="dark" эсвэл системийн тохиргоогоор.
+   ═══════════════════════════════════════════ */
+:root[data-theme="dark"]{
+  --accent:#2dd4bf; --accent-hover:#5eead4; --accent-bg:#134e4a; --accent-text:#5eead4;
+
+  --success:#4ade80; --success-bg:#14361f; --success-br:#1c5030;
+  --danger:#f87171;  --danger-bg:#3d1a1a;  --danger-br:#5c2626; --danger-fg:#fca5a5;
+  --warn:#fbbf24;    --warn-bg:#3a2f10;    --warn-fg:#fcd34d;   --warn-strong:#fbbf24;
+  --soft-yellow-bg:#3a3410; --soft-yellow-fg:#fde047;
+
+  --m-income:#4ade80;   --m-income-bg:#14361f;
+  --m-expense:#f87171;  --m-expense-bg:#3d1a1a;
+  --m-meter:#22d3ee;    --m-meter-bg:#0e3a44;
+  --m-fixed:#38bdf8;    --m-fixed-bg:#0c3550;
+  --m-variable:#fbbf24; --m-variable-bg:#3a2f10;
+  --m-vehicle:#a5b4fc;  --m-vehicle-bg:#252a5c;
+  --m-health:#f9a8d4;   --m-health-bg:#4a1936;
+  --m-finance:#c4b5fd;  --m-finance-bg:#2e2154;
+  --m-remind:#fdba74;   --m-remind-bg:#40260f;
+
+  --bg:#17181a; --surface:#1f2124; --surface-2:#26282c;
+  --text:#f2f1ef; --text-2:#b3b0ab; --text-muted:#807c76;
+  --border:#32343a; --border-strong:#43464d;
+
+  --shadow:0 1px 2px rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.24);
+  --shadow-md:0 2px 4px rgba(0,0,0,.28), 0 4px 12px rgba(0,0,0,.32);
+  --shadow-lg:0 8px 28px rgba(0,0,0,.48), 0 2px 6px rgba(0,0,0,.32);
+}
+/* Системийн тохиргоог дагах (гараар сонгоогүй үед) */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --accent:#2dd4bf; --accent-hover:#5eead4; --accent-bg:#134e4a; --accent-text:#5eead4;
+    --success:#4ade80; --success-bg:#14361f; --success-br:#1c5030;
+    --danger:#f87171;  --danger-bg:#3d1a1a;  --danger-br:#5c2626; --danger-fg:#fca5a5;
+    --warn:#fbbf24;    --warn-bg:#3a2f10;    --warn-fg:#fcd34d;   --warn-strong:#fbbf24;
+    --soft-yellow-bg:#3a3410; --soft-yellow-fg:#fde047;
+    --m-income:#4ade80;   --m-income-bg:#14361f;
+    --m-expense:#f87171;  --m-expense-bg:#3d1a1a;
+    --m-meter:#22d3ee;    --m-meter-bg:#0e3a44;
+    --m-fixed:#38bdf8;    --m-fixed-bg:#0c3550;
+    --m-variable:#fbbf24; --m-variable-bg:#3a2f10;
+    --m-vehicle:#a5b4fc;  --m-vehicle-bg:#252a5c;
+    --m-health:#f9a8d4;   --m-health-bg:#4a1936;
+    --m-finance:#c4b5fd;  --m-finance-bg:#2e2154;
+    --m-remind:#fdba74;   --m-remind-bg:#40260f;
+    --bg:#17181a; --surface:#1f2124; --surface-2:#26282c;
+    --text:#f2f1ef; --text-2:#b3b0ab; --text-muted:#807c76;
+    --border:#32343a; --border-strong:#43464d;
+    --shadow:0 1px 2px rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.24);
+    --shadow-md:0 2px 4px rgba(0,0,0,.28), 0 4px 12px rgba(0,0,0,.32);
+    --shadow-lg:0 8px 28px rgba(0,0,0,.48), 0 2px 6px rgba(0,0,0,.32);
+  }
+}
+/* Dark горимд тусгайлан тохируулах хэсгүүд */
+:root[data-theme="dark"] .card-box{ background:rgba(31,33,36,.92); border-color:rgba(255,255,255,.10) }
+:root[data-theme="dark"] #home-screen,
+:root[data-theme="dark"] #login-screen{ background:linear-gradient(rgba(10,10,12,.55),rgba(10,10,12,.72)), url('Background.jpg') center/cover no-repeat }
+:root[data-theme="dark"] .toast{ background:#3a3d42 }
+:root[data-theme="dark"] .modal-bg{ background:rgba(0,0,0,.62) }
+:root[data-theme="dark"] .btn-google{ background:var(--surface) }
+:root[data-theme="dark"] .fab button,
+:root[data-theme="dark"] .btn.acc,
+:root[data-theme="dark"] .btn-primary{ color:#0b2b28 }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .card-box{ background:rgba(31,33,36,.92); border-color:rgba(255,255,255,.10) }
+  :root:not([data-theme="light"]) #home-screen,
+  :root:not([data-theme="light"]) #login-screen{ background:linear-gradient(rgba(10,10,12,.55),rgba(10,10,12,.72)), url('Background.jpg') center/cover no-repeat }
+  :root:not([data-theme="light"]) .toast{ background:#3a3d42 }
+  :root:not([data-theme="light"]) .modal-bg{ background:rgba(0,0,0,.62) }
+  :root:not([data-theme="light"]) .btn-google{ background:var(--surface) }
+  :root:not([data-theme="light"]) .fab button,
+  :root:not([data-theme="light"]) .btn.acc,
+  :root:not([data-theme="light"]) .btn-primary{ color:#0b2b28 }
 }
 </style>
 </head>
@@ -1254,6 +1368,9 @@ input,select{font-family:inherit;font-size:15px}
       <button type="button" class="act-item" onclick="addMongolTemplate()">
         <span class="ai ai-gray"><i class="ti ti-template"></i></span>
         <span><span class="at">Монгол өрхийн загвар</span><br><span class="ad2">Тогтмол зардлын жагсаалт үүсгэх</span></span></button>
+      <button type="button" class="act-item" onclick="cycleTheme()">
+        <span class="ai ai-gray"><i class="ti ti-moon"></i></span>
+        <span><span class="at">Дэлгэцийн горим</span><br><span class="ad2" id="theme-label">Системийн дагуу</span></span></button>
       <button type="button" class="act-item" onclick="closeModal('settings-modal');logout()">
         <span class="ai ai-gray"><i class="ti ti-logout"></i></span>
         <span><span class="at">Гарах</span><br><span class="ad2" id="st-email"></span></span></button>
@@ -1734,7 +1851,7 @@ function openMeterModal(editId){
 function saveMeter(){
   const name=document.getElementById('mt-name').value.trim();
   const type=document.getElementById('mt-type').value;
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
     m.name=name; m.type=type; m.unit=(METER_TYPES[type]||METER_TYPES.huiten).unit; m.updatedAt=Date.now();
@@ -1815,7 +1932,7 @@ function saveReading(){
   const meterId=document.getElementById('rd-meter').value;
   const date=document.getElementById('rd-date').value;
   const val=parseFloat(document.getElementById('rd-value').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
   if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
   if(val<0){ toast('Заалт сөрөг байж болохгүй'); return; }
   if(val>1e9){ toast('Заалт хэт том байна'); return; }
@@ -1889,7 +2006,7 @@ function renderNotes(meterId){
 function addNote(){
   const date=document.getElementById('nt-date').value;
   const text=document.getElementById('nt-text').value.trim();
-  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
   if(!text){ toast('Тэмдэглэл бичнэ үү'); return; }
   data.notes.push({ id:'n'+Date.now(), meterId:histMeterId, date, text, updatedAt:Date.now() });
   document.getElementById('nt-text').value='';
@@ -1988,7 +2105,7 @@ function saveRecur(){
   const g=id=>document.getElementById(id);
   const kind=g('rc-kind').value;
   const amount=parseFloat(g('rc-amount').value);
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
   let day=parseInt(g('rc-day').value); if(isNaN(day)||day<0)day=0; if(day>31)day=31;
   if(kind==='variable' && data.categories.length===0){ toast('Эхлээд ангилал нэмнэ үү'); return; }
   const obj={ kind, amount, day, active:g('rc-active').checked,
@@ -2119,7 +2236,7 @@ async function copyText(text, label){
       document.body.removeChild(ta);
       toast(ok?((label||'Утга')+' хуулагдлаа'):'Хуулж чадсангүй — гараар бичнэ үү');
       return ok;
-    }catch(e2){ toast('Хуулж чадсангүй — гараар бичнэ үү'); return false; }
+    }catch(e2){ toast('Хуулж чадсангүй — гараар бичнэ үү','warn'); return false; }
   }
 }
 
@@ -2221,14 +2338,14 @@ function confirmPaid(){
   const raw=document.getElementById('pd-amount').value;
   const amt=parseFloat(raw);
   if(raw!=='' ){
-    const va=validAmount(amt); if(!va.ok){ toast(va.msg); return; }
+    const va=validAmount(amt); if(!va.ok){ toast(va.msg,'warn'); return; }
   }
   const patch={ paid:true };
   if(!isNaN(amt) && it && it.type==='helbelzeh') patch.amount=amt;
   setPayment(askPaidCtx.itemId, askPaidCtx.month, patch);
   askPaidCtx=null;
   persist(); closeModal('paid-modal'); render();
-  toast('Төлбөр бүртгэгдлээ');
+  toast('Төлбөр бүртгэгдлээ','ok');
 }
 
 /* ═══ Нөөц ба сэргээх ═══ */
@@ -2266,7 +2383,7 @@ async function manualBackup(){
   toast('Нөөц үүсгэж байна...');
   await doBackup();
   await listBackups();
-  toast('Нөөц үүслээ');
+  toast('Нөөц үүслээ','ok');
 }
 async function restoreBackup(fileId, label){
   if(!confirm('"'+label+'" нөөцөөр сэргээх үү?\n\nОдоогийн өгөгдөл энэ хувилбараар солигдоно.\nСэргээхийн өмнө одоогийн байдлаар нэмэлт нөөц үүснэ.'))return;
@@ -2283,7 +2400,7 @@ async function restoreBackup(fileId, label){
     migrate(); saveLocal();
     await saveToDrive();                    // сэргээсэн байдлыг үндсэн файлд бичих
     closeModal('backup-modal'); render();
-    toast('Сэргээгдлээ');
+    toast('Сэргээгдлээ','ok');
   }catch(e){
     console.error('Сэргээх алдаа:',e);
     toast(e&&e.authError?'Дахин нэвтэрнэ үү':'Сэргээхэд алдаа гарлаа');
@@ -2459,7 +2576,7 @@ function runImport(){
     });
   }
   persist(); closeModal('import-modal'); render();
-  toast(n+' бичлэг импортлогдлоо');
+  toast(n+' бичлэг импортлогдлоо','ok');
 }
 
 /* ═══ Quick add — доод + товчноос шууд нэмэх ═══ */
@@ -2497,6 +2614,7 @@ function openSettings(){
     u.textContent=(currentUser.name||'')+(currentUser.email?' · '+currentUser.email:'');
     if(e)e.textContent=currentUser.email||'';
   }else{ u.textContent=''; }
+  applyTheme(currentTheme());
   openModal('settings-modal');
 }
 
@@ -2642,7 +2760,7 @@ function saveReminder(){
   const note=g('rm-note').value.trim();
   const remindDays=[...document.querySelectorAll('#rm-days input:checked')].map(c=>parseInt(c.value)).sort((a,b)=>b-a);
   if(!title){ toast('Юуны сануулга болохыг бичнэ үү'); return; }
-  if(!date){ toast('Огноо оруулна уу'); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
   if(editingReminderId){
     const r=data.reminders.find(x=>x.id===editingReminderId);
     r.title=title; r.date=date; r.note=note; r.remindDays=remindDays; r.updatedAt=Date.now();
@@ -2708,8 +2826,8 @@ async function addToCalendar(id){
     const ev2=await res2.json(); if(ev2.id)newIds.push(ev2.id);
     r.calEvents=newIds; r.updatedAt=Date.now();
     persist(); renderReminders();
-    toast('Календарьт нэмэгдлээ ✓');
-  }catch(e){ console.error('Calendar алдаа:',e); toast('Календарьт нэмэхэд алдаа гарлаа'); }
+    toast('Календарьт нэмэгдлээ','ok');
+  }catch(e){ console.error('Calendar алдаа:',e); toast('Календарьт нэмэхэд алдаа гарлаа','err'); }
 }
 
 /* ═══ Санхүү: зээл + хуримтлал ═══ */
@@ -2807,7 +2925,7 @@ function saveLoan(){
   const g=id=>document.getElementById(id);
   const name=g('ln-name').value.trim();
   const type=g('ln-type').value;
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   for(const [f,lbl] of [['ln-total','Нийт дүн'],['ln-monthly','Сарын төлбөр'],['ln-partamt','Хэсгийн дүн']]){
     const v=parseFloat(g(f).value); if(!isNaN(v)&&v<0){ toast(lbl+' сөрөг байж болохгүй'); return; }
   }
@@ -2857,9 +2975,9 @@ function openSavingModal(editId){
 function saveSaving(){
   const g=id=>document.getElementById(id);
   const name=g('sv-name').value.trim();
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   const tgt=parseFloat(g('sv-target').value)||0, cur=parseFloat(g('sv-current').value)||0;
-  if(tgt<0||cur<0){ toast('Сөрөг дүн оруулах боломжгүй'); return; }
+  if(tgt<0||cur<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); return; }
   const obj={ name, target:tgt, current:cur,
     date:g('sv-date').value, updatedAt:Date.now() };
   if(editingSavingId){ Object.assign(data.savings.find(x=>x.id===editingSavingId), obj); toast('Засагдлаа'); }
@@ -2934,7 +3052,7 @@ function saveMember(){
   const name=document.getElementById('mb-name').value.trim();
   const birth=document.getElementById('mb-birth').value;
   const note=document.getElementById('mb-note').value.trim();
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   if(editingMemberId){
     const mb=data.members.find(x=>x.id===editingMemberId);
     mb.name=name; mb.birth=birth; mb.note=note; mb.updatedAt=Date.now();
@@ -2999,8 +3117,8 @@ function saveTreat(){
   const date=document.getElementById('tr-date').value;
   const desc=document.getElementById('tr-desc').value.trim();
   const amount=parseFloat(document.getElementById('tr-amount').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
   if(editingTreatId){
     const t=data.treatments.find(x=>x.id===editingTreatId);
     t.date=date; t.desc=desc; t.amount=amount; t.updatedAt=Date.now();
@@ -3081,7 +3199,7 @@ function saveVehicle(){
   const name=document.getElementById('vh-name').value.trim();
   const plate=document.getElementById('vh-plate').value.trim();
   const brand=document.getElementById('vh-brand').value.trim();
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   if(editingVehicleId){
     const v=data.vehicles.find(x=>x.id===editingVehicleId);
     v.name=name; v.plate=plate; v.brand=brand; v.updatedAt=Date.now();
@@ -3146,8 +3264,8 @@ function saveRepair(){
   const date=document.getElementById('rp-date').value;
   const desc=document.getElementById('rp-desc').value.trim();
   const amount=parseFloat(document.getElementById('rp-amount').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
   if(editingRepairId){
     const r=data.repairs.find(x=>x.id===editingRepairId);
     r.date=date; r.desc=desc; r.amount=amount; r.updatedAt=Date.now();
@@ -3204,7 +3322,7 @@ function budgetAlerts(month){
 }
 function addCategory(){
   const name=document.getElementById('cat-new').value.trim();
-  if(!name){ toast('Нэр оруулна уу'); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
   data.categories.push({ id:'c'+Date.now(), name, updatedAt:Date.now() });
   document.getElementById('cat-new').value='';
   persist(); renderCatList(); renderVariable();
@@ -3349,8 +3467,8 @@ function saveVariable(){
   const memberId=document.getElementById('vx-member').value;
   const note=document.getElementById('vx-note').value.trim();
   const amount=parseFloat(document.getElementById('vx-amount').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
   if(editingVariableId){
     const v=data.variable.find(x=>x.id===editingVariableId);
     v.date=date; v.categoryId=categoryId; v.memberId=memberId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
@@ -3388,6 +3506,7 @@ function renderIncome(){
     rows=`<div class="empty-state" style="padding:2rem 1rem">
       <i class="ti ti-coin"></i><h3>Орлого алга</h3>
       <p>Цалин болон нэмэлт орлогоо нэмээд сарын орлогоо хөтөлнө.</p>
+      <button class="btn acc" onclick="openIncomeModal()"><i class="ti ti-plus"></i> Орлого нэмэх</button>
     </div>`;
   }else{
     rows=list.map(i=>`<div class="inc-row">
@@ -3436,8 +3555,8 @@ function saveIncome(){
   const type=document.getElementById('in-type').value;
   const note=document.getElementById('in-note').value.trim();
   const amount=parseFloat(document.getElementById('in-amount').value);
-  if(!date){ toast('Огноо оруулна уу'); return; }
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
+  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
   if(editingIncomeId){
     const i=data.income.find(x=>x.id===editingIncomeId);
     i.date=date; i.type=type; i.note=note; i.amount=amount; i.updatedAt=Date.now();
@@ -3491,7 +3610,7 @@ function togglePaid(itemId){
 function setHelbelzehAmount(itemId, val){
   let amount=parseFloat(val);
   if(isNaN(amount))amount=0;
-  if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй'); amount=0; renderFixed(); }
+  if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); amount=0; renderFixed(); }
   setPayment(itemId, fixedMonth, {amount});
   persist(); renderFixedTotals(); renderHome();
 }
@@ -3504,6 +3623,7 @@ function renderFixed(){
       <i class="ti ti-receipt"></i><h3>Зардлын зүйл алга</h3>
       <p>Интернэт, СӨХ, хог, ус, дулаан зэргээ нэмээд сар бүр төлбөрөө хөтөлнө.</p>
       <button class="btn acc" onclick="addMongolTemplate()"><i class="ti ti-template"></i> Монгол өрхийн загвар нэмэх</button>
+      <button class="btn" style="min-width:200px;justify-content:center;margin-top:8px" onclick="openFixedModal()"><i class="ti ti-plus"></i> Ганцаарчлан нэмэх</button>
     </div>`;
   }else{
     // Бүлгээр бүлэглэх
@@ -3612,8 +3732,8 @@ function saveFixedItem(){
   const type=document.getElementById('fx-type').value;
   const group=document.getElementById('fx-group').value;
   const amount=parseFloat(document.getElementById('fx-amount').value)||0;
-  if(!name){ toast('Нэр оруулна уу'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg); return; }
+  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
   const billApp=document.getElementById('fx-billapp').value;
   const payMode=document.getElementById('fx-paymode').value;
   const bankAccount=payMode==='bank'?document.getElementById('fx-account').value.trim():'';
@@ -3771,18 +3891,31 @@ function renderHome(){
   // Өнгөрсөн сартай харьцуулах
   const prevYm=(()=>{ const d=new Date(); return monthLocal(new Date(d.getFullYear(),d.getMonth()-1,1)); })();
   const prevExp=monthlyTotals(prevYm).expense;
-  let momHtml='';
+  const chips=[];
   if(prevExp>0){
     const pct=Math.round((expenseTotal-prevExp)/prevExp*100);
-    if(pct!==0)momHtml=`<div class="mom ${pct>0?'up':'down'}">${pct>0?'▲':'▼'} өнгөрсөн сараас ${Math.abs(pct)}% ${pct>0?'их':'бага'} зардал</div>`;
+    if(pct!==0)chips.push(`<span class="chip ${pct>0?'up':'down'}"><i class="ti ti-${pct>0?'trending-up':'trending-down'}"></i>өнгөрсөн сараас ${Math.abs(pct)}% ${pct>0?'их':'бага'}</span>`);
   }
+  // Хамгийн их зарлагатай ангилал
+  const catTot={};
+  data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).forEach(v=>{ catTot[v.categoryId]=(catTot[v.categoryId]||0)+(v.amount||0); });
+  const topCat=Object.entries(catTot).sort((a,b)=>b[1]-a[1])[0];
+  if(topCat)chips.push(`<span class="chip top"><i class="ti ti-flame"></i>хамгийн их: ${escapeHtml(catName(topCat[0]))} ${fmt(topCat[1])}₮</span>`);
+  // Төлөгдөөгүй тогтмол зардал
+  const unpaid=data.fixedItems.filter(it=>monthAmount(it,ym)>0&&!isPaid(it,ym));
+  if(unpaid.length)chips.push(`<span class="chip"><i class="ti ti-clock"></i>${unpaid.length} төлбөр хүлээгдэж буй</span>`);
+
   const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
   const moneyCard = hasMoney
-    ? `<div class="money-grid">
-        <div class="mc"><div class="ml">Орлого</div><div class="mv pos">${fmt(incomeTotal)}₮</div></div>
-        <div class="mc"><div class="ml">Зардал</div><div class="mv neg">${fmt(expenseTotal)}₮</div></div>
-        <div class="mc"><div class="ml">Үлдэгдэл</div><div class="mv ${balance>=0?'pos':'neg'}">${fmt(balance)}₮</div></div>
-       </div>${momHtml}`
+    ? `<div class="hero${balance<0?' neg':''}">
+        <div class="hero-label">${fxMonthLabel(ym)} · үлдэгдэл</div>
+        <div class="hero-val">${fmt(balance)}₮</div>
+        <div class="hero-split">
+          <div class="hs inc"><div class="hl"><i class="ti ti-arrow-down-left"></i>Орлого</div><div class="hv">${fmt(incomeTotal)}₮</div></div>
+          <div class="hs exp"><div class="hl"><i class="ti ti-arrow-up-right"></i>Зардал</div><div class="hv">${fmt(expenseTotal)}₮</div></div>
+        </div>
+        ${chips.length?`<div class="hero-chips">${chips.join('')}</div>`:''}
+       </div>`
     : `<div class="hint-box"><b>Мөнгөний нэгтгэл</b> — Тогтмол болон Орлого таб дээр өгөгдөл нэмэхэд энэ сарын орлого, зардал, үлдэгдэл энд гарч ирнэ.</div>`;
   // 6 сарын график
   const chartPanel = hasMoney ? `<div class="chart-panel"><h4>Сүүлийн 6 сар</h4>
@@ -3904,6 +4037,29 @@ function renderMeters(){
 }
 
 /* ═══ Туслах ═══ */
+/* ═══ Гэрэл / харанхуй горим ═══ */
+const THEMES=['auto','light','dark'];
+function currentTheme(){ return localStorage.getItem('hb_theme')||'auto'; }
+function applyTheme(t){
+  if(t==='auto')document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta){
+    const dark = t==='dark' || (t==='auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    meta.setAttribute('content', dark?'#1f2124':'#0d9488');
+  }
+  const lbl=document.getElementById('theme-label');
+  if(lbl)lbl.textContent={auto:'Системийн дагуу',light:'Гэрэлтэй',dark:'Харанхуй'}[t];
+}
+function cycleTheme(){
+  const t=THEMES[(THEMES.indexOf(currentTheme())+1)%THEMES.length];
+  localStorage.setItem('hb_theme',t);
+  applyTheme(t);
+  render();                       // график/өнгө шинэ хувьсагчаар дахин зурагдана
+  toast({auto:'Системийн дагуу',light:'Гэрэлтэй горим',dark:'Харанхуй горим'}[t]);
+}
+applyTheme(currentTheme());        // хуудас ачаалахад шууд
+
 /* CSS хувьсагчийг JS-ээс уншина — өнгө нэг эх сурвалжаас удирдагдана */
 function cssVar(name, fallback){
   const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
