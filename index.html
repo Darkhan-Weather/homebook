@@ -178,6 +178,20 @@ input,select{font-family:inherit;font-size:15px}
 .cat-edit .ic:hover{color:var(--danger)}
 .mem-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;
   background:#fce7f3;color:#be185d;margin-left:6px}
+
+/* ── Давтагдах бичлэг ── */
+.rc-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.75rem .9rem;margin-bottom:8px;box-shadow:var(--shadow);flex-wrap:wrap}
+.rc-row.off{opacity:.55}
+.rc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rc-icon i{font-size:17px}
+.rc-main{flex:1 1 130px;min-width:120px;text-align:left;padding:0;cursor:pointer}
+.rc-name{font-size:14px;font-weight:500;line-height:1.3}
+.rc-sub{font-size:12px;color:var(--text-2)}
+.rc-auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;
+  background:var(--surface-2);color:var(--text-muted);margin-left:6px}
+.chk-row{display:flex;align-items:center;gap:9px;padding:10px 0;font-size:14px;cursor:pointer}
+.chk-row input{width:18px;height:18px;margin:0}
 .bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
@@ -964,6 +978,67 @@ input,select{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- MODAL: Давтагдах бичлэгийн жагсаалт -->
+<div class="modal-bg" id="recur-list-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rcl-title">
+    <h3 id="rcl-title">Давтагдах бичлэг</h3>
+    <p class="hint" style="margin:-.75rem 0 1rem">Цалин, тогтмол орлого/зардлыг сар бүр автоматаар үүсгэнэ. Огноо болоход апп нээхэд үүснэ.</p>
+    <div id="rc-list"></div>
+    <button class="btn acc" style="width:100%;justify-content:center;margin-top:.75rem" onclick="openRecurModal()">
+      <i class="ti ti-plus"></i> Дүрэм нэмэх</button>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('recur-list-modal')">Хаах</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Давтагдах дүрэм нэмэх/засах -->
+<div class="modal-bg" id="recur-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rc-modal-title">
+    <h3 id="rc-modal-title">Давтагдах бичлэг нэмэх</h3>
+    <div class="field">
+      <label for="rc-kind">Төрөл</label>
+      <select id="rc-kind" onchange="rcKindChanged()">
+        <option value="income">Орлого</option>
+        <option value="variable">Хувьсах зардал</option>
+      </select>
+    </div>
+    <div id="rc-income-fields">
+      <div class="field">
+        <label for="rc-type">Орлогын төрөл</label>
+        <select id="rc-type">
+          <option value="Цалин">Цалин</option>
+          <option value="Нэмэлт">Нэмэлт орлого</option>
+          <option value="Бусад">Бусад</option>
+        </select>
+      </div>
+    </div>
+    <div id="rc-var-fields" style="display:none">
+      <div class="field">
+        <label for="rc-cat">Ангилал</label>
+        <select id="rc-cat"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="rc-note">Тайлбар</label>
+      <input type="text" id="rc-note" placeholder="Жишээ: I хагас">
+    </div>
+    <div class="field">
+      <label for="rc-amount">Дүн (₮)</label>
+      <input type="number" min="0" id="rc-amount" inputmode="decimal" placeholder="Жишээ: 450500">
+    </div>
+    <div class="field">
+      <label for="rc-day">Сарын хэдэнд</label>
+      <input type="number" min="0" max="31" id="rc-day" inputmode="numeric" placeholder="15">
+      <div class="hint">0 бичвэл сарын сүүлийн өдөр. Тэр өдөр болоход автоматаар үүснэ.</div>
+    </div>
+    <label class="chk-row" for="rc-active"><input type="checkbox" id="rc-active" checked> Идэвхтэй</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('recur-modal')">Болих</button>
+      <button class="btn acc" onclick="saveRecur()">Хадгалах</button>
+    </div>
+    <div style="margin-top:10px" id="rc-delete-wrap"></div>
+  </div>
+</div>
+
 <!-- MODAL: Төлбөрийн туслах -->
 <div class="modal-bg" id="pay-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pay-title">
@@ -1030,6 +1105,9 @@ input,select{font-family:inherit;font-size:15px}
       <button type="button" class="act-item" onclick="openImportModal()">
         <span class="ai ai-fix"><i class="ti ti-file-import"></i></span>
         <span><span class="at">Өгөгдөл импортлох</span><br><span class="ad2">CSV-ээс олон бичлэг нэг дор</span></span></button>
+      <button type="button" class="act-item" onclick="openRecurList()">
+        <span class="ai ai-rem"><i class="ti ti-repeat"></i></span>
+        <span><span class="at">Давтагдах бичлэг</span><br><span class="ad2">Цалин, тогтмол зардлыг автоматаар</span></span></button>
       <button type="button" class="act-item" onclick="openBackupModal()">
         <span class="ai ai-met"><i class="ti ti-cloud-download"></i></span>
         <span><span class="at">Нөөц ба сэргээх</span><br><span class="ad2">Drive дээрх өдрийн нөөцүүд</span></span></button>
@@ -1118,7 +1196,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], tombstones:{} };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -1131,6 +1209,7 @@ let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
 let editingLoanId=null, editingSavingId=null;
 let editingReminderId=null;
+let editingRecurId=null;
 
 /* ═══ Дэлгэц ═══ */
 function goScreen(id){
@@ -1229,6 +1308,7 @@ function enterApp(){
   const av=document.getElementById('avatar');
   if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
   else{ av.textContent=name?name[0].toUpperCase():'Т'; }
+  processRecurring();              // огноо болсон давтагдах бичлэгүүдийг үүсгэх
   showView(currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
 }
 
@@ -1291,7 +1371,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, tombstones:data.tombstones };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
@@ -1337,8 +1417,10 @@ async function loadFromDrive(){
       data.loans=mergeById(data.loans, remote.loans||[]);
       data.savings=mergeById(data.savings, remote.savings||[]);
       data.reminders=mergeById(data.reminders, remote.reminders||[]);
+      data.recurring=mergeById(data.recurring, remote.recurring||[]);
       migrate(); saveLocal();
     }
+    processRecurring();            // Drive-аас lastCreated шинэчлэгдсэний дараа
     setSync('Синктэй','#0f766e'); render();
     if(!sessionBackupDone){ sessionBackupDone=true; doBackup(); }
   }catch(e){
@@ -1375,7 +1457,7 @@ async function doBackup(){
     const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,tombstones:data.tombstones})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -1448,7 +1530,7 @@ function loadLocal(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
+  if(!data.reminders)data.reminders=[]; if(!data.recurring)data.recurring=[]; if(!data.tombstones)data.tombstones={};
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -1682,6 +1764,167 @@ function deleteNote(id){
   persist(); renderNotes(histMeterId); render();
 }
 
+/* ═══ Давтагдах бичлэг ═══
+   Давхардлаас сэргийлэх 3 давхар хамгаалалт:
+   1) id нь тодорхойлогдсон: 'i_rec_<дүрэм>_<сар>' — хоёр төхөөрөмж зэрэг
+      үүсгэсэн ч ижил id гарч, merge үедээ нэгдэнэ.
+   2) lastCreated — дүрэм тус бүр хаана хүртэл үүсгэснээ санана.
+   3) tombstone шалгалт — хэрэглэгч устгасан бичлэгийг дахин үүсгэхгүй. */
+const RECUR_MAX_BACKFILL=12;   // хамгийн ихдээ 12 сар ухарч үүсгэнэ
+function nextMonth(ym){ const [y,m]=ym.split('-').map(Number); return monthLocal(new Date(y,m,1)); }
+function prevMonth(ym){ const [y,m]=ym.split('-').map(Number); return monthLocal(new Date(y,m-2,1)); }
+function monthDays(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function recurDate(ym, day){
+  const dim=monthDays(ym);
+  const d=(!day||day>dim)?dim:day;          // 0 эсвэл хэт том бол сарын сүүлийн өдөр
+  return ym+'-'+String(d).padStart(2,'0');
+}
+function recurRecordId(r, month){ return (r.kind==='income'?'i_rec_':'v_rec_')+r.id+'_'+month; }
+
+function createFromRecurring(r, month, dateStr){
+  const id=recurRecordId(r, month);
+  if(data.tombstones[id])return false;                       // устгасныг сэргээхгүй
+  if(r.kind==='income'){
+    if(data.income.some(x=>x.id===id))return false;
+    data.income.push({ id, date:dateStr, type:r.type||'Цалин', note:r.note||'',
+      amount:r.amount||0, recurringId:r.id, updatedAt:Date.now() });
+  }else{
+    if(data.variable.some(x=>x.id===id))return false;
+    if(!data.categories.some(c=>c.id===r.categoryId))return false;   // ангилал устсан бол алгасана
+    data.variable.push({ id, date:dateStr, categoryId:r.categoryId, memberId:r.memberId||'',
+      note:r.note||'', amount:r.amount||0, recurringId:r.id, updatedAt:Date.now() });
+  }
+  return true;
+}
+function processRecurring(silent){
+  if(!data.recurring||data.recurring.length===0)return 0;
+  const today=todayLocal(), curM=monthLocal();
+  let created=0, changed=false;
+  data.recurring.forEach(r=>{
+    if(!r.active)return;
+    let m=r.lastCreated?nextMonth(r.lastCreated):curM;
+    let guard=0;
+    while(m<=curM && guard++<RECUR_MAX_BACKFILL){
+      const dt=recurDate(m, r.day);
+      if(dt>today)break;                                     // огноо болоогүй — хүлээнэ
+      if(createFromRecurring(r, m, dt))created++;
+      r.lastCreated=m; r.updatedAt=Date.now(); changed=true;
+      m=nextMonth(m);
+    }
+  });
+  if(changed)persist();
+  if(created && !silent)toast(created+' давтагдах бичлэг үүслээ');
+  return created;
+}
+
+/* ── Дүрэм удирдах ── */
+function openRecurModal(editId){
+  editingRecurId=editId||null;
+  const g=id=>document.getElementById(id);
+  const catSel=g('rc-cat');
+  catSel.innerHTML=data.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
+    || '<option value="">— ангилал алга —</option>';
+  const delWrap=g('rc-delete-wrap');
+  if(editingRecurId){
+    const r=data.recurring.find(x=>x.id===editingRecurId);
+    g('rc-modal-title').textContent='Давтагдах бичлэг засах';
+    g('rc-kind').value=r.kind; g('rc-type').value=r.type||'Цалин';
+    if(r.categoryId)catSel.value=r.categoryId;
+    g('rc-note').value=r.note||''; g('rc-amount').value=r.amount||'';
+    g('rc-day').value=r.day||0; g('rc-active').checked=r.active!==false;
+    delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteRecur('${r.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
+  }else{
+    g('rc-modal-title').textContent='Давтагдах бичлэг нэмэх';
+    g('rc-kind').value='income'; g('rc-type').value='Цалин';
+    g('rc-note').value=''; g('rc-amount').value=''; g('rc-day').value=15;
+    g('rc-active').checked=true; delWrap.innerHTML='';
+  }
+  rcKindChanged();
+  openModal('recur-modal');
+}
+function rcKindChanged(){
+  const k=document.getElementById('rc-kind').value;
+  document.getElementById('rc-income-fields').style.display=(k==='income')?'block':'none';
+  document.getElementById('rc-var-fields').style.display=(k==='variable')?'block':'none';
+}
+function saveRecur(){
+  const g=id=>document.getElementById(id);
+  const kind=g('rc-kind').value;
+  const amount=parseFloat(g('rc-amount').value);
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
+  let day=parseInt(g('rc-day').value); if(isNaN(day)||day<0)day=0; if(day>31)day=31;
+  if(kind==='variable' && data.categories.length===0){ toast('Эхлээд ангилал нэмнэ үү'); return; }
+  const obj={ kind, amount, day, active:g('rc-active').checked,
+    type:kind==='income'?g('rc-type').value:'',
+    categoryId:kind==='variable'?g('rc-cat').value:'',
+    note:g('rc-note').value.trim(), updatedAt:Date.now() };
+  if(editingRecurId){
+    Object.assign(data.recurring.find(x=>x.id===editingRecurId), obj);
+    toast('Засагдлаа');
+  }else{
+    obj.id='rc'+Date.now();
+    obj.lastCreated=prevMonth(monthLocal());   // энэ сараас эхлэн үүсгэх боломжтой
+    data.recurring.push(obj);
+    toast('Дүрэм нэмэгдлээ');
+  }
+  persist(); closeModal('recur-modal');
+  processRecurring(); render(); renderRecurList();
+}
+function deleteRecur(id){
+  if(!confirm('Энэ дүрмийг устгах уу?\n\nӨмнө үүссэн бичлэгүүд хэвээр үлдэнэ.'))return;
+  tombstone(id);
+  data.recurring=data.recurring.filter(x=>x.id!==id);
+  persist(); closeModal('recur-modal'); renderRecurList(); render();
+}
+function toggleRecur(id){
+  const r=data.recurring.find(x=>x.id===id); if(!r)return;
+  r.active=!r.active; r.updatedAt=Date.now();
+  persist(); renderRecurList();
+  if(r.active)processRecurring();
+}
+function openRecurList(){
+  closeIfOpen('settings-modal');
+  renderRecurList();
+  openModal('recur-list-modal');
+}
+function renderRecurList(){
+  const wrap=document.getElementById('rc-list');
+  if(!wrap)return;
+  if(!data.recurring||data.recurring.length===0){
+    wrap.innerHTML='<div class="empty-line">Дүрэм алга. Доор нэмнэ үү.</div>'; return;
+  }
+  wrap.innerHTML=data.recurring.map(r=>{
+    const label=r.kind==='income'?(r.type||'Орлого'):catName(r.categoryId);
+    const dayTxt=r.day?('сарын '+r.day+'-нд'):'сарын сүүлийн өдөр';
+    return `<div class="rc-row${r.active?'':' off'}">
+      <div class="rc-icon ${r.kind==='income'?'ai-inc':'ai-exp'}"><i class="ti ti-${r.kind==='income'?'coin':'shopping-cart'}"></i></div>
+      <button type="button" class="rc-main" onclick="openRecurModal('${r.id}')" aria-label="Дүрэм засах">
+        <div class="rc-name">${escapeHtml(label)}${r.note?' — '+escapeHtml(r.note):''}</div>
+        <div class="rc-sub">${dayTxt} · <span class="num">${fmt(r.amount)}₮</span>${r.lastCreated?' · сүүлд '+r.lastCreated:''}</div>
+      </button>
+      <button type="button" class="paid-btn${r.active?' on':''}" onclick="toggleRecur('${r.id}')">${r.active?'Идэвхтэй':'Унтраасан'}</button>
+    </div>`;
+  }).join('');
+}
+
+/* ── Өмнөх сарын дүнг хуулах (хэлбэлзэх зардалд) ── */
+function copyPrevAmounts(){
+  const prev=prevMonth(fixedMonth);
+  const targets=data.fixedItems.filter(i=>i.type==='helbelzeh');
+  if(targets.length===0){ toast('Хэлбэлзэх зардал алга'); return; }
+  const plan=[];
+  targets.forEach(it=>{
+    const p=getPayment(it.id, prev), cur=getPayment(it.id, fixedMonth);
+    if(p && p.amount>0 && (!cur || !cur.amount)) plan.push({it, amount:p.amount});
+  });
+  if(plan.length===0){ toast('Хуулах дүн алга (өмнөх сар хоосон эсвэл аль хэдийн бөглөгдсөн)'); return; }
+  if(!confirm(fxMonthLabel(prev)+'-ын дүнг '+fxMonthLabel(fixedMonth)+' рүү хуулах уу?\n\n'+
+    plan.map(p=>'· '+p.it.name+' — '+fmt(p.amount)+'₮').join('\n')))return;
+  plan.forEach(p=>setPayment(p.it.id, fixedMonth, {amount:p.amount}));
+  persist(); renderFixed(); renderHome();
+  toast(plan.length+' дүн хуулагдлаа');
+}
+
 /* ═══ Төлбөрийн апп холбоос ═══
    Android дээр intent:// ашиглан апп нээнэ. Апп суулгаагүй бол Play Store руу.
    iOS болон компьютер дээр Play Store хуудсыг шинэ табд нээнэ. */
@@ -1880,7 +2123,7 @@ async function restoreBackup(fileId, label){
     const b=JSON.parse(text);
     const KEYS=['meters','readings','notes','fixedItems','payments','income',
                 'categories','variable','vehicles','repairs','members','treatments',
-                'loans','savings','reminders'];
+                'loans','savings','reminders','recurring'];
     KEYS.forEach(k=>{ data[k]=Array.isArray(b[k])?b[k]:[]; });
     data.tombstones=b.tombstones&&typeof b.tombstones==='object'?b.tombstones:{};
     migrate(); saveLocal();
@@ -2885,7 +3128,7 @@ function renderVariable(){
     rows=list.map(v=>`<div class="vx-row">
       <div class="vx-icon"><i class="ti ti-shopping-cart"></i></div>
       <button type="button" class="vx-main" onclick="openVariableModal('${v.id}')" aria-label="Зардал засах">
-        <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}${v.memberId?`<span class="mem-chip"><i class="ti ti-user"></i>${escapeHtml(memberName(v.memberId))}</span>`:''}</div>
+        <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}${v.memberId?`<span class="mem-chip"><i class="ti ti-user"></i>${escapeHtml(memberName(v.memberId))}</span>`:''}${v.recurringId?'<span class="rc-auto"><i class="ti ti-repeat"></i>авто</span>':''}</div>
         <div class="vx-sub num">${v.date}</div>
       </button>
       <span class="vx-amt">${fmt(v.amount)}₮</span>
@@ -2996,7 +3239,7 @@ function renderIncome(){
     rows=list.map(i=>`<div class="inc-row">
       <div class="inc-icon"><i class="ti ti-${i.type==='Цалин'?'cash':'plus'}"></i></div>
       <button type="button" class="inc-main" onclick="openIncomeModal('${i.id}')" aria-label="Орлого засах">
-        <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}</div>
+        <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}${i.recurringId?'<span class="rc-auto"><i class="ti ti-repeat"></i>авто</span>':''}</div>
         <div class="inc-sub num">${i.date}</div>
       </button>
       <span class="inc-amt">+${fmt(i.amount)}₮</span>
@@ -3151,7 +3394,8 @@ function renderFixed(){
     </div>
     ${rows}
     <div id="fx-totals"></div>
-    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openFixedModal()"><i class="ti ti-plus"></i> Зардлын зүйл нэмэх</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="copyPrevAmounts()"><i class="ti ti-copy"></i> Өмнөх сарын дүнг хуулах</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="openFixedModal()"><i class="ti ti-plus"></i> Зардлын зүйл нэмэх</button>
   `;
   renderFixedTotals();
 }
