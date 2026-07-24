@@ -734,6 +734,47 @@ input,select{font-family:inherit;font-size:15px}
   :root:not([data-theme="light"]) .btn.acc,
   :root:not([data-theme="light"]) .btn-primary{ color:#0b2b28 }
 }
+
+
+/* ═══════════════════════════════════════════
+   Хэвлэх / PDF — браузерын "Save as PDF"
+   Монгол фонтыг браузер өөрөө зурна
+   ═══════════════════════════════════════════ */
+#print-area{display:none}
+@media print{
+  @page{ size:A4; margin:14mm }
+  html,body{ background:#fff !important; color:#000 !important; overflow:visible !important }
+  .screen,.bottom-nav,.fab,.modal-bg,.toast,.topbar{ display:none !important }
+  #print-area{ display:block !important; color:#000; font-size:11pt; line-height:1.45 }
+  #print-area *{ -webkit-print-color-adjust:exact; print-color-adjust:exact }
+
+  .pr-head{ display:flex; align-items:flex-start; justify-content:space-between;
+    border-bottom:2px solid #0d9488; padding-bottom:8px; margin-bottom:14px }
+  .pr-title{ font-size:19pt; font-weight:700; letter-spacing:-.02em; color:#0d9488 }
+  .pr-sub{ font-size:10pt; color:#555; margin-top:2px }
+  .pr-meta{ font-size:9pt; color:#777; text-align:right }
+
+  .pr-kpi{ display:flex; gap:10px; margin-bottom:16px }
+  .pr-kpi div{ flex:1; border:1px solid #ddd; border-radius:6px; padding:9px 11px }
+  .pr-kpi .k{ font-size:9pt; color:#666 }
+  .pr-kpi .v{ font-size:14pt; font-weight:700; font-variant-numeric:tabular-nums }
+  .pr-kpi .v.inc{ color:#15803d } .pr-kpi .v.exp{ color:#b91c1c }
+
+  #print-area h2{ font-size:12pt; margin:16px 0 6px; padding-bottom:4px;
+    border-bottom:1px solid #ccc; page-break-after:avoid }
+  #print-area table{ width:100%; border-collapse:collapse; font-size:10pt; page-break-inside:auto }
+  #print-area th{ text-align:left; font-size:9pt; color:#555; font-weight:600;
+    border-bottom:1px solid #bbb; padding:5px 6px }
+  #print-area td{ padding:4px 6px; border-bottom:1px solid #eee; vertical-align:top }
+  #print-area tr{ page-break-inside:avoid }
+  #print-area .r{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap }
+  #print-area tfoot td{ font-weight:700; border-top:1px solid #999; border-bottom:none }
+  .pr-sect{ page-break-inside:avoid }
+  .pr-none{ font-size:10pt; color:#888; padding:4px 0 }
+  .pr-foot{ margin-top:20px; padding-top:8px; border-top:1px solid #ddd;
+    font-size:8pt; color:#999; text-align:center }
+  .pr-ok{ color:#15803d } .pr-no{ color:#b91c1c }
+}
 </style>
 </head>
 <body>
@@ -1439,6 +1480,25 @@ input,select{font-family:inherit;font-size:15px}
     <div class="modal-actions"><button class="btn" onclick="closeModal('backup-modal')">Хаах</button></div>
   </div>
 </div>
+
+<!-- MODAL: Сарын тайлан -->
+<div class="modal-bg" id="report-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rp2-title">
+    <h3 id="rp2-title">Сарын тайлан</h3>
+    <div class="field">
+      <label for="rp2-month">Аль сар</label>
+      <select id="rp2-month"></select>
+    </div>
+    <button class="btn acc" style="width:100%;justify-content:center;margin-bottom:10px" onclick="printReport()">
+      <i class="ti ti-printer"></i> PDF болгох / хэвлэх</button>
+    <button class="btn" style="width:100%;justify-content:center" onclick="exportReport()">
+      <i class="ti ti-file-text"></i> Word файл татах</button>
+    <div class="hint" style="margin-top:.75rem">PDF болгохын тулд хэвлэх цонхонд "Хэвлэгч" хэсгээс <b>"Save as PDF"</b> сонгоно уу.</div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('report-modal')">Хаах</button></div>
+  </div>
+</div>
+
+<div id="print-area"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -3943,9 +4003,146 @@ function exportExcel(){
   toast('Excel татагдлаа');
 }
 
+/* ═══ Хэвлэх / PDF тайлан ═══ */
+let reportMonth=null;
+function openReportModal(){
+  const sel=document.getElementById('rp2-month');
+  const months=[]; let m=monthLocal(), g=0;
+  while(g++<18){ months.push(m); m=prevMonth(m); }
+  sel.innerHTML=months.map(x=>`<option value="${x}">${fxMonthLabel(x)}</option>`).join('');
+  openModal('report-modal');
+}
+function prRow(a,b,cls){ return `<tr><td>${a}</td><td class="r ${cls||''}">${b}</td></tr>`; }
+function buildPrintReport(ym){
+  const t=monthlyTotals(ym);
+  const bal=t.income-t.expense;
+  const esc=escapeHtml;
+  let h=`<div class="pr-head">
+    <div><div class="pr-title">HomeBook</div><div class="pr-sub">Гэр бүлийн санхүүгийн тайлан</div></div>
+    <div class="pr-meta">${fxMonthLabel(ym)}<br>Хэвлэсэн: ${todayLocal()}</div>
+  </div>
+  <div class="pr-kpi">
+    <div><div class="k">Орлого</div><div class="v inc">${fmt(t.income)}₮</div></div>
+    <div><div class="k">Зардал</div><div class="v exp">${fmt(t.expense)}₮</div></div>
+    <div><div class="k">${bal>=0?'Хэмнэлт':'Хэтрэлт'}</div><div class="v">${fmt(bal)}₮</div></div>
+  </div>`;
+
+  // ── Дансны тааруулга ──
+  const bd=balanceDiff(ym);
+  if(bd && bd.diff!=null){
+    h+=`<div class="pr-sect"><h2>Дансны тааруулга</h2><table>
+      ${prRow('Хүлээгдэж буй үлдэгдэл', fmt(bd.expected)+'₮')}
+      ${prRow('Дансны бодит үлдэгдэл', fmt(bd.actual)+'₮')}
+      ${prRow('<b>'+(bd.diff<0?'Мэдэгдэхгүй зарлага':(bd.diff>0?'Бүртгээгүй орлого':'Тэнцсэн'))+'</b>',
+              '<b>'+fmt(Math.abs(bd.diff))+'₮</b>', bd.diff<0?'pr-no':'pr-ok')}
+    </table></div>`;
+  }
+
+  // ── Орлого ──
+  const inc=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).sort((a,b)=>a.date.localeCompare(b.date));
+  h+=`<div class="pr-sect"><h2>Орлого</h2>`;
+  h+= inc.length
+    ? `<table><thead><tr><th>Огноо</th><th>Төрөл</th><th>Тайлбар</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      inc.map(i=>`<tr><td>${i.date}</td><td>${esc(i.type||'')}</td><td>${esc(i.note||'')}</td><td class="r">${fmt(i.amount)}₮</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.income)}₮</td></tr></tfoot></table>`
+    : `<div class="pr-none">Бүртгэл алга</div>`;
+  h+=`</div>`;
+
+  // ── Тогтмол зардал (бүлгээр) ──
+  const GO=['Ашиглалт','Холбоо/ТВ','Орон сууц','Хүүхэд','Бусад'];
+  const grp={}; data.fixedItems.forEach(it=>{ const g=it.group||'Бусад'; (grp[g]=grp[g]||[]).push(it); });
+  const gNames=Object.keys(grp).sort((a,b)=>(GO.indexOf(a)<0?99:GO.indexOf(a))-(GO.indexOf(b)<0?99:GO.indexOf(b)));
+  h+=`<div class="pr-sect"><h2>Тогтмол зардал</h2>`;
+  if(data.fixedItems.length){
+    h+=`<table><thead><tr><th>Зүйл</th><th>Бүлэг</th><th class="r">Дүн</th><th class="r">Төлөв</th></tr></thead><tbody>`;
+    gNames.forEach(g=>{
+      grp[g].forEach(it=>{
+        const a=monthAmount(it,ym), p=isPaid(it,ym);
+        h+=`<tr><td>${esc(it.name)}</td><td>${esc(g)}</td><td class="r">${fmt(a)}₮</td>
+            <td class="r ${p?'pr-ok':'pr-no'}">${p?'төлсөн':'төлөөгүй'}</td></tr>`;
+      });
+    });
+    h+=`</tbody><tfoot><tr><td colspan="2">Нийт</td><td class="r">${fmt(t.fixed)}₮</td><td></td></tr></tfoot></table>`;
+  }else h+=`<div class="pr-none">Бүртгэл алга</div>`;
+  h+=`</div>`;
+
+  // ── Хувьсах зардал ──
+  const varL=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).sort((a,b)=>a.date.localeCompare(b.date));
+  h+=`<div class="pr-sect"><h2>Хувьсах зардал</h2>`;
+  if(varL.length){
+    const byCat={}; varL.forEach(v=>{ byCat[v.categoryId]=(byCat[v.categoryId]||0)+(v.amount||0); });
+    h+=`<table><thead><tr><th>Ангилал</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      Object.entries(byCat).sort((a,b)=>b[1]-a[1])
+        .map(([c,a])=>`<tr><td>${esc(catName(c))}</td><td class="r">${fmt(a)}₮</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td>Нийт</td><td class="r">${fmt(t.variable)}₮</td></tr></tfoot></table>`;
+    h+=`<table style="margin-top:8px"><thead><tr><th>Огноо</th><th>Ангилал</th><th>Тайлбар</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      varL.map(v=>`<tr><td>${v.date}</td><td>${esc(catName(v.categoryId))}</td>
+        <td>${esc(v.note||'')}${v.memberId?' ('+esc(memberName(v.memberId))+')':''}</td>
+        <td class="r">${fmt(v.amount)}₮</td></tr>`).join('')+`</tbody></table>`;
+  }else h+=`<div class="pr-none">Бүртгэл алга</div>`;
+  h+=`</div>`;
+
+  // ── Машин ба эрүүл мэнд ──
+  const rep=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym);
+  if(rep.length){
+    h+=`<div class="pr-sect"><h2>Машины засвар</h2><table>
+      <thead><tr><th>Огноо</th><th>Машин</th><th>Засвар</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      rep.map(r=>{ const v=data.vehicles.find(x=>x.id===r.vehicleId);
+        return `<tr><td>${r.date}</td><td>${esc(v?v.name:'')}</td><td>${esc(r.desc||'')}</td><td class="r">${fmt(r.amount)}₮</td></tr>`;
+      }).join('')+`</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.repairs)}₮</td></tr></tfoot></table></div>`;
+  }
+  const trt=data.treatments.filter(x=>x.date&&x.date.slice(0,7)===ym);
+  if(trt.length){
+    h+=`<div class="pr-sect"><h2>Эрүүл мэнд</h2><table>
+      <thead><tr><th>Огноо</th><th>Гишүүн</th><th>Эмчилгээ</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      trt.map(x=>`<tr><td>${x.date}</td><td>${esc(memberName(x.memberId))}</td><td>${esc(x.desc||'')}</td><td class="r">${fmt(x.amount)}₮</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.treats)}₮</td></tr></tfoot></table></div>`;
+  }
+
+  // ── Тоолуурын хэрэглээ ──
+  const mrows=[];
+  data.meters.forEach(m=>{
+    const rs=readingsOf(m.id);
+    rs.forEach((r,i)=>{
+      if(r.date.slice(0,7)!==ym || i===0)return;
+      mrows.push({name:m.name, unit:m.unit, date:r.date, prev:rs[i-1].value, cur:r.value, use:r.value-rs[i-1].value});
+    });
+  });
+  if(mrows.length){
+    h+=`<div class="pr-sect"><h2>Тоолуурын хэрэглээ</h2><table>
+      <thead><tr><th>Тоолуур</th><th>Огноо</th><th class="r">Заалт</th><th class="r">Хэрэглээ</th></tr></thead><tbody>`+
+      mrows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.date}</td>
+        <td class="r">${r.prev} → ${r.cur}</td><td class="r">${fmt(r.use)} ${esc(r.unit||'')}</td></tr>`).join('')+
+      `</tbody></table></div>`;
+  }
+
+  // ── Сүүлийн 6 сарын харьцуулалт ──
+  const ms=lastNMonths(6);
+  h+=`<div class="pr-sect"><h2>Сүүлийн 6 сар</h2><table>
+    <thead><tr><th>Сар</th><th class="r">Орлого</th><th class="r">Зардал</th><th class="r">Зөрүү</th></tr></thead><tbody>`+
+    ms.map(x=>{ const q=monthlyTotals(x); const b=q.income-q.expense;
+      return `<tr${x===ym?' style="font-weight:700"':''}><td>${fxMonthLabel(x)}</td>
+        <td class="r">${fmt(q.income)}₮</td><td class="r">${fmt(q.expense)}₮</td>
+        <td class="r ${b>=0?'pr-ok':'pr-no'}">${fmt(b)}₮</td></tr>`;
+    }).join('')+`</tbody></table></div>`;
+
+  h+=`<div class="pr-foot">HomeBook · ${fxMonthLabel(ym)} · ${todayLocal()}</div>`;
+  return h;
+}
+function printReport(){
+  const sel=document.getElementById('rp2-month');
+  const ym=(sel&&sel.value)||monthLocal();
+  reportMonth=ym;
+  document.getElementById('print-area').innerHTML=buildPrintReport(ym);
+  closeModal('report-modal');
+  setTimeout(()=>{ window.print(); }, 250);
+}
+
 /* ── Сарын тайлан (Word/.doc) ── */
 function exportReport(){
-  const ym=monthLocal();
+  const sel=document.getElementById('rp2-month');
+  const ym=(sel&&sel.value)||monthLocal();
+  closeIfOpen('report-modal');
   const t=monthlyTotals(ym);
   const balance=t.income-t.expense;
   const incList=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym);
@@ -4053,7 +4250,7 @@ function renderHome(){
   const breakdownPanel = hasMoney ? buildBreakdown(ym) : '';
   const exportRow = hasMoney ? `<div class="export-row">
     <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
-    <button class="btn" onclick="exportReport()"><i class="ti ti-file-text"></i> Сарын тайлан</button>
+    <button class="btn" onclick="openReportModal()"><i class="ti ti-file-text"></i> Сарын тайлан</button>
   </div>` : '';
   // Удахгүй болох сануулга (анхаарах шаардлагатай)
   const upcoming=data.reminders.filter(r=>{ const s=reminderStatus(r); return s==='soon'||s==='over'; })

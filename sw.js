@@ -1,7 +1,7 @@
 /* HomeBook — Service Worker
    Зорилго: апп офлайн ажиллах, CDN-ээс татдаг icon/xlsx-г кэшлэх.
    Кэшийн хувилбар: index.html шинэчлэх бүрд VERSION-ыг нэмэгдүүлнэ. */
-const VERSION = 'v17';
+const VERSION = 'v18';
 const CACHE   = 'homebook-' + VERSION;
 
 /* Заавал кэшлэх — апп-ийн үндсэн бүрэлдэхүүн */
