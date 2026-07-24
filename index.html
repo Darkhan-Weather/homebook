@@ -217,6 +217,10 @@ input,select{font-family:inherit;font-size:15px}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem}
 .topbar h2{font-size:18px;font-weight:600}
 .topbar .month{font-size:13px;color:var(--text-2);margin-top:2px}
+.gear-btn{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);flex-shrink:0}
+.gear-btn i{font-size:19px}
+.gear-btn:hover{background:var(--surface-2);color:var(--text)}
 .avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);
   display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer}
 .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
@@ -508,6 +512,7 @@ input,select{font-family:inherit;font-size:15px}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <button type="button" class="sync-badge" id="sync-badge" onclick="onSyncBadgeClick()" aria-label="Синкийн төлөв"><i class="ti ti-cloud"></i> <span>Синктэй</span></button>
+        <button type="button" class="gear-btn" onclick="openSettings()" aria-label="Тохиргоо" title="Тохиргоо"><i class="ti ti-settings"></i></button>
         <button type="button" class="avatar" id="avatar" onclick="openSettings()" aria-label="Тохиргоо">Т</button>
       </div>
     </div>
@@ -1911,18 +1916,35 @@ function renderRecurList(){
 function copyPrevAmounts(){
   const prev=prevMonth(fixedMonth);
   const targets=data.fixedItems.filter(i=>i.type==='helbelzeh');
-  if(targets.length===0){ toast('Хэлбэлзэх зардал алга'); return; }
-  const plan=[];
+  if(targets.length===0){ toast('Хэлбэлзэх зардал алга (ус, дулаан, цахилгаан)'); return; }
+  const empty=[], filled=[];
   targets.forEach(it=>{
     const p=getPayment(it.id, prev), cur=getPayment(it.id, fixedMonth);
-    if(p && p.amount>0 && (!cur || !cur.amount)) plan.push({it, amount:p.amount});
+    if(!p || !(p.amount>0))return;                       // өмнөх сард дүн алга
+    ((cur && cur.amount>0) ? filled : empty).push({ it, amount:p.amount, old:cur?cur.amount:0 });
   });
-  if(plan.length===0){ toast('Хуулах дүн алга (өмнөх сар хоосон эсвэл аль хэдийн бөглөгдсөн)'); return; }
-  if(!confirm(fxMonthLabel(prev)+'-ын дүнг '+fxMonthLabel(fixedMonth)+' рүү хуулах уу?\n\n'+
-    plan.map(p=>'· '+p.it.name+' — '+fmt(p.amount)+'₮').join('\n')))return;
-  plan.forEach(p=>setPayment(p.it.id, fixedMonth, {amount:p.amount}));
+  // Өмнөх сар бүхэлдээ хоосон
+  if(empty.length===0 && filled.length===0){
+    alert(fxMonthLabel(prev)+'-д дүн оруулаагүй байна.\n\nЭхлээд ◀ товчоор тэр сар руу очиж дүнгээ оруулна уу.');
+    return;
+  }
+  // Хоосон нүд байвал зөвхөн тэдгээрийг дүүргэнэ
+  if(empty.length){
+    if(!confirm(fxMonthLabel(prev)+' → '+fxMonthLabel(fixedMonth)+' рүү хуулах уу?\n\n'+
+      empty.map(p=>'· '+p.it.name+' — '+fmt(p.amount)+'₮').join('\n')+
+      (filled.length?'\n\n('+filled.length+' зүйл аль хэдийн бөглөгдсөн тул хөндөхгүй)':'')))return;
+    empty.forEach(p=>setPayment(p.it.id, fixedMonth, {amount:p.amount}));
+    persist(); renderFixed(); renderHome();
+    toast(empty.length+' дүн хуулагдлаа');
+    return;
+  }
+  // Бүгд бөглөгдсөн — дарж бичих үү гэж лавлана
+  if(!confirm(fxMonthLabel(fixedMonth)+'-ын бүх дүн аль хэдийн бөглөгдсөн байна.\n\n'+
+    fxMonthLabel(prev)+'-ынхаар дарж бичих үү?\n\n'+
+    filled.map(p=>'· '+p.it.name+': '+fmt(p.old)+'₮ → '+fmt(p.amount)+'₮').join('\n')))return;
+  filled.forEach(p=>setPayment(p.it.id, fixedMonth, {amount:p.amount}));
   persist(); renderFixed(); renderHome();
-  toast(plan.length+' дүн хуулагдлаа');
+  toast(filled.length+' дүн дарж бичигдлээ');
 }
 
 /* ═══ Төлбөрийн апп холбоос ═══
