@@ -63,6 +63,7 @@
   --gap:12px; --pad-card:1.05rem 1.15rem;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;max-width:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
 .num{font-variant-numeric:tabular-nums}
@@ -347,52 +348,6 @@ input,select{font-family:inherit;font-size:15px}
 .modal h3{letter-spacing:-.01em}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(min-width:520px){.modal-bg{align-items:center}.modal{border-radius:var(--radius-lg)}}
-/* ═══════════════════════════════════════════
-   Desktop — 900px-ээс дээш: хажуугийн навигаци
-   Гар утасны бүтэц хэвээр, зөвхөн CSS-ээр өөрчилнө
-   ═══════════════════════════════════════════ */
-@media(min-width:900px){
-  #app{ max-width:900px; padding:0 1.5rem 3rem; margin-left:230px; margin-right:auto }
-
-  /* Доод навигац → зүүн талын багана */
-  .bottom-nav{
-    top:0; bottom:0; right:auto; width:214px;
-    flex-direction:column; justify-content:flex-start; align-items:stretch;
-    gap:4px; padding:1.5rem .75rem; overflow-y:auto; overflow-x:hidden;
-    border-top:none; border-right:1px solid var(--border);
-    background:var(--surface);
-  }
-  .nav-btn{
-    flex:0 0 auto; width:100%; min-height:46px;
-    flex-direction:row; justify-content:flex-start; gap:12px;
-    padding:11px 14px; font-size:14px; text-align:left;
-  }
-  .nav-btn i{ font-size:20px }
-  .nav-btn.active i{ transform:none }
-
-  /* Хөвөгч товчийг баганын дотор буулгах */
-  .fab{ left:0; right:auto; transform:none; bottom:auto; top:calc(1.5rem + 40px);
-        width:198px; margin-left:.75rem; z-index:61 }
-  .fab button{ padding:12px }
-
-  /* Дашбоард — 2 багана */
-  .dash-cols{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:start }
-  .dash-cols > *{ margin-bottom:0 }
-  .stat-grid,.money-grid{ gap:var(--gap) }
-
-  /* Жагсаалтын дэлгэцүүд — 2 багана */
-  #view-meters #meters-list,
-  #view-vehicles > div:first-child,
-  #view-health > div:first-child{ }
-  .meters-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap) }
-  .meters-grid .meter-card{ margin-bottom:0 }
-
-  .modal{ max-width:520px }
-}
-@media(min-width:1280px){
-  #app{ max-width:1080px }
-}
-
 .modal h3{font-size:18px;font-weight:600;margin-bottom:1.25rem}
 .field{margin-bottom:1rem}
 .field label{display:block;font-size:13px;color:var(--text-2);margin-bottom:6px;font-weight:500}
@@ -493,6 +448,18 @@ input,select{font-family:inherit;font-size:15px}
 
 /* ── Орлого + мөнгөний нэгтгэл ── */
 .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.money-grid .mc,.stat-grid .stat{min-width:0}
+.money-grid .mv,.stat .sv{overflow-wrap:anywhere}
+/* Нарийн дэлгэц: Орлого | Зардал дээр, Үлдэгдэл доор бүтэн өргөнөөр */
+@media(max-width:460px){
+  .money-grid{grid-template-columns:1fr 1fr}
+  .money-grid .mc:nth-child(3){grid-column:1 / -1}
+  .money-grid .mc:nth-child(3) .mv{font-size:22px}
+  .stat-grid{gap:8px}
+  .stat{padding:.75rem .8rem}
+  .stat .sl{font-size:11px}
+  .stat .sv{font-size:20px}
+}
 .money-grid .mc{padding:.9rem 1rem}
 .money-grid .ml{font-size:12px;color:var(--text-2);margin-bottom:6px}
 .money-grid .mv{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
@@ -590,6 +557,49 @@ input,select{font-family:inherit;font-size:15px}
 .up-row .ut{flex:1;font-size:14px}
 .up-row .ub{font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap}
 .up-row .ub.over{background:#fee2e2;color:#b91c1c}
+
+/* ═══════════════════════════════════════════
+   Desktop — 900px-ээс дээш: хажуугийн навигаци
+   Гар утасны бүтэц хэвээр, зөвхөн CSS-ээр өөрчилнө
+   ═══════════════════════════════════════════ */
+@media(min-width:900px){
+  #app{ max-width:900px; padding:0 1.5rem 3rem; margin-left:230px; margin-right:auto }
+
+  /* Доод навигац → зүүн талын багана */
+  .bottom-nav{
+    top:0; bottom:0; right:auto; width:214px;
+    flex-direction:column; justify-content:flex-start; align-items:stretch;
+    gap:4px; padding:1.5rem .75rem 84px; overflow-y:auto; overflow-x:hidden;
+    border-top:none; border-right:1px solid var(--border);
+    background:var(--surface);
+  }
+  .nav-btn{
+    flex:0 0 auto; width:100%; min-height:46px;
+    flex-direction:row; justify-content:flex-start; gap:12px;
+    padding:11px 14px; font-size:14px; text-align:left;
+  }
+  .nav-btn i{ font-size:20px }
+  .nav-btn.active i{ transform:none }
+
+  /* Хөвөгч товчийг баганын дотор буулгах */
+  #app-screen .fab, .fab{ left:0; right:auto; transform:none; bottom:auto;
+        top:auto; bottom:1.25rem; width:190px; margin-left:.75rem; z-index:61 }
+  .fab button{ padding:12px; font-size:14px }
+
+  /* Дашбоард — 2 багана */
+  .dash-cols{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:start }
+  .dash-cols > *{ margin-bottom:0 }
+  .stat-grid,.money-grid{ gap:var(--gap) }
+
+  /* Тоолуурын картууд — 2 багана */
+  .meters-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap) }
+  .meters-grid .meter-card{ margin-bottom:0 }
+
+  .modal{ max-width:520px }
+}
+@media(min-width:1280px){
+  #app{ max-width:1080px }
+}
 </style>
 </head>
 <body>
