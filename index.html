@@ -157,6 +157,27 @@ input,select{font-family:inherit;font-size:15px}
 .copy-row.note{background:#fef3c7}
 .copy-row.note .cv{font-size:13px;font-weight:400;color:#92400e}
 .pay-step{font-size:11px;color:var(--text-muted);margin:-.3rem 0 .8rem;line-height:1.5}
+
+/* ── Ангиллын төсөв ── */
+.bud-bar{height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
+.bud-bar .fill{height:100%;border-radius:4px;transition:width .3s}
+.bud-ok .fill{background:var(--accent)}
+.bud-warn .fill{background:#f59e0b}
+.bud-over .fill{background:var(--danger)}
+.bud-meta{display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:var(--text-muted)}
+.bud-meta .st{font-weight:500}
+.bud-meta .st.warn{color:#b45309}
+.bud-meta .st.over{color:var(--danger)}
+.cat-edit{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
+.cat-edit:last-of-type{border-bottom:none}
+.cat-edit .cn{flex:1;font-size:14px;min-width:0;word-break:break-word}
+.cat-edit .cbud{width:104px;padding:7px 9px;border:1px solid var(--border-strong);border-radius:8px;
+  text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.cat-edit .ic{color:var(--text-muted);font-size:16px;padding:5px;min-width:32px;min-height:32px;
+  display:inline-flex;align-items:center;justify-content:center}
+.cat-edit .ic:hover{color:var(--danger)}
+.mem-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;
+  background:#fce7f3;color:#be185d;margin-left:6px}
 .bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
@@ -301,16 +322,17 @@ input,select{font-family:inherit;font-size:15px}
 .month-nav button:hover{background:var(--surface-2)}
 .month-nav .mlabel{font-size:15px;font-weight:600}
 .fx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
+  border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow);flex-wrap:wrap}
+.fx-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .fx-icon{width:36px;height:36px;border-radius:9px;background:var(--accent-bg);display:flex;
   align-items:center;justify-content:center;flex-shrink:0}
 .fx-icon i{font-size:18px;color:var(--accent-text)}
-.fx-main{flex:1;min-width:0;cursor:pointer}
-.fx-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-main{flex:1 1 120px;min-width:110px;cursor:pointer}
+.fx-name{font-size:14px;font-weight:500;line-height:1.3}
 .fx-type{font-size:11px;color:var(--text-muted)}
 .fx-amt{font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
-.fx-amt-input{width:96px;padding:7px 8px;border:1px solid var(--border-strong);border-radius:8px;
-  text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.fx-amt-input{width:92px;padding:7px 8px;border:1px solid var(--border-strong);border-radius:8px;
+  text-align:right;font-weight:500;font-variant-numeric:tabular-nums;font-size:14px}
 .paid-btn{padding:6px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border-strong);
   background:var(--surface);color:var(--text-2);white-space:nowrap;flex-shrink:0}
 .paid-btn.on{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
@@ -698,6 +720,10 @@ input,select{font-family:inherit;font-size:15px}
       <select id="vx-cat"></select>
     </div>
     <div class="field">
+      <label for="vx-member">Хэнтэй холбоотой (заавал биш)</label>
+      <select id="vx-member"></select>
+    </div>
+    <div class="field">
       <label>Тайлбар</label>
       <input type="text" id="vx-note" placeholder="Жишээ: Хүнсний дэлгүүр">
     </div>
@@ -716,11 +742,12 @@ input,select{font-family:inherit;font-size:15px}
 <!-- MODAL: ангилал удирдах -->
 <div class="modal-bg" id="category-modal">
   <div class="modal" role="dialog" aria-modal="true">
-    <h3>Ангилал удирдах</h3>
+    <h3>Ангилал ба сарын төсөв</h3>
+    <p class="hint" style="margin:-.75rem 0 1rem">Ангилал бүрд сарын хязгаар тавьбал 80%-д хүрэхэд анхааруулна. 0 бол хязгааргүй.</p>
     <div id="cat-list" style="margin-bottom:1rem"></div>
     <div class="mini-add">
       <input type="text" id="cat-new" placeholder="Шинэ ангилал (жишээ: Эм тариа)">
-      <button class="add-ic" onclick="addCategory()"><i class="ti ti-plus"></i></button>
+      <button class="add-ic" onclick="addCategory()" aria-label="Ангилал нэмэх"><i class="ti ti-plus"></i></button>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('category-modal')">Хаах</button>
@@ -2744,13 +2771,39 @@ function deleteRepair(id){
 }
 
 /* ═══ Ангилал ═══ */
+function memberName(id){ const m=data.members.find(x=>x.id===id); return m?m.name:''; }
 function catName(id){ const c=data.categories.find(x=>x.id===id); return c?c.name:'—'; }
 function openCategoryModal(){ renderCatList(); openModal('category-modal'); }
 function renderCatList(){
   const wrap=document.getElementById('cat-list');
   if(data.categories.length===0){ wrap.innerHTML='<div class="empty-line">Ангилал алга. Доор нэмнэ үү.</div>'; return; }
-  wrap.innerHTML=data.categories.map(c=>`<span class="cat-chip">${escapeHtml(c.name)}
-    <button type="button" class="ic" onclick="deleteCategory('${c.id}')" aria-label="Ангилал устгах"><i class="ti ti-x"></i></button></span>`).join('');
+  wrap.innerHTML=data.categories.map(c=>`<div class="cat-edit">
+    <span class="cn">${escapeHtml(c.name)}</span>
+    <input class="cbud" type="number" min="0" inputmode="decimal" value="${c.budget||''}" placeholder="төсөв"
+      aria-label="${escapeHtml(c.name)} — сарын төсөв" onchange="setCategoryBudget('${c.id}',this.value)">
+    <button type="button" class="ic" onclick="deleteCategory('${c.id}')" aria-label="${escapeHtml(c.name)} устгах"><i class="ti ti-trash"></i></button>
+  </div>`).join('');
+}
+function setCategoryBudget(id,val){
+  const c=data.categories.find(x=>x.id===id); if(!c)return;
+  let b=parseFloat(val);
+  if(isNaN(b))b=0;
+  if(b<0){ toast('Сөрөг төсөв тавих боломжгүй'); b=0; }
+  c.budget=b; c.updatedAt=Date.now();
+  persist(); renderCatList(); renderVariable(); renderHome();
+}
+/* Тухайн сард ангилалд зарцуулсан дүн */
+function catSpent(catId, month){
+  return data.variable.filter(v=>v.categoryId===catId && v.date && v.date.slice(0,7)===month)
+    .reduce((s,v)=>s+(v.amount||0),0);
+}
+/* Төсөв хэтэрсэн / ойртсон ангиллууд */
+function budgetAlerts(month){
+  return data.categories.filter(c=>c.budget>0).map(c=>{
+    const spent=catSpent(c.id, month);
+    const pct=Math.round(spent/c.budget*100);
+    return { c, spent, pct, state: pct>=100?'over' : pct>=80?'warn' : 'ok' };
+  }).filter(x=>x.state!=='ok').sort((a,b)=>b.pct-a.pct);
 }
 function addCategory(){
   const name=document.getElementById('cat-new').value.trim();
@@ -2806,10 +2859,24 @@ function renderVariable(){
   let catPanel='';
   if(catRows.length){
     catPanel=`<div class="cat-panel"><h4>Ангиллаар (${fxMonthLabel(variableMonth)})</h4>`+
-      catRows.map(([cid,amt])=>`<div class="cat-bar-row">
-        <div class="cat-bar-head"><span>${escapeHtml(catName(cid))}</span><span class="num">${fmt(amt)}₮</span></div>
-        <div class="cat-bar" style="width:${Math.max(4,Math.round(amt/mx*100))}%"></div>
-      </div>`).join('')+`</div>`;
+      catRows.map(([cid,amt])=>{
+        const c=data.categories.find(x=>x.id===cid);
+        const bud=c&&c.budget>0?c.budget:0;
+        if(bud){
+          const pct=Math.round(amt/bud*100);
+          const st=pct>=100?'over':pct>=80?'warn':'ok';
+          const label=pct>=100?'төсөв хэтэрсэн':(pct>=80?'төсөвт ойрхон':'');
+          return `<div class="cat-bar-row">
+            <div class="cat-bar-head"><span>${escapeHtml(catName(cid))}</span><span class="num">${fmt(amt)} / ${fmt(bud)}₮</span></div>
+            <div class="bud-bar bud-${st}"><div class="fill" style="width:${Math.min(100,pct)}%"></div></div>
+            <div class="bud-meta"><span class="num">${pct}%</span><span class="st ${st==='ok'?'':st}">${label||('үлдсэн '+fmt(Math.max(0,bud-amt))+'₮')}</span></div>
+          </div>`;
+        }
+        return `<div class="cat-bar-row">
+          <div class="cat-bar-head"><span>${escapeHtml(catName(cid))}</span><span class="num">${fmt(amt)}₮</span></div>
+          <div class="cat-bar" style="width:${Math.max(4,Math.round(amt/mx*100))}%"></div>
+        </div>`;
+      }).join('')+`</div>`;
   }
   // Зардлын жагсаалт
   let rows='';
@@ -2818,11 +2885,24 @@ function renderVariable(){
     rows=list.map(v=>`<div class="vx-row">
       <div class="vx-icon"><i class="ti ti-shopping-cart"></i></div>
       <button type="button" class="vx-main" onclick="openVariableModal('${v.id}')" aria-label="Зардал засах">
-        <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}</div>
+        <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}${v.memberId?`<span class="mem-chip"><i class="ti ti-user"></i>${escapeHtml(memberName(v.memberId))}</span>`:''}</div>
         <div class="vx-sub num">${v.date}</div>
       </button>
       <span class="vx-amt">${fmt(v.amount)}₮</span>
     </div>`).join('');
+  }
+  // Гишүүнээр нэгтгэх
+  const byMem={};
+  list.forEach(v=>{ if(v.memberId)byMem[v.memberId]=(byMem[v.memberId]||0)+(v.amount||0); });
+  const memRows=Object.entries(byMem).sort((a,b)=>b[1]-a[1]);
+  let memPanel='';
+  if(memRows.length){
+    const mmx=memRows[0][1];
+    memPanel=`<div class="cat-panel"><h4>Гишүүнээр</h4>`+
+      memRows.map(([mid,amt])=>`<div class="cat-bar-row">
+        <div class="cat-bar-head"><span>${escapeHtml(memberName(mid))}</span><span class="num">${fmt(amt)}₮</span></div>
+        <div class="cat-bar" style="width:${Math.max(4,Math.round(amt/mmx*100))}%;background:#be185d"></div>
+      </div>`).join('')+`</div>`;
   }
   wrap.innerHTML=`
     <div class="month-nav">
@@ -2831,6 +2911,7 @@ function renderVariable(){
       <button onclick="changeVariableMonth(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
     ${catPanel}
+    ${memPanel}
     ${rows}
     ${list.length?`<div class="fx-total"><div class="tr big"><span>Сарын нийт</span><span class="num" style="color:var(--danger)">${fmt(total)}₮</span></div></div>`:''}
     <button class="btn acc" style="width:100%;justify-content:center;margin-top:6px" onclick="openVariableModal()"><i class="ti ti-plus"></i> Зардал нэмэх</button>
@@ -2842,18 +2923,23 @@ function openVariableModal(editId){
   editingVariableId=editId||null;
   const sel=document.getElementById('vx-cat');
   sel.innerHTML=data.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const msel=document.getElementById('vx-member');
+  msel.innerHTML='<option value="">— бүх гэр бүл —</option>'+
+    data.members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   const delWrap=document.getElementById('vx-delete-wrap');
   if(editingVariableId){
     const v=data.variable.find(x=>x.id===editingVariableId);
     document.getElementById('vx-modal-title').textContent='Зардал засах';
     document.getElementById('vx-date').value=v.date;
     sel.value=v.categoryId;
+    msel.value=v.memberId||'';
     document.getElementById('vx-note').value=v.note||'';
     document.getElementById('vx-amount').value=v.amount;
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteVariable('${v.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('vx-modal-title').textContent='Зардал нэмэх';
     document.getElementById('vx-date').value=todayLocal();
+    msel.value='';
     document.getElementById('vx-note').value='';
     document.getElementById('vx-amount').value='';
     delWrap.innerHTML='';
@@ -2863,16 +2949,17 @@ function openVariableModal(editId){
 function saveVariable(){
   const date=document.getElementById('vx-date').value;
   const categoryId=document.getElementById('vx-cat').value;
+  const memberId=document.getElementById('vx-member').value;
   const note=document.getElementById('vx-note').value.trim();
   const amount=parseFloat(document.getElementById('vx-amount').value);
   if(!date){ toast('Огноо оруулна уу'); return; }
   const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg); return; }
   if(editingVariableId){
     const v=data.variable.find(x=>x.id===editingVariableId);
-    v.date=date; v.categoryId=categoryId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
+    v.date=date; v.categoryId=categoryId; v.memberId=memberId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
     toast('Засагдлаа');
   }else{
-    data.variable.push({ id:'v'+Date.now(), date, categoryId, note, amount, updatedAt:Date.now() });
+    data.variable.push({ id:'v'+Date.now(), date, categoryId, memberId, note, amount, updatedAt:Date.now() });
     toast('Зардал нэмэгдлээ');
   }
   variableMonth=date.slice(0,7);
@@ -3046,9 +3133,11 @@ function renderFixed(){
             <div class="fx-name">${escapeHtml(it.name)}</div>
             <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
           </button>
-          ${amtCell}
-          ${hasPayInfo(it)?`<button type="button" class="pay-btn" onclick="openPayModal('${it.id}')" aria-label="Төлбөрийн туслах"><i class="ti ti-external-link"></i></button>`:''}
-          <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
+          <div class="fx-actions">
+            ${amtCell}
+            ${hasPayInfo(it)?`<button type="button" class="pay-btn" onclick="openPayModal('${it.id}')" aria-label="Төлбөрийн туслах"><i class="ti ti-external-link"></i></button>`:''}
+            <button class="paid-btn${paid?' on':''}" onclick="togglePaid('${it.id}')">${paid?'<i class="ti ti-check"></i> Төлсөн':'Төлөх'}</button>
+          </div>
         </div>`;
       }).join('');
       return `<div class="grp-head"><span class="gl"><i class="ti ti-${GROUP_ICON[g]||'dots'}"></i> ${escapeHtml(g)}</span><span class="gv num">${fmt(gTotal)}₮</span></div>${body}`;
@@ -3207,7 +3296,8 @@ function exportExcel(){
   const fxRows=[];
   data.payments.forEach(p=>{ const it=data.fixedItems.find(x=>x.id===p.itemId); if(it)fxRows.push({Сар:p.month,Зүйл:it.name,Дүн:monthAmount(it,p.month),Төлсөн:p.paid?'Тийм':'Үгүй'}); });
   add('Тогтмол зардал', fxRows);
-  add('Хувьсах зардал', data.variable.map(v=>({Огноо:v.date,Ангилал:catName(v.categoryId),Тайлбар:v.note||'',Дүн:v.amount})));
+  add('Хувьсах зардал', data.variable.map(v=>({Огноо:v.date,Ангилал:catName(v.categoryId),
+    Гишүүн:v.memberId?memberName(v.memberId):'',Тайлбар:v.note||'',Дүн:v.amount})));
   add('Машин засвар', data.repairs.map(r=>({Огноо:r.date,Машин:(data.vehicles.find(x=>x.id===r.vehicleId)||{}).name||'',Засвар:r.desc||'',Дүн:r.amount})));
   add('Эрүүл мэнд', data.treatments.map(t=>({Огноо:t.date,Гишүүн:(data.members.find(x=>x.id===t.memberId)||{}).name||'',Эмчилгээ:t.desc||'',Дүн:t.amount})));
   add('Тоолуур заалт', data.readings.map(r=>({Огноо:r.date,Тоолуур:(data.meters.find(x=>x.id===r.meterId)||{}).name||'',Заалт:r.value})));
@@ -3314,6 +3404,17 @@ function renderHome(){
         return `<div class="up-row"><span class="ut">${escapeHtml(r.title)}</span>${b}</div>`;
       }).join('')+`</div>`;
   }
+  // Төсвийн анхааруулга
+  const alerts=budgetAlerts(ym);
+  let budPanel='';
+  if(alerts.length){
+    budPanel=`<div class="panel"><h4><i class="ti ti-target" style="color:#f59e0b"></i> Төсвийн анхаарал</h4>`+
+      alerts.map(a=>`<div class="cat-bar-row">
+        <div class="cat-bar-head"><span>${escapeHtml(a.c.name)}</span><span class="num">${fmt(a.spent)} / ${fmt(a.c.budget)}₮</span></div>
+        <div class="bud-bar bud-${a.state}"><div class="fill" style="width:${Math.min(100,a.pct)}%"></div></div>
+        <div class="bud-meta"><span class="num">${a.pct}%</span><span class="st ${a.state}">${a.state==='over'?'хэтэрсэн':'ойрхон'}</span></div>
+      </div>`).join('')+`</div>`;
+  }
   wrap.innerHTML=`
     <div class="stat-grid">
       <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
@@ -3321,6 +3422,7 @@ function renderHome(){
       <div class="stat"><div class="sl">Нийт заалт</div><div class="sv num">${totalReadings}</div></div>
     </div>
     ${moneyCard}
+    ${budPanel}
     ${remPanel}
     ${chartPanel}
     ${breakdownPanel}
