@@ -3909,7 +3909,19 @@ function renderHome(){
   const chips=[];
   if(prevExp>0){
     const pct=Math.round((expenseTotal-prevExp)/prevExp*100);
-    if(pct!==0)chips.push(`<span class="chip ${pct>0?'up':'down'}"><i class="ti ti-${pct>0?'trending-up':'trending-down'}"></i>өнгөрсөн сараас ${Math.abs(pct)}% ${pct>0?'их':'бага'}</span>`);
+    // ±3%-иас бага өөрчлөлтийг харуулахгүй — чимээ болно
+    if(Math.abs(pct)>=3){
+      const up=pct>0;
+      let txt;
+      if(pct>=200){                                   // 3 дахин ба түүнээс их
+        txt=trimNum(expenseTotal/prevExp)+' дахин их';
+      }else if(pct<=-67 && expenseTotal>0){           // 3 дахин ба түүнээс бага
+        txt=trimNum(prevExp/expenseTotal)+' дахин бага';
+      }else{
+        txt=Math.abs(pct)+'% '+(up?'их':'бага');
+      }
+      chips.push(`<span class="chip ${up?'up':'down'}" title="${fmt(prevExp)}₮ → ${fmt(expenseTotal)}₮"><i class="ti ti-${up?'trending-up':'trending-down'}"></i>өнгөрсөн сараас ${txt}</span>`);
+    }
   }
   // Хамгийн их зарлагатай ангилал
   const catTot={};
@@ -4087,6 +4099,8 @@ const MODULE_COLORS={
 };
 function moduleColor(key){ return cssVar(MODULE_COLORS[key]||'--accent'); }
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('en-US'); }
+/* 4.30 → 4.3, 5.0 → 5 */
+function trimNum(n){ return (Math.round(n*10)/10).toString().replace(/\.0$/,''); }
 /* Дүнгийн валидаци — сөрөг ба хэт том утга хориглоно */
 const MAX_AMOUNT=1e12;
 function validAmount(v,{allowZero=true}={}){
