@@ -33,14 +33,14 @@
   --accent:#0d9488; --accent-hover:#0f766e; --accent-bg:#ccfbf1; --accent-text:#0f766e;
 
   /* Утга илэрхийлэх өнгө */
-  --success:#15803d; --success-bg:#dcfce7; --success-br:#bbf7d0;
-  --danger:#dc2626;  --danger-bg:#fee2e2;  --danger-br:#fecaca; --danger-fg:#b91c1c;
+  --success:#047857; --success-bg:#d1fae5; --success-br:#a7f3d0;
+  --danger:#e11d48;  --danger-bg:#ffe4e6;  --danger-br:#fecdd3; --danger-fg:#be123c;
   --warn:#b45309;    --warn-bg:#fef3c7;    --warn-fg:#92400e;   --warn-strong:#f59e0b;
   --soft-yellow-bg:#fef9c3; --soft-yellow-fg:#ca8a04;
 
   /* Модуль бүрийн өнгө — карт, дүрс, график бүгд эндээс */
-  --m-income:#15803d;   --m-income-bg:#dcfce7;
-  --m-expense:#dc2626;  --m-expense-bg:#fee2e2;
+  --m-income:#047857;   --m-income-bg:#d1fae5;
+  --m-expense:#e11d48;  --m-expense-bg:#ffe4e6;
   --m-meter:#0891b2;    --m-meter-bg:#cffafe;
   --m-fixed:#0369a1;    --m-fixed-bg:#e0f2fe;
   --m-variable:#b45309; --m-variable-bg:#fef3c7;
@@ -50,9 +50,9 @@
   --m-remind:#c2410c;   --m-remind-bg:#ffedd5;
 
   /* Гадаргуу ба текст */
-  --bg:#f5f5f4; --surface:#ffffff; --surface-2:#fafaf9;
-  --text:#1c1917; --text-2:#57534e; --text-muted:#a8a29e;
-  --border:#e7e5e4; --border-strong:#d6d3d1;
+  --bg:#f7f5f0; --surface:#ffffff; --surface-2:#faf8f4;
+  --text:#1f2933; --text-2:#5b6570; --text-muted:#6b7683;
+  --border:#e8e4dc; --border-strong:#d6d0c6;
 
   /* Хэлбэр */
   --radius:14px; --radius-sm:9px; --radius-lg:18px;
@@ -142,6 +142,12 @@ input,select{font-family:inherit;font-size:15px}
 }
 .meter-card,.veh-card,.fin-card,.panel,.chart-panel,.cat-panel{ padding:var(--pad-card); }
 .meter-card,.veh-card,.fin-card,.rm-card,.panel,.chart-panel,.cat-panel{ margin-bottom:var(--gap); }
+
+/* Модулийн өнгө — картын нарийн зурвас */
+.meter-card{ border-top:3px solid var(--m-meter) }
+.veh-card{ border-left:3px solid var(--m-vehicle) }
+.veh-card.health{ border-left-color:var(--m-health) }
+.fin-card{ border-left:3px solid var(--m-finance) }
 .fx-row,.inc-row,.vx-row,.rc-row{ margin-bottom:9px; transition:box-shadow .15s, border-color .15s; }
 .fx-row:hover,.inc-row:hover,.vx-row:hover,.rc-row:hover{ box-shadow:var(--shadow-md); border-color:var(--border-strong); }
 
@@ -223,8 +229,8 @@ input,select{font-family:inherit;font-size:15px}
 .pay-step{font-size:11px;color:var(--text-muted);margin:-.3rem 0 .8rem;line-height:1.5}
 
 /* ── Ангиллын төсөв ── */
-.bud-bar{height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
-.bud-bar .fill{height:100%;border-radius:4px;transition:width .3s}
+.bud-bar{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
+.bud-bar .fill{height:100%;border-radius:99px;transition:width .3s}
 .bud-ok .fill{background:var(--accent)}
 .bud-warn .fill{background:var(--warn-strong)}
 .bud-over .fill{background:var(--danger)}
@@ -257,6 +263,7 @@ input,select{font-family:inherit;font-size:15px}
 .chk-row{display:flex;align-items:center;gap:9px;padding:10px 0;font-size:14px;cursor:pointer}
 .chk-row input{width:18px;height:18px;margin:0}
 .bottom-nav::-webkit-scrollbar{display:none}
+.nav-brand,.nav-user{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:64px;min-height:52px;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:3px;padding:7px 8px;color:var(--text-muted);border-radius:12px;
@@ -352,7 +359,18 @@ input,select{font-family:inherit;font-size:15px}
 .modal{background:var(--surface);width:100%;max-width:480px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
   padding:1.6rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;
   animation:slideUp .22s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow-lg)}
-.modal h3{letter-spacing:-.01em}
+.modal{position:relative}
+.modal h3{letter-spacing:-.01em;padding-right:38px}
+/* Утсан дээр татах бариул */
+.modal::before{content:'';display:block;width:38px;height:4px;border-radius:99px;
+  background:var(--border-strong);margin:-.5rem auto 1.1rem}
+@media(min-width:520px){ .modal::before{display:none} }
+.modal-x{position:absolute;top:1.1rem;right:1.1rem;width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;color:var(--text-muted);
+  background:var(--surface-2);border:1px solid var(--border);z-index:2}
+.modal-x i{font-size:18px}
+.modal-x:hover{background:var(--surface);color:var(--text)}
+@media(min-width:520px){ .modal-x{top:1.2rem} }
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(min-width:520px){.modal-bg{align-items:center}.modal{border-radius:var(--radius-lg)}}
 .modal h3{font-size:18px;font-weight:600;margin-bottom:1.25rem}
@@ -538,7 +556,7 @@ input,select{font-family:inherit;font-size:15px}
 .cat-bar-row:last-child{margin-bottom:0}
 .cat-bar-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
 .cat-bar-head .num{color:var(--text-2)}
-.cat-bar{height:7px;border-radius:4px;background:var(--accent);min-width:4px}
+.cat-bar{height:9px;border-radius:99px;background:var(--accent);min-width:4px}
 .vx-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:.8rem .9rem;margin-bottom:8px;box-shadow:var(--shadow)}
 .vx-icon{width:36px;height:36px;border-radius:9px;background:var(--warn-bg);display:flex;align-items:center;
@@ -581,8 +599,8 @@ input,select{font-family:inherit;font-size:15px}
 .fin-name{font-size:15px;font-weight:600;flex:1}
 .fin-line{font-size:13px;color:var(--text-2);margin-bottom:2px}
 .fin-line b{color:var(--text);font-weight:600}
-.progress{height:9px;border-radius:5px;background:var(--surface-2);overflow:hidden;margin:9px 0 7px;border:1px solid var(--border)}
-.progress .fill{height:100%;background:var(--accent)}
+.progress{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:9px 0 7px;border:1px solid var(--border)}
+.progress .fill{height:100%;border-radius:99px;background:var(--accent)}
 .progress .fill.sv{background:var(--success)}
 .fin-actions{display:flex;gap:8px;margin-top:10px}
 .fin-actions .btn{flex:1;justify-content:center;padding:8px}
@@ -636,6 +654,25 @@ input,select{font-family:inherit;font-size:15px}
   }
   .nav-btn i{ font-size:20px }
   .nav-btn.active i{ transform:none }
+  /* Идэвхтэй мөрийн зүүн зурвас */
+  .nav-btn.active::before{ content:''; position:absolute; left:-2px; top:50%; transform:translateY(-50%);
+    width:3px; height:56%; border-radius:0 3px 3px 0; background:var(--accent) }
+
+  /* Толгой — лого */
+  .nav-brand{ display:flex; align-items:center; gap:9px; padding:2px 12px 1.1rem;
+    font-size:15px; font-weight:700; letter-spacing:-.02em; color:var(--text) }
+  .nav-brand img{ width:30px; height:30px; border-radius:9px; object-fit:cover }
+
+  /* Хөл — хэрэглэгч */
+  .nav-user{ display:flex; align-items:center; gap:9px; margin-top:auto; padding:10px 12px;
+    border-radius:12px; text-align:left; color:var(--text-2); font-size:13px; width:100% }
+  .nav-user:hover{ background:var(--surface-2) }
+  .nav-user img,.nav-user .nu-av{ width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0;
+    background:var(--accent-bg); color:var(--accent-text); display:flex; align-items:center;
+    justify-content:center; font-weight:600; font-size:13px }
+  .nav-user .nu-n{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    color:var(--text); font-weight:500 }
+  .nav-user i{ font-size:17px; color:var(--text-muted) }
 
   /* Хөвөгч товчийг баганын дотор буулгах */
   #app-screen .fab, .fab{ left:0; right:auto; transform:none; bottom:auto;
@@ -680,9 +717,9 @@ input,select{font-family:inherit;font-size:15px}
   --m-finance:#c4b5fd;  --m-finance-bg:#2e2154;
   --m-remind:#fdba74;   --m-remind-bg:#40260f;
 
-  --bg:#17181a; --surface:#1f2124; --surface-2:#26282c;
-  --text:#f2f1ef; --text-2:#b3b0ab; --text-muted:#807c76;
-  --border:#32343a; --border-strong:#43464d;
+  --bg:#101718; --surface:#172123; --surface-2:#1d2a2c;
+  --text:#eaf2f1; --text-2:#a3b8b7; --text-muted:#849c9b;
+  --border:#2b3a3d; --border-strong:#3c5054;
 
   --shadow:0 1px 2px rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.24);
   --shadow-md:0 2px 4px rgba(0,0,0,.28), 0 4px 12px rgba(0,0,0,.32);
@@ -705,9 +742,9 @@ input,select{font-family:inherit;font-size:15px}
     --m-health:#f9a8d4;   --m-health-bg:#4a1936;
     --m-finance:#c4b5fd;  --m-finance-bg:#2e2154;
     --m-remind:#fdba74;   --m-remind-bg:#40260f;
-    --bg:#17181a; --surface:#1f2124; --surface-2:#26282c;
-    --text:#f2f1ef; --text-2:#b3b0ab; --text-muted:#807c76;
-    --border:#32343a; --border-strong:#43464d;
+    --bg:#101718; --surface:#172123; --surface-2:#1d2a2c;
+    --text:#eaf2f1; --text-2:#a3b8b7; --text-muted:#849c9b;
+    --border:#2b3a3d; --border-strong:#3c5054;
     --shadow:0 1px 2px rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.24);
     --shadow-md:0 2px 4px rgba(0,0,0,.28), 0 4px 12px rgba(0,0,0,.32);
     --shadow-lg:0 8px 28px rgba(0,0,0,.48), 0 2px 6px rgba(0,0,0,.32);
@@ -717,7 +754,7 @@ input,select{font-family:inherit;font-size:15px}
 :root[data-theme="dark"] .card-box{ background:rgba(31,33,36,.92); border-color:rgba(255,255,255,.10) }
 :root[data-theme="dark"] #home-screen,
 :root[data-theme="dark"] #login-screen{ background:linear-gradient(rgba(10,10,12,.55),rgba(10,10,12,.72)), url('Background.jpg') center/cover no-repeat }
-:root[data-theme="dark"] .toast{ background:#3a3d42 }
+:root[data-theme="dark"] .toast{ background:#28383a }
 :root[data-theme="dark"] .modal-bg{ background:rgba(0,0,0,.62) }
 :root[data-theme="dark"] .btn-google{ background:var(--surface) }
 :root[data-theme="dark"] .fab button,
@@ -727,7 +764,7 @@ input,select{font-family:inherit;font-size:15px}
   :root:not([data-theme="light"]) .card-box{ background:rgba(31,33,36,.92); border-color:rgba(255,255,255,.10) }
   :root:not([data-theme="light"]) #home-screen,
   :root:not([data-theme="light"]) #login-screen{ background:linear-gradient(rgba(10,10,12,.55),rgba(10,10,12,.72)), url('Background.jpg') center/cover no-repeat }
-  :root:not([data-theme="light"]) .toast{ background:#3a3d42 }
+  :root:not([data-theme="light"]) .toast{ background:#28383a }
   :root:not([data-theme="light"]) .modal-bg{ background:rgba(0,0,0,.62) }
   :root:not([data-theme="light"]) .btn-google{ background:var(--surface) }
   :root:not([data-theme="light"]) .fab button,
@@ -786,10 +823,10 @@ input,select{font-family:inherit;font-size:15px}
       <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
       <h1>HomeBook</h1>
       <p class="sub">Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор</p>
-      <div class="feat"><i class="ti ti-wallet"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Ус, дулаан, цахилгаан, тогтмол, хувьсах</div></div></div>
-      <div class="feat"><i class="ti ti-car"></i><div><div class="ft">Машин</div><div class="fs">Засвар, даатгал, татвар</div></div></div>
-      <div class="feat"><i class="ti ti-heartbeat"></i><div><div class="ft">Эрүүл мэнд</div><div class="fs">Гишүүн бүрийн эмчилгээ</div></div></div>
-      <div class="feat"><i class="ti ti-bell"></i><div><div class="ft">Сануулга</div><div class="fs">Дуусах хугацаа сануулна</div></div></div>
+      <div class="feat"><i class="ti ti-wallet" style="color:var(--m-income)"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Ус, дулаан, цахилгаан, тогтмол, хувьсах</div></div></div>
+      <div class="feat"><i class="ti ti-car" style="color:var(--m-vehicle)"></i><div><div class="ft">Машин</div><div class="fs">Засвар, даатгал, татвар</div></div></div>
+      <div class="feat"><i class="ti ti-heartbeat" style="color:var(--m-health)"></i><div><div class="ft">Эрүүл мэнд</div><div class="fs">Гишүүн бүрийн эмчилгээ</div></div></div>
+      <div class="feat"><i class="ti ti-bell" style="color:var(--m-remind)"></i><div><div class="ft">Сануулга</div><div class="fs">Дуусах хугацаа сануулна</div></div></div>
       <button class="btn-primary" style="margin-top:1.5rem" onclick="goScreen('login-screen')">Эхлэх <i class="ti ti-arrow-right"></i></button>
       <p class="note"><i class="ti ti-brand-google"></i> Google хаягаар нэвтэрнэ</p>
     </div>
@@ -846,6 +883,7 @@ input,select{font-family:inherit;font-size:15px}
   </div>
   <div class="fab" id="fab"><button onclick="openQuickAdd()" aria-label="Хурдан нэмэх"><i class="ti ti-plus"></i> Нэмэх</button></div>
   <nav class="bottom-nav">
+    <div class="nav-brand"><img src="icon-192.png" alt=""><span>HomeBook</span></div>
     <button class="nav-btn active" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
     <button class="nav-btn" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
     <button class="nav-btn" data-view="fixed" onclick="showView('fixed')"><i class="ti ti-receipt"></i><span>Тогтмол</span></button>
@@ -855,6 +893,7 @@ input,select{font-family:inherit;font-size:15px}
     <button class="nav-btn" data-view="health" onclick="showView('health')"><i class="ti ti-heartbeat"></i><span>Эрүүл мэнд</span></button>
     <button class="nav-btn" data-view="finance" onclick="showView('finance')"><i class="ti ti-credit-card"></i><span>Санхүү</span></button>
     <button class="nav-btn" data-view="reminders" onclick="showView('reminders')"><i class="ti ti-bell"></i><span>Сануулга</span></button>
+    <button type="button" class="nav-user" id="nav-user" onclick="openSettings()" aria-label="Тохиргоо"></button>
   </nav>
 </div>
 
@@ -1642,6 +1681,13 @@ function enterApp(){
   const av=document.getElementById('avatar');
   if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
   else{ av.textContent=name?name[0].toUpperCase():'Т'; }
+  const nu=document.getElementById('nav-user');
+  if(nu){
+    const pic=currentUser&&currentUser.picture
+      ? `<img src="${currentUser.picture}" alt="">`
+      : `<span class="nu-av">${name?escapeHtml(name[0].toUpperCase()):'Т'}</span>`;
+    nu.innerHTML=`${pic}<span class="nu-n">${escapeHtml(name||'Хэрэглэгч')}</span><i class="ti ti-settings"></i>`;
+  }
   processRecurring();              // огноо болсон давтагдах бичлэгүүдийг үүсгэх
   showView(currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
 }
@@ -3167,7 +3213,7 @@ function renderHealth(){
   data.members.forEach(mb=>{
     const ts=treatsOf(mb.id);
     const total=memberTotal(mb.id);
-    html+=`<div class="veh-card">
+    html+=`<div class="veh-card health">
       <div class="veh-head">
         <div class="veh-icon mem-icon"><i class="ti ti-user-heart"></i></div>
         <div style="flex:1"><div class="veh-title">${escapeHtml(mb.name)}</div>
@@ -4392,7 +4438,7 @@ function applyTheme(t){
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta){
     const dark = t==='dark' || (t==='auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    meta.setAttribute('content', dark?'#1f2124':'#0d9488');
+    meta.setAttribute('content', dark?'#172123':'#0d9488');
   }
   const lbl=document.getElementById('theme-label');
   if(lbl)lbl.textContent={auto:'Системийн дагуу',light:'Гэрэлтэй',dark:'Харанхуй'}[t];
@@ -4451,6 +4497,15 @@ function focusablesIn(el){
 function showModalEl(id){
   const bg=document.getElementById(id);
   if(!bg)return null;
+  // Хаах товчийг автоматаар нэмнэ (бүх модалд гараар бичих шаардлагагүй)
+  const m=bg.querySelector('.modal');
+  if(m && !m.querySelector('.modal-x')){
+    const b=document.createElement('button');
+    b.type='button'; b.className='modal-x'; b.setAttribute('aria-label','Хаах');
+    b.innerHTML='<i class="ti ti-x"></i>';
+    b.addEventListener('click',()=>closeModal(id));
+    m.insertBefore(b, m.firstChild);
+  }
   bg.classList.add('show');
   const f=focusablesIn(bg);
   if(f.length)setTimeout(()=>f[0].focus(),50);
