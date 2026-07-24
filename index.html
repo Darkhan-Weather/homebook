@@ -100,6 +100,47 @@ input,select{font-family:inherit;font-size:15px}
 .mom.up{color:var(--danger)} .mom.down{color:var(--success)}
 .export-row{display:flex;gap:10px;margin:14px 0}
 .export-row .btn{flex:1;justify-content:center;padding:12px}
+
+/* ── Quick add / Тохиргоо — үйлдлийн жагсаалт ── */
+.act-list{display:flex;flex-direction:column;gap:8px}
+.act-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:var(--radius);
+  border:1px solid var(--border);background:var(--surface);text-align:left;width:100%;cursor:pointer;
+  min-height:52px;transition:background .15s}
+.act-item:hover{background:var(--surface-2)}
+.act-item .ai{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.act-item .ai i{font-size:20px}
+.act-item .at{font-size:14px;font-weight:500}
+.act-item .ad2{font-size:12px;color:var(--text-2)}
+.ai-inc{background:#dcfce7}.ai-inc i{color:#15803d}
+.ai-exp{background:#fef3c7}.ai-exp i{color:#92400e}
+.ai-met{background:var(--accent-bg)}.ai-met i{color:var(--accent-text)}
+.ai-rem{background:#fef3c7}.ai-rem i{color:#b45309}
+.ai-veh{background:#e0e7ff}.ai-veh i{color:#4338ca}
+.ai-hel{background:#fce7f3}.ai-hel i{color:#be185d}
+.ai-fix{background:#e0f2fe}.ai-fix i{color:#0369a1}
+.ai-gray{background:var(--surface-2)}.ai-gray i{color:var(--text-2)}
+
+/* ── Импорт ── */
+.imp-area{width:100%;min-height:130px;padding:10px 12px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  line-height:1.5;resize:vertical;background:var(--surface)}
+.imp-area:focus{outline:none;border-color:var(--accent)}
+.imp-fmt{background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;
+  color:var(--text-2);line-height:1.6;margin-bottom:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  overflow-x:auto;white-space:pre}
+.imp-result{border-radius:var(--radius-sm);padding:11px 12px;font-size:13px;margin-top:.75rem;line-height:1.5}
+.imp-result.ok{background:#dcfce7;color:#15803d}
+.imp-result.warn{background:#fef3c7;color:#92400e}
+.imp-result.err{background:#fee2e2;color:#b91c1c}
+.file-btn{display:block;width:100%;padding:11px;border-radius:var(--radius-sm);border:1px dashed var(--border-strong);
+  background:transparent;color:var(--accent-text);font-size:14px;font-weight:500;text-align:center;cursor:pointer;margin-bottom:.75rem}
+.file-btn:hover{background:var(--accent-bg)}
+
+/* ── Нөөц ── */
+.bk-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.bk-row:last-child{border-bottom:none}
+.bk-date{flex:1;font-size:14px;font-variant-numeric:tabular-nums}
+.bk-sub{font-size:12px;color:var(--text-2)}
 .bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav{scrollbar-width:none}
 .nav-btn{flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;
@@ -415,7 +456,7 @@ input,select{font-family:inherit;font-size:15px}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <button type="button" class="sync-badge" id="sync-badge" onclick="onSyncBadgeClick()" aria-label="Синкийн төлөв"><i class="ti ti-cloud"></i> <span>Синктэй</span></button>
-        <div class="avatar" id="avatar" onclick="logout()" title="Гарах">Т</div>
+        <button type="button" class="avatar" id="avatar" onclick="openSettings()" aria-label="Тохиргоо">Т</button>
       </div>
     </div>
     <!-- Хураангуй -->
@@ -439,7 +480,7 @@ input,select{font-family:inherit;font-size:15px}
     <!-- Сануулга -->
     <div id="view-reminders" class="view"></div>
   </div>
-  <div class="fab" id="fab" style="display:none"><button onclick="openReadingModal()"><i class="ti ti-plus"></i> Шинэ заалт нэмэх</button></div>
+  <div class="fab" id="fab"><button onclick="openQuickAdd()" aria-label="Хурдан нэмэх"><i class="ti ti-plus"></i> Нэмэх</button></div>
   <nav class="bottom-nav">
     <button class="nav-btn active" data-view="home" onclick="showView('home')"><i class="ti ti-layout-dashboard"></i><span>Хураангуй</span></button>
     <button class="nav-btn" data-view="meters" onclick="showView('meters')"><i class="ti ti-droplet"></i><span>Тоолуур</span></button>
@@ -845,6 +886,104 @@ input,select{font-family:inherit;font-size:15px}
       <button class="btn acc" onclick="saveReminder()">Хадгалах</button>
     </div>
     <div style="margin-top:10px" id="rm-delete-wrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: Quick add -->
+<div class="modal-bg" id="quick-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="qa-title">
+    <h3 id="qa-title">Хурдан нэмэх</h3>
+    <div class="act-list">
+      <button type="button" class="act-item" onclick="quickGo('income')">
+        <span class="ai ai-inc"><i class="ti ti-coin"></i></span>
+        <span><span class="at">Орлого</span><br><span class="ad2">Цалин, нэмэлт орлого</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('variable')">
+        <span class="ai ai-exp"><i class="ti ti-shopping-cart"></i></span>
+        <span><span class="at">Хувьсах зардал</span><br><span class="ad2">Хүнс, тээвэр, аялал</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('reading')">
+        <span class="ai ai-met"><i class="ti ti-gauge"></i></span>
+        <span><span class="at">Тоолуурын заалт</span><br><span class="ad2">Ус, дулаан, цахилгаан</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('fixed')">
+        <span class="ai ai-fix"><i class="ti ti-receipt"></i></span>
+        <span><span class="at">Тогтмол зардал төлөх</span><br><span class="ad2">Энэ сарын жагсаалт руу</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('repair')">
+        <span class="ai ai-veh"><i class="ti ti-car"></i></span>
+        <span><span class="at">Машины засвар</span><br><span class="ad2">Юу зассан, хэдэн төгрөг</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('treat')">
+        <span class="ai ai-hel"><i class="ti ti-heartbeat"></i></span>
+        <span><span class="at">Эмчилгээ</span><br><span class="ad2">Гишүүний эмчилгээ, эм</span></span></button>
+      <button type="button" class="act-item" onclick="quickGo('reminder')">
+        <span class="ai ai-rem"><i class="ti ti-bell"></i></span>
+        <span><span class="at">Сануулга</span><br><span class="ad2">Даатгал, татвар, вакцин</span></span></button>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('quick-modal')">Хаах</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Тохиргоо -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="st-title">
+    <h3 id="st-title">Тохиргоо</h3>
+    <div id="st-user" style="font-size:13px;color:var(--text-2);margin-bottom:1rem"></div>
+    <div class="act-list">
+      <button type="button" class="act-item" onclick="openImportModal()">
+        <span class="ai ai-fix"><i class="ti ti-file-import"></i></span>
+        <span><span class="at">Өгөгдөл импортлох</span><br><span class="ad2">CSV-ээс олон бичлэг нэг дор</span></span></button>
+      <button type="button" class="act-item" onclick="openBackupModal()">
+        <span class="ai ai-met"><i class="ti ti-cloud-download"></i></span>
+        <span><span class="at">Нөөц ба сэргээх</span><br><span class="ad2">Drive дээрх өдрийн нөөцүүд</span></span></button>
+      <button type="button" class="act-item" onclick="exportExcel()">
+        <span class="ai ai-inc"><i class="ti ti-file-spreadsheet"></i></span>
+        <span><span class="at">Excel татах</span><br><span class="ad2">Бүх өгөгдлийг хүснэгтээр</span></span></button>
+      <button type="button" class="act-item" onclick="addMongolTemplate()">
+        <span class="ai ai-gray"><i class="ti ti-template"></i></span>
+        <span><span class="at">Монгол өрхийн загвар</span><br><span class="ad2">Тогтмол зардлын жагсаалт үүсгэх</span></span></button>
+      <button type="button" class="act-item" onclick="closeModal('settings-modal');logout()">
+        <span class="ai ai-gray"><i class="ti ti-logout"></i></span>
+        <span><span class="at">Гарах</span><br><span class="ad2" id="st-email"></span></span></button>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('settings-modal')">Хаах</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Импорт -->
+<div class="modal-bg" id="import-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="im-title">
+    <h3 id="im-title">Өгөгдөл импортлох</h3>
+    <div class="field">
+      <label for="im-type">Юу импортлох вэ</label>
+      <select id="im-type" onchange="renderImportFormat()">
+        <option value="fixed">Тогтмол зардлын төлбөр</option>
+        <option value="income">Орлого</option>
+        <option value="variable">Хувьсах зардал</option>
+        <option value="reading">Тоолуурын заалт</option>
+      </select>
+    </div>
+    <div class="imp-fmt" id="im-format"></div>
+    <label class="file-btn" for="im-file"><i class="ti ti-upload"></i> CSV файл сонгох</label>
+    <input type="file" id="im-file" accept=".csv,.txt" style="display:none" onchange="loadImportFile(this)">
+    <div class="field">
+      <label for="im-text">Эсвэл шууд буулгах</label>
+      <textarea class="imp-area" id="im-text" placeholder="Мөр бүрд нэг бичлэг, таслалаар тусгаарлана" oninput="previewImport()"></textarea>
+    </div>
+    <div id="im-result"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('import-modal')">Болих</button>
+      <button class="btn acc" id="im-go" onclick="runImport()">Импортлох</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Нөөц -->
+<div class="modal-bg" id="backup-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bk-title">
+    <h3 id="bk-title">Нөөц ба сэргээх</h3>
+    <button class="btn acc" style="width:100%;justify-content:center;margin-bottom:1rem" onclick="manualBackup()">
+      <i class="ti ti-cloud-upload"></i> Одоо нөөц үүсгэх</button>
+    <div class="section-label"><i class="ti ti-history"></i> Drive дээрх нөөцүүд</div>
+    <div id="bk-list"><div class="empty-line">Ачаалж байна...</div></div>
+    <div class="hint" style="margin-top:.75rem">Сэргээхэд одоогийн өгөгдөл нөөцийн хувилбараар солигдоно. Сэргээхийн өмнө автоматаар нэмэлт нөөц үүснэ.</div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('backup-modal')">Хаах</button></div>
   </div>
 </div>
 
@@ -1442,6 +1581,301 @@ function deleteNote(id){
   persist(); renderNotes(histMeterId); render();
 }
 
+/* ═══ Нөөц ба сэргээх ═══ */
+async function openBackupModal(){
+  closeIfOpen('settings-modal');
+  document.getElementById('bk-list').innerHTML='<div class="empty-line">Ачаалж байна...</div>';
+  openModal('backup-modal');
+  await listBackups();
+}
+async function listBackups(){
+  const el=document.getElementById('bk-list');
+  if(!accessToken){ el.innerHTML='<div class="empty-line">Нэвтрээгүй байна</div>'; return; }
+  try{
+    const folderId=await getOrCreateFolder();
+    const bf=await getBackupFolder(folderId);
+    const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name,size,modifiedTime)`)
+      .then(r=>r.json());
+    const files=(res.files||[]).filter(f=>f.name.indexOf('backup_')===0);
+    if(files.length===0){ el.innerHTML='<div class="empty-line">Нөөц алга. Дээрх товчоор үүсгэнэ үү.</div>'; return; }
+    el.innerHTML=files.map(f=>{
+      const d=f.name.replace('backup_','').replace('.json','');
+      const kb=f.size?Math.max(1,Math.round(f.size/1024))+' KB':'';
+      return `<div class="bk-row">
+        <span class="bk-date">${escapeHtml(d)}<br><span class="bk-sub">${kb}</span></span>
+        <button class="btn sm" onclick="restoreBackup('${f.id}','${escapeHtml(d)}')"><i class="ti ti-restore"></i> Сэргээх</button>
+      </div>`;
+    }).join('');
+  }catch(e){
+    if(e&&e.authError)el.innerHTML='<div class="empty-line">Дахин нэвтэрнэ үү</div>';
+    else el.innerHTML='<div class="empty-line">Нөөцийн жагсаалт уншигдсангүй</div>';
+  }
+}
+async function manualBackup(){
+  if(!accessToken){ toast('Эхлээд нэвтэрнэ үү'); return; }
+  toast('Нөөц үүсгэж байна...');
+  await doBackup();
+  await listBackups();
+  toast('Нөөц үүслээ');
+}
+async function restoreBackup(fileId, label){
+  if(!confirm('"'+label+'" нөөцөөр сэргээх үү?\n\nОдоогийн өгөгдөл энэ хувилбараар солигдоно.\nСэргээхийн өмнө одоогийн байдлаар нэмэлт нөөц үүснэ.'))return;
+  try{
+    toast('Сэргээж байна...');
+    await doBackup();                       // одоогийн байдлыг эхлээд хамгаална
+    const text=await apiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`).then(r=>r.text());
+    const b=JSON.parse(text);
+    const KEYS=['meters','readings','notes','fixedItems','payments','income',
+                'categories','variable','vehicles','repairs','members','treatments',
+                'loans','savings','reminders'];
+    KEYS.forEach(k=>{ data[k]=Array.isArray(b[k])?b[k]:[]; });
+    data.tombstones=b.tombstones&&typeof b.tombstones==='object'?b.tombstones:{};
+    migrate(); saveLocal();
+    await saveToDrive();                    // сэргээсэн байдлыг үндсэн файлд бичих
+    closeModal('backup-modal'); render();
+    toast('Сэргээгдлээ');
+  }catch(e){
+    console.error('Сэргээх алдаа:',e);
+    toast(e&&e.authError?'Дахин нэвтэрнэ үү':'Сэргээхэд алдаа гарлаа');
+  }
+}
+
+/* ═══ CSV импорт ═══ */
+const IMPORT_SPEC={
+  fixed:    { title:'Тогтмол зардлын төлбөр',
+              cols:['Сар','Зүйл','Дүн','Төлсөн'],
+              sample:'Сар,Зүйл,Дүн,Төлсөн\n2025-01,Цахилгаан,43932,Тийм\n2025-01,Ус суваг,25300,Тийм' },
+  income:   { title:'Орлого',
+              cols:['Огноо','Төрөл','Тайлбар','Дүн'],
+              sample:'Огноо,Төрөл,Тайлбар,Дүн\n2026-07-15,Цалин,I хагас,450500\n2026-07-30,Цалин,II хагас,2502826' },
+  variable: { title:'Хувьсах зардал',
+              cols:['Огноо','Ангилал','Тайлбар','Дүн'],
+              sample:'Огноо,Ангилал,Тайлбар,Дүн\n2026-07-05,Хүнс,Дэлгүүр,45000\n2026-07-08,Тээвэр,Такси,12000' },
+  reading:  { title:'Тоолуурын заалт',
+              cols:['Огноо','Тоолуур','Заалт'],
+              sample:'Огноо,Тоолуур,Заалт\n2026-06-13,Гал тогоо — халуун ус,118\n2026-06-13,Ванна — хүйтэн ус,4' }
+};
+function openImportModal(){
+  closeIfOpen('settings-modal');
+  document.getElementById('im-text').value='';
+  document.getElementById('im-result').innerHTML='';
+  renderImportFormat();
+  openModal('import-modal');
+}
+function renderImportFormat(){
+  const t=document.getElementById('im-type').value;
+  const s=IMPORT_SPEC[t];
+  document.getElementById('im-format').textContent=s.sample;
+  previewImport();
+}
+function loadImportFile(input){
+  const f=input.files&&input.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ document.getElementById('im-text').value=r.result; previewImport(); };
+  r.onerror=()=>toast('Файл уншиж чадсангүй');
+  r.readAsText(f,'utf-8');
+  input.value='';
+}
+/* Энгийн CSV задлагч — хашилттай талбарыг дэмжинэ */
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ cell+='"'; i++; } else q=false; }
+      else cell+=c;
+    }else{
+      if(c==='"')q=true;
+      else if(c===','||c===';'||c==='\t'){ row.push(cell); cell=''; }
+      else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+      else if(c!=='\r')cell+=c;
+    }
+  }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(x=>x!==''));
+}
+function normNum(s){
+  if(s==null)return NaN;
+  return parseFloat(String(s).replace(/[\s',₮]/g,'').replace(/(\d),(\d)/g,'$1$2'));
+}
+function normDate(s){
+  s=String(s||'').trim().replace(/[./]/g,'-');
+  const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  return null;
+}
+function normMonth(s){
+  s=String(s||'').trim().replace(/[./]/g,'-');
+  let m=s.match(/^(\d{4})-(\d{1,2})$/);
+  if(m)return m[1]+'-'+m[2].padStart(2,'0');
+  const d=normDate(s);
+  return d?d.slice(0,7):null;
+}
+function isYes(s){ return /^(тийм|yes|y|1|true|төлсөн|x|✓)$/i.test(String(s||'').trim()); }
+
+/* Мөрүүдийг задалж, алдааг тоолно */
+function analyzeImport(){
+  const type=document.getElementById('im-type').value;
+  const text=document.getElementById('im-text').value;
+  const spec=IMPORT_SPEC[type];
+  const out={ type, rows:[], errors:[], newItems:new Set() };
+  if(!text.trim())return out;
+  let rows=parseCSV(text);
+  // Толгой мөрийг алгасах
+  if(rows.length && rows[0].some(c=>spec.cols.some(h=>c.toLowerCase()===h.toLowerCase()))) rows=rows.slice(1);
+  rows.forEach((r,idx)=>{
+    const ln=idx+1;
+    if(type==='fixed'){
+      const month=normMonth(r[0]), name=(r[1]||'').trim(), amt=normNum(r[2]);
+      if(!month)return out.errors.push(ln+'-р мөр: сар буруу ("'+(r[0]||'')+'")');
+      if(!name)  return out.errors.push(ln+'-р мөр: зүйлийн нэр хоосон');
+      if(isNaN(amt)||amt<0)return out.errors.push(ln+'-р мөр: дүн буруу ("'+(r[2]||'')+'")');
+      const item=data.fixedItems.find(i=>i.name.trim().toLowerCase()===name.toLowerCase());
+      if(!item)out.newItems.add(name);
+      out.rows.push({ month, name, amount:amt, paid:r[3]===undefined?true:isYes(r[3]) });
+    }else if(type==='income'||type==='variable'){
+      const date=normDate(r[0]), key=(r[1]||'').trim(), note=(r[2]||'').trim(), amt=normNum(r[3]);
+      if(!date)return out.errors.push(ln+'-р мөр: огноо буруу ("'+(r[0]||'')+'")');
+      if(isNaN(amt)||amt<0)return out.errors.push(ln+'-р мөр: дүн буруу ("'+(r[3]||'')+'")');
+      if(type==='variable'){
+        if(!key)return out.errors.push(ln+'-р мөр: ангилал хоосон');
+        if(!data.categories.find(c=>c.name.trim().toLowerCase()===key.toLowerCase()))out.newItems.add(key);
+      }
+      out.rows.push({ date, key:key||'Бусад', note, amount:amt });
+    }else if(type==='reading'){
+      const date=normDate(r[0]), name=(r[1]||'').trim(), val=normNum(r[2]);
+      if(!date)return out.errors.push(ln+'-р мөр: огноо буруу ("'+(r[0]||'')+'")');
+      if(!name)return out.errors.push(ln+'-р мөр: тоолуурын нэр хоосон');
+      if(isNaN(val)||val<0)return out.errors.push(ln+'-р мөр: заалт буруу ("'+(r[2]||'')+'")');
+      if(!data.meters.find(m=>m.name.trim().toLowerCase()===name.toLowerCase()))out.newItems.add(name);
+      out.rows.push({ date, name, value:val });
+    }
+  });
+  return out;
+}
+function previewImport(){
+  const a=analyzeImport();
+  const el=document.getElementById('im-result');
+  const go=document.getElementById('im-go');
+  if(a.rows.length===0 && a.errors.length===0){ el.innerHTML=''; go.disabled=false; return; }
+  let html='';
+  if(a.rows.length){
+    html+='<div class="imp-result ok"><b>'+a.rows.length+'</b> бичлэг бэлэн';
+    if(a.newItems.size)html+=' · <b>'+a.newItems.size+'</b> шинэ зүйл үүснэ ('+[...a.newItems].slice(0,4).join(', ')+(a.newItems.size>4?'...':'')+')';
+    html+='</div>';
+  }
+  if(a.errors.length){
+    html+='<div class="imp-result err"><b>'+a.errors.length+'</b> мөр алгасагдана:<br>'+
+      a.errors.slice(0,5).map(escapeHtml).join('<br>')+(a.errors.length>5?'<br>...':'')+'</div>';
+  }
+  el.innerHTML=html;
+}
+function runImport(){
+  const a=analyzeImport();
+  if(a.rows.length===0){ toast('Импортлох бичлэг алга'); return; }
+  if(!confirm(a.rows.length+' бичлэг импортлох уу?'+(a.newItems.size?'\n'+a.newItems.size+' шинэ зүйл автоматаар үүснэ.':'')))return;
+  const now=Date.now(); let n=0, seq=0;
+  if(a.type==='fixed'){
+    a.rows.forEach(r=>{
+      let item=data.fixedItems.find(i=>i.name.trim().toLowerCase()===r.name.toLowerCase());
+      if(!item){
+        const tpl=MN_TEMPLATE.find(t=>t.name.toLowerCase()===r.name.toLowerCase());
+        item={ id:'f'+(now+(seq++)), name:r.name, type:tpl?tpl.type:'helbelzeh',
+               group:tpl?tpl.group:'Бусад', amount:0, updatedAt:now };
+        data.fixedItems.push(item);
+      }
+      setPayment(item.id, r.month, { amount:r.amount, paid:r.paid });
+      n++;
+    });
+  }else if(a.type==='income'){
+    a.rows.forEach(r=>{ data.income.push({ id:'i'+(now+(seq++)), date:r.date, type:r.key||'Цалин',
+      note:r.note, amount:r.amount, updatedAt:now }); n++; });
+  }else if(a.type==='variable'){
+    a.rows.forEach(r=>{
+      let cat=data.categories.find(c=>c.name.trim().toLowerCase()===r.key.toLowerCase());
+      if(!cat){ cat={ id:'c'+(now+(seq++)), name:r.key, updatedAt:now }; data.categories.push(cat); }
+      data.variable.push({ id:'v'+(now+(seq++)), date:r.date, categoryId:cat.id,
+        note:r.note, amount:r.amount, updatedAt:now }); n++;
+    });
+  }else if(a.type==='reading'){
+    a.rows.forEach(r=>{
+      let m=data.meters.find(x=>x.name.trim().toLowerCase()===r.name.toLowerCase());
+      if(!m){ m={ id:'m'+(now+(seq++)), name:r.name, type:'huiten', unit:'м³', updatedAt:now }; data.meters.push(m); }
+      const dup=data.readings.find(x=>x.meterId===m.id && x.date===r.date);
+      if(dup){ dup.value=r.value; dup.updatedAt=now; }
+      else data.readings.push({ id:'r'+(now+(seq++)), meterId:m.id, date:r.date, value:r.value, updatedAt:now });
+      n++;
+    });
+  }
+  persist(); closeModal('import-modal'); render();
+  toast(n+' бичлэг импортлогдлоо');
+}
+
+/* ═══ Quick add — доод + товчноос шууд нэмэх ═══ */
+function openQuickAdd(){ openModal('quick-modal'); }
+function quickGo(what){
+  closeModal('quick-modal');
+  setTimeout(()=>{
+    switch(what){
+      case 'income':   showView('income');   openIncomeModal(); break;
+      case 'variable': showView('variable'); openVariableModal(); break;
+      case 'reading':  showView('meters');   openReadingModal(); break;
+      case 'fixed':    showView('fixed'); break;
+      case 'reminder': showView('reminders'); openReminderModal(); break;
+      case 'repair':
+        showView('vehicles');
+        if(data.vehicles.length===0){ toast('Эхлээд машин нэмнэ үү'); openVehicleModal(); }
+        else if(data.vehicles.length===1){ repairVehicleId=data.vehicles[0].id; openRepairModal(); }
+        else toast('Аль машины засвар болохыг сонгоно уу');
+        break;
+      case 'treat':
+        showView('health');
+        if(data.members.length===0){ toast('Эхлээд гишүүн нэмнэ үү'); openMemberModal(); }
+        else if(data.members.length===1){ treatMemberId=data.members[0].id; openTreatModal(); }
+        else toast('Аль гишүүний эмчилгээ болохыг сонгоно уу');
+        break;
+    }
+  },180);
+}
+
+/* ═══ Тохиргоо ═══ */
+function openSettings(){
+  const u=document.getElementById('st-user');
+  const e=document.getElementById('st-email');
+  if(currentUser){
+    u.textContent=(currentUser.name||'')+(currentUser.email?' · '+currentUser.email:'');
+    if(e)e.textContent=currentUser.email||'';
+  }else{ u.textContent=''; }
+  openModal('settings-modal');
+}
+
+/* ═══ Монгол өрхийн загвар ═══ */
+const MN_TEMPLATE=[
+  { name:'Цахилгаан',   group:'Ашиглалт',   type:'helbelzeh' },
+  { name:'Ус суваг',    group:'Ашиглалт',   type:'helbelzeh' },
+  { name:'Дулаан',      group:'Ашиглалт',   type:'helbelzeh' },
+  { name:'Интернэт',    group:'Холбоо/ТВ',  type:'togtmol'   },
+  { name:'Гар утас',    group:'Холбоо/ТВ',  type:'togtmol'   },
+  { name:'LookTV',      group:'Холбоо/ТВ',  type:'togtmol'   },
+  { name:'ДДШ-TV',      group:'Холбоо/ТВ',  type:'togtmol'   },
+  { name:'СӨХ',         group:'Орон сууц',  type:'togtmol'   },
+  { name:'Хог, тээвэр', group:'Орон сууц',  type:'togtmol'   },
+  { name:'Цэцэрлэг',    group:'Хүүхэд',     type:'togtmol'   }
+];
+function addMongolTemplate(){
+  const exist=new Set(data.fixedItems.map(i=>i.name.trim().toLowerCase()));
+  const toAdd=MN_TEMPLATE.filter(t=>!exist.has(t.name.toLowerCase()));
+  if(toAdd.length===0){ toast('Бүх зүйл аль хэдийн нэмэгдсэн байна'); return; }
+  if(!confirm(toAdd.length+' зардлын зүйл нэмэх үү?\n\n'+toAdd.map(t=>'· '+t.name).join('\n')+'\n\nДүнг нь дараа өөрөө оруулна.'))return;
+  const now=Date.now();
+  toAdd.forEach((t,i)=>{
+    data.fixedItems.push({ id:'f'+(now+i), name:t.name, type:t.type, group:t.group, amount:0, updatedAt:now+i });
+  });
+  persist(); closeIfOpen('settings-modal'); showView('fixed');
+  toast(toAdd.length+' зүйл нэмэгдлээ');
+}
+
 /* ═══ Навигаци ═══ */
 let currentView='home';
 function showView(name){
@@ -1449,8 +1883,7 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
-  // FAB зөвхөн Тоолуур дэлгэцэд
-  document.getElementById('fab').style.display=(name==='meters')?'block':'none';
+  document.getElementById('fab').style.display='block';   // Quick add үргэлж бэлэн
   render();
 }
 
@@ -2338,6 +2771,7 @@ function renderFixed(){
     rows=`<div class="empty-state" style="padding:2rem 1rem">
       <i class="ti ti-receipt"></i><h3>Зардлын зүйл алга</h3>
       <p>Интернэт, СӨХ, хог, ус, дулаан зэргээ нэмээд сар бүр төлбөрөө хөтөлнө.</p>
+      <button class="btn acc" onclick="addMongolTemplate()"><i class="ti ti-template"></i> Монгол өрхийн загвар нэмэх</button>
     </div>`;
   }else{
     // Бүлгээр бүлэглэх
