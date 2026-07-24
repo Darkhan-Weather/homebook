@@ -484,6 +484,25 @@ input,select{font-family:inherit;font-size:15px}
 .chip.down{background:var(--success-bg);color:var(--success);border-color:var(--success-br)}
 .chip.top{background:var(--m-variable-bg);color:var(--warn-fg);border-color:transparent}
 
+/* ── Дансны тааруулга ── */
+.rec-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;font-size:14px}
+.rec-row + .rec-row{border-top:1px solid var(--border)}
+.rec-row .rl{color:var(--text-2)}
+.rec-row .rv{font-weight:600;font-variant-numeric:tabular-nums}
+.rec-row.total{border-top:2px solid var(--border);margin-top:4px;padding-top:12px}
+.rec-row.total .rl{color:var(--text);font-weight:600}
+.rec-row.total .rv{font-size:17px}
+.rec-neg .rv{color:var(--danger)} .rec-pos .rv{color:var(--success)}
+.rec-input{width:140px;padding:9px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  text-align:right;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--surface)}
+.rec-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(13,148,136,.14)}
+.rec-note{font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:.6rem}
+.bal-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.bal-row:last-child{border-bottom:none}
+.bal-m{font-size:14px;font-weight:500;min-width:110px}
+.bal-d{font-size:12px;font-variant-numeric:tabular-nums;margin-left:auto;white-space:nowrap}
+.bal-d.neg{color:var(--danger)} .bal-d.pos{color:var(--success)}
+
 .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .money-grid .mc,.stat-grid .stat{min-width:0}
 .money-grid .mv,.stat .sv{overflow-wrap:anywhere}
@@ -1451,7 +1470,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], tombstones:{} };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -1626,7 +1645,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, tombstones:data.tombstones };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
@@ -1673,6 +1692,7 @@ async function loadFromDrive(){
       data.savings=mergeById(data.savings, remote.savings||[]);
       data.reminders=mergeById(data.reminders, remote.reminders||[]);
       data.recurring=mergeById(data.recurring, remote.recurring||[]);
+      data.balances=mergeById(data.balances, remote.balances||[]);
       migrate(); saveLocal();
     }
     processRecurring();            // Drive-аас lastCreated шинэчлэгдсэний дараа
@@ -1712,7 +1732,7 @@ async function doBackup(){
     const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,tombstones:data.tombstones})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -1785,7 +1805,7 @@ function loadLocal(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[]; if(!data.recurring)data.recurring=[]; if(!data.tombstones)data.tombstones={};
+  if(!data.reminders)data.reminders=[]; if(!data.recurring)data.recurring=[]; if(!data.balances)data.balances=[]; if(!data.tombstones)data.tombstones={};
   migrate();
 }
 /* Хуучин загвар (tariff тоо) → шинэ (tariffs түүх) руу шилжүүлэх */
@@ -2017,6 +2037,68 @@ function deleteNote(id){
   tombstone(id);
   data.notes=data.notes.filter(n=>n.id!==id);
   persist(); renderNotes(histMeterId); render();
+}
+
+/* ═══ Дансны тааруулга ═══
+   Банкны бодит үлдэгдлийг сар бүр бичихэд апп хүлээгдэж буй үлдэгдэлтэй
+   харьцуулж, зөрүүг (мэдэгдэхгүй зарлага) автоматаар гаргана.
+   Ингэснээр жижиг зарлагуудыг гараар "тааруулах бичилт" хийх шаардлагагүй. */
+function balanceId(month){ return 'bal_'+month; }
+function getBalance(month){ return data.balances.find(b=>b.month===month)||null; }
+function setBalance(month, actual, note){
+  let b=getBalance(month);
+  if(!b){ b={ id:balanceId(month), month, actual:null, note:'' }; data.balances.push(b); }
+  b.actual=actual; if(note!==undefined)b.note=note;
+  b.updatedAt=Date.now();
+  return b;
+}
+/* Өмнөх бүртгэлтэй сарын бодит үлдэгдэл */
+function prevActualBalance(month){
+  const list=data.balances.filter(b=>b.month<month && b.actual!=null)
+    .sort((a,b)=>b.month.localeCompare(a.month));
+  return list.length?list[0]:null;
+}
+/* Хүлээгдэж буй үлдэгдэл = өмнөх бодит + хооронд дахь орлого − зардал */
+function expectedBalance(month){
+  const pa=prevActualBalance(month);
+  if(!pa)return null;
+  let m=nextMonth(pa.month), exp=pa.actual, guard=0;
+  while(m<=month && guard++<36){
+    const t=monthlyTotals(m);
+    exp += t.income - t.expense;
+    m=nextMonth(m);
+  }
+  return { expected:exp, from:pa.month };
+}
+/* Зөрүү: сөрөг = мэдэгдэхгүй зарлага, эерэг = бүртгээгүй орлого */
+function balanceDiff(month){
+  const b=getBalance(month);
+  if(!b || b.actual==null)return null;
+  const e=expectedBalance(month);
+  if(!e)return { expected:null, actual:b.actual, diff:null, from:null };
+  return { expected:e.expected, actual:b.actual, diff:b.actual-e.expected, from:e.from };
+}
+function saveDashBalance(val){
+  let a=parseFloat(val);
+  if(val===''||isNaN(a)){                       // хоосон болговол бүртгэлийг арилгана
+    const b=getBalance(monthLocal());
+    if(b){ tombstone(b.id); data.balances=data.balances.filter(x=>x.id!==b.id); }
+  }else{
+    const va=validAmount(a); if(!va.ok){ toast(va.msg,'warn'); renderHome(); return; }
+    setBalance(monthLocal(), a);
+  }
+  persist(); renderHome(); renderFinance();
+}
+function saveBalanceFor(month, val){
+  let a=parseFloat(val);
+  if(val===''||isNaN(a)){
+    const b=getBalance(month);
+    if(b){ tombstone(b.id); data.balances=data.balances.filter(x=>x.id!==b.id); }
+  }else{
+    const va=validAmount(a); if(!va.ok){ toast(va.msg,'warn'); renderFinance(); return; }
+    setBalance(month, a);
+  }
+  persist(); renderFinance(); renderHome();
 }
 
 /* ═══ Давтагдах бичлэг ═══
@@ -2391,7 +2473,7 @@ async function restoreBackup(fileId, label){
     const b=JSON.parse(text);
     const KEYS=['meters','readings','notes','fixedItems','payments','income',
                 'categories','variable','vehicles','repairs','members','treatments',
-                'loans','savings','reminders','recurring'];
+                'loans','savings','reminders','recurring','balances'];
     KEYS.forEach(k=>{ data[k]=Array.isArray(b[k])?b[k]:[]; });
     data.tombstones=b.tombstones&&typeof b.tombstones==='object'?b.tombstones:{};
     migrate(); saveLocal();
@@ -2882,7 +2964,27 @@ function renderFinance(){
       </div>`;
     }).join('');
   }
+  // ── Дансны үлдэгдлийн түүх ──
+  const months=lastNMonths(6).reverse();
+  const balHtml=months.map(m=>{
+    const b=getBalance(m), d=balanceDiff(m);
+    const dTxt = d&&d.diff!=null
+      ? `<span class="bal-d ${d.diff<0?'neg':(d.diff>0?'pos':'')}">${d.diff===0?'тэнцсэн':(d.diff<0?'−':'+')+fmt(Math.abs(d.diff))+'₮'}</span>`
+      : '<span class="bal-d" style="color:var(--text-muted)">—</span>';
+    return `<div class="bal-row">
+      <span class="bal-m">${fxMonthLabel(m)}</span>
+      <input class="rec-input" type="number" min="0" inputmode="decimal" placeholder="үлдэгдэл"
+        value="${b&&b.actual!=null?b.actual:''}" aria-label="${fxMonthLabel(m)} — дансны үлдэгдэл"
+        onchange="saveBalanceFor('${m}',this.value)">
+      ${dTxt}
+    </div>`;
+  }).join('');
   wrap.innerHTML=`
+    <div class="sec-title"><i class="ti ti-scale"></i> Дансны үлдэгдэл</div>
+    <div class="fin-card">
+      ${balHtml}
+      <div class="rec-note">Сар бүрийн эцсийн үлдэгдлээ бичихэд зөрүү (мэдэгдэхгүй зарлага) автоматаар гарна.</div>
+    </div>
     <div class="sec-title"><i class="ti ti-credit-card"></i> Зээл / өр</div>
     ${loanHtml}
     <button class="btn" style="width:100%;justify-content:center" onclick="openLoanModal()"><i class="ti ti-plus"></i> Зээл нэмэх</button>
@@ -3975,6 +4077,25 @@ function renderHome(){
         <div class="bud-meta"><span class="num">${a.pct}%</span><span class="st ${a.state}">${a.state==='over'?'хэтэрсэн':'ойрхон'}</span></div>
       </div>`).join('')+`</div>`;
   }
+  // Дансны тааруулга
+  const balNow=getBalance(ym), diffNow=balanceDiff(ym), expNow=expectedBalance(ym);
+  let recPanel='';
+  if(hasMoney){
+    const d=diffNow&&diffNow.diff!=null?diffNow.diff:null;
+    recPanel=`<div class="panel">
+      <h4><i class="ti ti-scale" style="color:var(--m-finance)"></i> Дансны тааруулга</h4>
+      ${expNow?`<div class="rec-row"><span class="rl">Хүлээгдэж буй үлдэгдэл</span><span class="rv num">${fmt(expNow.expected)}₮</span></div>`
+              :`<div class="rec-note">Өмнөх сарын бодит үлдэгдэл бүртгэгдээгүй тул хүлээгдэж буй дүн бодогдохгүй байна.</div>`}
+      <div class="rec-row"><span class="rl">Дансны бодит үлдэгдэл</span>
+        <input class="rec-input" type="number" min="0" inputmode="decimal" placeholder="бичих"
+          value="${balNow&&balNow.actual!=null?balNow.actual:''}"
+          aria-label="Дансны бодит үлдэгдэл" onchange="saveDashBalance(this.value)"></div>
+      ${d!=null?`<div class="rec-row total ${d<0?'rec-neg':(d>0?'rec-pos':'')}">
+        <span class="rl">${d<0?'Мэдэгдэхгүй зарлага':(d>0?'Бүртгээгүй орлого':'Тэнцсэн')}</span>
+        <span class="rv num">${d===0?'0₮':fmt(Math.abs(d))+'₮'}</span></div>`:''}
+      <div class="rec-note">Сарын эцэст банкны үлдэгдлээ бичихэд зөрүү автоматаар гарна. Жижиг зарлагуудыг гараар бүртгэх шаардлагагүй.</div>
+    </div>`;
+  }
   wrap.innerHTML=`
     <div class="stat-grid">
       <div class="stat"><div class="sl">Тоолуур</div><div class="sv num">${meterCount}</div></div>
@@ -3989,6 +4110,7 @@ function renderHome(){
         ${chartPanel}
       </div>
       <div>
+        ${recPanel}
         ${breakdownPanel}
         <div class="panel">
           <h4>Сүүлийн үйл ажиллагаа</h4>
