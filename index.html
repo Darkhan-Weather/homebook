@@ -438,6 +438,7 @@ input,select{font-family:inherit;font-size:15px}
 .fx-name{font-size:14px;font-weight:500;line-height:1.3}
 .fx-type{font-size:11px;color:var(--text-muted)}
 .fx-amt{font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
+.fx-amt-input.ovr{border-color:var(--m-variable);background:var(--m-variable-bg)}
 .fx-amt-input{width:92px;padding:7px 8px;border:1px solid var(--border-strong);border-radius:8px;
   text-align:right;font-weight:500;font-variant-numeric:tabular-nums;font-size:14px}
 .paid-btn{padding:6px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border-strong);
@@ -2262,13 +2263,9 @@ function openPayModal(itemId){
   }
 
   // 2. Дүн
-  if(it.type==='helbelzeh'){
-    h+=`<div class="field"><label for="pay-amount">Энэ сарын дүн (₮)</label>
-      <input type="number" min="0" id="pay-amount" inputmode="decimal" value="${amt||''}" placeholder="Нэхэмжлэлээс бичнэ"
-      onchange="setHelbelzehAmount('${it.id}',this.value)"></div>`;
-  }else{
-    h+=`<div class="copy-row"><span class="cl">Дүн</span><span class="cv">${fmt(amt)}₮</span></div>`;
-  }
+  h+=`<div class="field"><label for="pay-amount">Энэ сарын дүн (₮)</label>
+    <input type="number" min="0" id="pay-amount" inputmode="decimal" value="${amt||''}" placeholder="Нэхэмжлэлээс бичнэ"
+    onchange="setMonthAmount('${it.id}',this.value)"></div>`;
 
   // 3. Төлөх
   if(it.payMode==='bank'){
@@ -3597,8 +3594,16 @@ function setPayment(itemId, month, patch){
   return p;
 }
 function monthAmount(item, month){
-  if(item.type==='helbelzeh'){ const p=getPayment(item.id, month); return p&&p.amount!=null?p.amount:0; }
-  return item.amount||0;   // тогтмол
+  // Тухайн сард тусгай дүн бүртгэсэн бол түүнийг давуу эрхтэй авна.
+  // Тогтмол зардал ч тариф өөрчлөгдөхөд сар бүрээр өөр байж болно.
+  const p=getPayment(item.id, month);
+  if(p && p.amount!=null) return p.amount;
+  return item.type==='helbelzeh' ? 0 : (item.amount||0);
+}
+/* Тухайн сард анхдагчаас өөр дүн бүртгэгдсэн эсэх */
+function hasMonthOverride(item, month){
+  const p=getPayment(item.id, month);
+  return !!(p && p.amount!=null && item.type!=='helbelzeh' && p.amount!==(item.amount||0));
 }
 function isPaid(item, month){ const p=getPayment(item.id, month); return p?!!p.paid:false; }
 function togglePaid(itemId){
@@ -3607,13 +3612,22 @@ function togglePaid(itemId){
   setPayment(itemId, fixedMonth, {paid:!cur});
   persist(); renderFixed(); renderHome();
 }
-function setHelbelzehAmount(itemId, val){
+function setMonthAmount(itemId, val){
+  const it=data.fixedItems.find(x=>x.id===itemId); if(!it)return;
   let amount=parseFloat(val);
   if(isNaN(amount))amount=0;
-  if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); amount=0; renderFixed(); }
-  setPayment(itemId, fixedMonth, {amount});
-  persist(); renderFixedTotals(); renderHome();
+  if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); renderFixed(); return; }
+  if(it.type!=='helbelzeh' && amount===(it.amount||0)){
+    // Анхдагчтай ижил — сарын тусгай дүнг цэвэрлэнэ
+    const p=getPayment(itemId, fixedMonth);
+    if(p && p.amount!=null){ p.amount=null; p.updatedAt=Date.now(); }
+  }else{
+    setPayment(itemId, fixedMonth, {amount});
+  }
+  persist(); renderFixed(); renderHome();
 }
+/* Хуучин нэрийг хадгалж үлдээв */
+function setHelbelzehAmount(itemId, val){ setMonthAmount(itemId, val); }
 function renderFixed(){
   const wrap=document.getElementById('view-fixed');
   const items=data.fixedItems;
@@ -3641,14 +3655,15 @@ function renderFixed(){
       const body=gItems.map(it=>{
         const paid=isPaid(it, fixedMonth);
         const amt=monthAmount(it, fixedMonth);
-        const amtCell = it.type==='helbelzeh'
-          ? `<input class="fx-amt-input num" type="number" inputmode="decimal" value="${amt||''}" placeholder="0" onchange="setHelbelzehAmount('${it.id}',this.value)">`
-          : `<span class="fx-amt num">${fmt(amt)}₮</span>`;
+        const ovr=hasMonthOverride(it, fixedMonth);
+        const amtCell = `<input class="fx-amt-input num${ovr?' ovr':''}" type="number" min="0" inputmode="decimal"
+            value="${amt||''}" placeholder="0" aria-label="${escapeHtml(it.name)} — энэ сарын дүн"
+            title="${ovr?'Энэ сард анхдагчаас өөр дүн':''}" onchange="setMonthAmount('${it.id}',this.value)">`;
         return `<div class="fx-row">
           <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
           <button type="button" class="fx-main" onclick="openFixedModal('${it.id}')" aria-label="Зардлын зүйл засах: ${escapeHtml(it.name)}">
             <div class="fx-name">${escapeHtml(it.name)}</div>
-            <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':'тогтмол'}</div>
+            <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':(ovr?'тогтмол · энэ сар өөр':'тогтмол '+fmt(it.amount||0)+'₮')}</div>
           </button>
           <div class="fx-actions">
             ${amtCell}
