@@ -831,6 +831,24 @@ input,select{font-family:inherit;font-size:15px}
     font-size:8pt; color:#999; text-align:center }
   .pr-ok{ color:#15803d } .pr-no{ color:#b91c1c }
 }
+
+/* ═══ #18 Дэвтрийн хэмнэл — карт биш, мөр ═══
+   Бүх өмнөх мөр-дүрмийн ДАРАА тул cascade-аар давамгайлна.
+   Layout (flex, padding) хэвээр — зөвхөн картын төрх (сүүдэр/радиус/зай)-ыг мөр болгоно. */
+.fx-row,.inc-row,.vx-row,.rc-row{
+  border:0;
+  border-bottom:1px solid var(--border);
+  border-radius:0;
+  box-shadow:none;
+  margin-bottom:0;
+  min-height:52px;
+  transition:background .15s;
+}
+.fx-row:hover,.inc-row:hover,.vx-row:hover,.rc-row:hover{
+  background:var(--surface-2);
+  box-shadow:none;
+  border-color:var(--border);
+}
 </style>
 </head>
 <body>
