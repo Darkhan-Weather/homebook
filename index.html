@@ -864,6 +864,19 @@ input,select{font-family:inherit;font-size:15px}
 .ms-cell.sel.now{box-shadow:none}
 .ms-cell:hover:not(.sel){background:var(--accent-bg)}
 @media (max-width:360px){.ms-cell{font-size:0;height:26px}.ms-cell.sel{font-size:11px}}
+
+/* ═══ #20 Сар хаах ═══ */
+.month-close{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1rem;margin-bottom:10px}
+.month-close.closed{border-color:var(--success-br);background:var(--success-bg)}
+.mc-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.6rem}
+.month-close .lbl{font-weight:600}
+.mc-count{font-size:15px;color:var(--text-2)}
+.month-close.closed .mc-count{color:var(--success)}
+.mc-tiles{display:flex;gap:4px;flex-wrap:wrap}
+.mc-tile{flex:1 1 0;min-width:14px;height:8px;border-radius:3px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--border);transition:background .25s ease,box-shadow .25s ease}
+.mc-tile.done{background:var(--success);box-shadow:none}
+.mc-note{margin-top:.55rem;font-size:13px;color:var(--text-muted)}
+.month-close.closed .mc-note{color:var(--success)}
 </style>
 </head>
 <body>
@@ -4018,7 +4031,17 @@ function renderFixedTotals(){
   let total=0, paidSum=0;
   items.forEach(it=>{ const a=monthAmount(it, fixedMonth); total+=a; if(isPaid(it, fixedMonth))paidSum+=a; });
   const remain=total-paidSum;
-  el.innerHTML=`<div class="fx-total">
+  // ── #20 Сар хаах ──
+  const done=items.filter(it=>isPaid(it, fixedMonth));
+  const left=items.filter(it=>!isPaid(it, fixedMonth));
+  const closed=left.length===0;
+  const tiles=items.map(it=>`<span class="mc-tile${isPaid(it,fixedMonth)?' done':''}" title="${escapeHtml(it.name)}"></span>`).join('');
+  const closeBlock=`<div class="month-close${closed?' closed':''}">
+    <div class="mc-head"><span class="lbl">${closed?'Сар хаагдлаа':'Сар хаагдаагүй'}</span><span class="num mc-count">${done.length}/${items.length}</span></div>
+    <div class="mc-tiles" role="img" aria-label="${items.length} зүйлээс ${done.length} нь төлөгдсөн">${tiles}</div>
+    ${closed?`<p class="mc-note">Бүх төлбөр төлөгдсөн.</p>`:`<p class="mc-note">Үлдсэн: ${left.slice(0,3).map(it=>escapeHtml(it.name)).join(' · ')}${left.length>3?' · +'+(left.length-3):''}</p>`}
+  </div>`;
+  el.innerHTML=closeBlock+`<div class="fx-total">
     <div class="tr"><span>Төлсөн</span><span class="num">${fmt(paidSum)}₮</span></div>
     <div class="tr"><span>Үлдсэн</span><span class="num">${fmt(remain)}₮</span></div>
     <div class="tr big"><span>Сарын нийт</span><span class="num">${fmt(total)}₮</span></div>
