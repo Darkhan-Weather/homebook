@@ -849,6 +849,21 @@ input,select{font-family:inherit;font-size:15px}
   box-shadow:none;
   border-color:var(--border);
 }
+
+/* ═══ #19 Сарын нуруу ═══ */
+.month-spine{margin-bottom:1rem}
+.ms-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ms-label{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.ms-arrow{min-width:34px;min-height:34px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:8px}
+.ms-arrow:hover{background:var(--surface-2)}
+.ms-track{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px}
+.ms-cell{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--text-muted);height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
+.ms-cell.past{background:var(--surface-2);color:var(--text-2)}
+.ms-cell.now{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent-text)}
+.ms-cell.sel{background:var(--accent);color:#fff;font-weight:500}
+.ms-cell.sel.now{box-shadow:none}
+.ms-cell:hover:not(.sel){background:var(--accent-bg)}
+@media (max-width:360px){.ms-cell{font-size:0;height:26px}.ms-cell.sel{font-size:11px}}
 </style>
 </head>
 <body>
@@ -3722,11 +3737,7 @@ function renderVariable(){
       </div>`).join('')+`</div>`;
   }
   wrap.innerHTML=`
-    <div class="month-nav">
-      <button onclick="changeVariableMonth(-1)"><i class="ti ti-chevron-left"></i></button>
-      <span class="mlabel">${fxMonthLabel(variableMonth)}</span>
-      <button onclick="changeVariableMonth(1)"><i class="ti ti-chevron-right"></i></button>
-    </div>
+    ${monthSpine(variableMonth,'changeVariableMonth')}
     ${catPanel}
     ${memPanel}
     ${rows}
@@ -3821,11 +3832,7 @@ function renderIncome(){
     </div>`).join('');
   }
   wrap.innerHTML=`
-    <div class="month-nav">
-      <button onclick="changeIncomeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
-      <span class="mlabel">${fxMonthLabel(incomeMonth)}</span>
-      <button onclick="changeIncomeMonth(1)"><i class="ti ti-chevron-right"></i></button>
-    </div>
+    ${monthSpine(incomeMonth,'changeIncomeMonth')}
     ${rows}
     ${list.length?`<div class="fx-total"><div class="tr big"><span>Сарын нийт орлого</span><span class="num" style="color:var(--success)">${fmt(total)}₮</span></div></div>`:''}
     <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="openIncomeModal()"><i class="ti ti-plus"></i> Орлого нэмэх</button>
@@ -3881,6 +3888,20 @@ function deleteIncome(id){
 function fxMonthLabel(ym){
   const [y,m]=ym.split('-');
   return y+' оны '+parseInt(m)+'-р сар';
+}
+/* ═══ #19 Сарын нуруу — 12 сарын зурвас ═══
+   ym: 'YYYY-MM' сонгогдсон сар | fnName: сар солих функцийн нэр (delta авдаг) */
+function monthSpine(ym, fnName){
+  const [y,m]=ym.split('-').map(Number);
+  const nowYM=monthLocal();
+  const nowY=Number(nowYM.slice(0,4)), nowM=Number(nowYM.slice(5,7));
+  let cells='';
+  for(let i=1;i<=12;i++){
+    const isSel=(i===m), isNow=(y===nowY&&i===nowM), isPast=(y<nowY)||(y===nowY&&i<nowM);
+    const cls=['ms-cell',isSel?'sel':'',isNow?'now':'',isPast?'past':''].filter(Boolean).join(' ');
+    cells+=`<button type="button" class="${cls}" onclick="${fnName}(${i-m})" aria-label="${y} оны ${i}-р сар"${isSel?' aria-current="date"':''}>${i}</button>`;
+  }
+  return `<div class="month-spine"><div class="ms-head"><button type="button" class="ms-arrow" onclick="${fnName}(-12)" aria-label="Өмнөх жил"><i class="ti ti-chevron-left" aria-hidden="true"></i></button><span class="ms-label">${fxMonthLabel(ym)}</span><button type="button" class="ms-arrow" onclick="${fnName}(12)" aria-label="Дараагийн жил"><i class="ti ti-chevron-right" aria-hidden="true"></i></button></div><div class="ms-track" role="group" aria-label="Сар сонгох">${cells}</div></div>`;
 }
 function changeFixedMonth(delta){
   const [y,m]=fixedMonth.split('-').map(Number);
@@ -3981,11 +4002,7 @@ function renderFixed(){
     }).join('');
   }
   wrap.innerHTML=`
-    <div class="month-nav">
-      <button onclick="changeFixedMonth(-1)"><i class="ti ti-chevron-left"></i></button>
-      <span class="mlabel">${fxMonthLabel(fixedMonth)}</span>
-      <button onclick="changeFixedMonth(1)"><i class="ti ti-chevron-right"></i></button>
-    </div>
+    ${monthSpine(fixedMonth,'changeFixedMonth')}
     ${rows}
     <div id="fx-totals"></div>
     <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="copyPrevAmounts()"><i class="ti ti-copy"></i> Өмнөх сарын дүнг хуулах</button>
