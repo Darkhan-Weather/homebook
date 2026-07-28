@@ -1,94 +1,136 @@
-/* HomeBook — Service Worker
-   Зорилго: апп офлайн ажиллах, CDN-ээс татдаг icon/xlsx-г кэшлэх.
-   Кэшийн хувилбар: index.html шинэчлэх бүрд VERSION-ыг нэмэгдүүлнэ. */
-const VERSION = 'v19';
-const CACHE   = 'homebook-' + VERSION;
+/* ═══════════════════════════════════════════════════════════════
+   HomeBook — Service Worker
+   ───────────────────────────────────────────────────────────────
+   Кэшийн стратеги:
+   · Апп өөрөө (index.html)  → network-first  (шинэчлэлт шууд ирнэ,
+                                                офлайн үед кэшээс)
+   · CDN (icons, xlsx)       → cache-first    (офлайн үед ажиллана)
+   · Google API / auth       → кэшлэхгүй      (токен, өгөгдөл хэзээ ч
+                                                кэшэнд орох ёсгүй)
 
-/* Заавал кэшлэх — апп-ийн үндсэн бүрэлдэхүүн */
-const CORE = [
+   ⚠ ЧУХАЛ: index.html-г өөрчлөх бүрдээ доорх VERSION-г ӨСГӨНӨ.
+   Эс бөгөөс хэрэглэгч хуучин хувилбарт гацна.
+   ═══════════════════════════════════════════════════════════════ */
+
+const VERSION = 'v1.0.1';
+const SHELL_CACHE  = 'hb-shell-'  + VERSION;
+const ASSET_CACHE  = 'hb-assets-' + VERSION;
+
+/* Апп ажиллахад зайлшгүй хэрэгтэй өөрийн файлууд */
+const SHELL_FILES = [
   './',
   './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './HomeBook%20Logo.jpg',
-  './Background.jpg',
+  './manifest.json'
+];
+
+/* Гадаад CDN — офлайн үед icon болон Excel экспорт ажиллахын тулд */
+const CDN_FILES = [
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css',
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
 ];
 
-/* Хэзээ ч кэшлэхгүй — нэвтрэлт, өгөгдлийн API */
-function isNetworkOnly(url) {
-  return url.hostname === 'accounts.google.com'
-      || url.hostname.endsWith('googleapis.com')
-      || url.hostname.endsWith('google.com');
-}
+/* Кэшлэхгүй домэйнууд — Google-ийн бүх дуудлага сүлжээгээр шууд явна */
+const NEVER_CACHE = /(^|\.)(googleapis\.com|google\.com|gstatic\.com|googleusercontent\.com)$/;
 
-/* Ажиллах үед кэшлэх — CDN-ийн фонт зэрэг */
-function isRuntimeCacheable(url) {
-  return url.hostname === 'cdn.jsdelivr.net';
-}
-
+/* ─── Суулгах ─────────────────────────────────────────────── */
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    // Нэг файл алдаа өгвөл бусад нь кэшлэгдэхгүй болохоос сэргийлж тус тусад нь
-    await Promise.all(CORE.map(async url => {
-      try { await cache.add(new Request(url, { cache: 'reload' })); }
-      catch (e) { console.warn('[SW] кэшлэж чадсангүй:', url); }
-    }));
-    self.skipWaiting();
+    const shell = await caches.open(SHELL_CACHE);
+    await shell.addAll(SHELL_FILES);
+
+    // CDN нь унтарсан байж болзошгүй тул алдаа гарвал суулгалтыг зогсоохгүй
+    const assets = await caches.open(ASSET_CACHE);
+    await Promise.allSettled(
+      CDN_FILES.map(url => assets.add(new Request(url, { mode: 'cors' })))
+    );
   })());
+  // Шинэ SW-г хүлээлгэлгүй идэвхжүүлэхгүй — хэрэглэгч өөрөө шийднэ
+  // (index.html доторх SKIP_WAITING мессежээр идэвхжинэ)
 });
 
+/* ─── Идэвхжих — хуучин кэшийг цэвэрлэх ──────────────────── */
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(
+      keys.filter(k => k.startsWith('hb-') && k !== SHELL_CACHE && k !== ASSET_CACHE)
+          .map(k => caches.delete(k))
+    );
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable();
+    }
     await self.clients.claim();
   })());
 });
 
-self.addEventListener('fetch', event => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  const url = new URL(req.url);
-  if (isNetworkOnly(url)) return;   // нэвтрэлт/API — SW оролцохгүй
-
-  /* Хуудас ачаалах: сүлжээ эхэлж (шинэчлэлт авахын тулд),
-     амжилтгүй бол кэшнээс */
-  if (req.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(req);
-        const cache = await caches.open(CACHE);
-        cache.put('./index.html', fresh.clone());
-        return fresh;
-      } catch (e) {
-        const cached = await caches.match('./index.html');
-        return cached || new Response('Офлайн байна', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
-      }
-    })());
-    return;
-  }
-
-  /* Бусад нөөц: кэш эхэлж (хурдан), зэрэгцээд шинэчилнэ */
-  if (url.origin === self.location.origin || isRuntimeCacheable(url)) {
-    event.respondWith((async () => {
-      const cached = await caches.match(req);
-      const network = fetch(req).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(c => c.put(req, res.clone()));
-        }
-        return res;
-      }).catch(() => null);
-      return cached || (await network) || new Response('', { status: 504 });
-    })());
+/* ─── index.html-аас ирэх мессеж ──────────────────────────── */
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.source && event.source.postMessage({ type: 'VERSION', version: VERSION });
   }
 });
 
-/* Апп-аас шинэчлэлт хүсэх боломж */
-self.addEventListener('message', e => {
-  if (e.data === 'skipWaiting') self.skipWaiting();
+/* ─── Стратегиуд ──────────────────────────────────────────── */
+async function networkFirst(request, preload) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const fresh = (preload && await preload) || await fetch(request);
+    if (fresh && fresh.ok) cache.put(request, fresh.clone());
+    return fresh;
+  } catch (err) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    // Навигаци бол апп-ийн үндсэн хуудсыг буцаана
+    const shell = await cache.match('./index.html');
+    if (shell) return shell;
+    throw err;
+  }
+}
+
+async function cacheFirst(request) {
+  const cache = await caches.open(ASSET_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const fresh = await fetch(request);
+  // opaque (no-cors) хариуг ч хадгална — фонт ихэвчлэн ийм байдаг
+  if (fresh && (fresh.ok || fresh.type === 'opaque')) cache.put(request, fresh.clone());
+  return fresh;
+}
+
+/* ─── Fetch ───────────────────────────────────────────────── */
+self.addEventListener('fetch', event => {
+  const req = event.request;
+
+  // Зөвхөн GET — POST/PATCH (Drive хадгалалт) хөндөхгүй
+  if (req.method !== 'GET') return;
+
+  let url;
+  try { url = new URL(req.url); } catch (e) { return; }
+
+  // chrome-extension:// гэх мэт схемүүдийг алгасна
+  if (url.protocol !== 'https:' && url.hostname !== 'localhost') return;
+
+  // Google-ийн юуг ч кэшлэхгүй — токен, хэрэглэгчийн өгөгдөл
+  if (NEVER_CACHE.test(url.hostname)) return;
+
+  // Range хүсэлт (видео/аудио) — хөндөхгүй
+  if (req.headers.has('range')) return;
+
+  // Хуудас нээх
+  if (req.mode === 'navigate') {
+    event.respondWith(networkFirst(req, event.preloadResponse));
+    return;
+  }
+
+  // CDN — офлайн ажиллахын тулд кэшээс түрүүлж
+  if (url.hostname === 'cdn.jsdelivr.net') {
+    event.respondWith(cacheFirst(req));
+    return;
+  }
+
+  // Өөрийн файлууд
+  if (url.origin === self.location.origin) {
+    event.respondWith(networkFirst(req));
+  }
 });

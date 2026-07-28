@@ -51,7 +51,7 @@
 
   /* Гадаргуу ба текст */
   --bg:#f7f5f0; --surface:#ffffff; --surface-2:#faf8f4;
-  --text:#1f2933; --text-2:#5b6570; --text-muted:#6b7683;
+  --text:#1f2933; --text-2:#5b6570; --text-muted:#5f6b78;
   --border:#e8e4dc; --border-strong:#d6d0c6;
 
   /* Хэлбэр */
@@ -820,7 +820,7 @@ input,select{font-family:inherit;font-size:15px}
 <div id="home-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
-      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
+      <img class="logo-img" src="icon-192.png" alt="HomeBook">
       <h1>HomeBook</h1>
       <p class="sub">Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор</p>
       <div class="feat"><i class="ti ti-wallet" style="color:var(--m-income)"></i><div><div class="ft">Зардал ба орлого</div><div class="fs">Ус, дулаан, цахилгаан, тогтмол, хувьсах</div></div></div>
@@ -828,7 +828,6 @@ input,select{font-family:inherit;font-size:15px}
       <div class="feat"><i class="ti ti-heartbeat" style="color:var(--m-health)"></i><div><div class="ft">Эрүүл мэнд</div><div class="fs">Гишүүн бүрийн эмчилгээ</div></div></div>
       <div class="feat"><i class="ti ti-bell" style="color:var(--m-remind)"></i><div><div class="ft">Сануулга</div><div class="fs">Дуусах хугацаа сануулна</div></div></div>
       <button class="btn-primary" style="margin-top:1.5rem" onclick="goScreen('login-screen')">Эхлэх <i class="ti ti-arrow-right"></i></button>
-      <p class="note"><i class="ti ti-brand-google"></i> Google хаягаар нэвтэрнэ</p>
     </div>
   </div>
 </div>
@@ -837,7 +836,7 @@ input,select{font-family:inherit;font-size:15px}
 <div id="login-screen" class="screen">
   <div class="center-wrap">
     <div class="card-box">
-      <img class="logo-img" src="HomeBook%20Logo.jpg" alt="HomeBook">
+      <img class="logo-img" src="icon-192.png" alt="HomeBook">
       <h1>Тавтай морил</h1>
       <p class="sub">Үргэлжлүүлэхийн тулд Google хаягаараа нэвтэрнэ үү</p>
       <button class="btn-google" onclick="login()"><i class="ti ti-brand-google"></i> Google-ээр нэвтрэх</button>
@@ -1539,7 +1538,7 @@ input,select{font-family:inherit;font-size:15px}
 
 <div id="print-area"></div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* Clickjacking хамгаалалт — frame-ancestors нь <meta>-д ажилладаггүй,
@@ -1669,6 +1668,9 @@ function logout(){
   accessToken=null; tokenExpiresAt=0; currentUser=null;
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
   sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
+  if(confirm('Энэ төхөөрөмжөөс санхүүгийн өгөгдлийг бас арчих уу?\n(Drive-д хадгалагдсан хэвээр үлдэнэ. Дундын/нийтийн төхөөрөмжид зөвлөнө.)')){
+    localStorage.removeItem('hb_data');
+  }
   goScreen('home-screen');
 }
 function enterApp(){
@@ -2012,7 +2014,7 @@ function openReadingModal(preMeterId, editId){
   if(data.meters.length===0){ toast('Эхлээд тоолуур нэмнэ үү'); openMeterModal(); return; }
   editingReadingId=editId||null;
   const sel=document.getElementById('rd-meter');
-  sel.innerHTML=data.meters.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  sel.innerHTML=data.meters.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   if(editingReadingId){
     const r=data.readings.find(x=>x.id===editingReadingId);
     document.getElementById('rd-modal-title').textContent='Заалт засах';
@@ -2411,6 +2413,11 @@ function openApp(key){
   return true;
 }
 /* Clipboard — HTTPS дээр ажиллана, эс бөгөөс хуучин аргаар */
+/* Хуулах товчнуудыг delegation-ээр — onclick доторх апострофын алдаанаас сэргийлнэ */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]');
+  if(b) copyText(b.getAttribute('data-copy'), b.getAttribute('data-copy-label')||'');
+});
 async function copyText(text, label){
   try{
     await navigator.clipboard.writeText(text);
@@ -2459,11 +2466,11 @@ function openPayModal(itemId){
   if(it.payMode==='bank'){
     if(it.bankAccount){
       h+=`<div class="copy-row"><span class="cl">Данс</span><span class="cv">${escapeHtml(it.bankAccount)}</span>
-        <button class="cb" onclick="copyText('${escapeHtml(it.bankAccount)}','Данс')">Хуулах</button></div>`;
+        <button type="button" class="cb" data-copy="${escapeHtml(it.bankAccount)}" data-copy-label="Данс">Хуулах</button></div>`;
     }
     if(it.bankMemo){
       h+=`<div class="copy-row"><span class="cl">Утга</span><span class="cv">${escapeHtml(it.bankMemo)}</span>
-        <button class="cb" onclick="copyText('${escapeHtml(it.bankMemo)}','Гүйлгээний утга')">Хуулах</button></div>`;
+        <button type="button" class="cb" data-copy="${escapeHtml(it.bankMemo)}" data-copy-label="Гүйлгээний утга">Хуулах</button></div>`;
     }else{
       h+=`<div class="copy-row note"><span class="cl">Утга</span><span class="cv">Тохируулаагүй — ${app?escapeHtml(app.name)+' аппаас хуулж авна':'гараар бичнэ'}</span></div>`;
     }
@@ -4044,6 +4051,10 @@ function exportExcel(){
   add('Машин засвар', data.repairs.map(r=>({Огноо:r.date,Машин:(data.vehicles.find(x=>x.id===r.vehicleId)||{}).name||'',Засвар:r.desc||'',Дүн:r.amount})));
   add('Эрүүл мэнд', data.treatments.map(t=>({Огноо:t.date,Гишүүн:(data.members.find(x=>x.id===t.memberId)||{}).name||'',Эмчилгээ:t.desc||'',Дүн:t.amount})));
   add('Тоолуур заалт', data.readings.map(r=>({Огноо:r.date,Тоолуур:(data.meters.find(x=>x.id===r.meterId)||{}).name||'',Заалт:r.value})));
+  add('Зээл', data.loans.map(l=>({'Нэр':l.name,'Төрөл':l.type||'','Нийт дүн':l.total||0,'Сарын төлбөр':l.monthly||0,'Дараагийн огноо':l.next||l.due||'','Нийт хэсэг':l.parts||0,'Төлсөн хэсэг':l.paidParts||0})));
+  add('Хуримтлал', data.savings.map(s=>({'Нэр':s.name,'Зорилтот дүн':s.target||0,'Одоогийн дүн':s.current||0,'Огноо':s.date||''})));
+  add('Сануулга', data.reminders.map(r=>({'Гарчиг':r.title,'Огноо':r.date,'Тэмдэглэл':r.note||''})));
+  add('Дансны тааруулга', data.balances.filter(b=>b.actual!=null).map(b=>({'Сар':b.month,'Бодит үлдэгдэл':b.actual,'Тэмдэглэл':b.note||''})));
   if(wb.SheetNames.length===0){ toast('Экспортлох өгөгдөл алга'); return; }
   XLSX.writeFile(wb,'HomeBook_'+todayLocal()+'.xlsx');
   toast('Excel татагдлаа');
@@ -4235,7 +4246,7 @@ function renderHome(){
       return `<div class="act-row">
         <span class="ad num">${r.date}</span>
         <span class="am">${m?escapeHtml(m.name):'—'}</span>
-        <span class="av num">${use!==null?fmt(use)+' м³':'эхлэл'}</span>
+        <span class="av num">${use!==null?fmt(use)+' '+(m?m.unit:'м³'):'эхлэл'}</span>
       </div>`;
     }).join('');
   }
