@@ -877,6 +877,17 @@ input,select{font-family:inherit;font-size:15px}
 .mc-tile.done{background:var(--success);box-shadow:none}
 .mc-note{margin-top:.55rem;font-size:13px;color:var(--text-muted)}
 .month-close.closed .mc-note{color:var(--success)}
+
+/* ═══ inline формын алдаа ═══ */
+.form-err{background:var(--danger-bg);color:var(--danger-fg);border:1px solid var(--danger-br);border-radius:8px;padding:.5rem .7rem;font-size:13px;margin-bottom:.75rem}
+/* ═══ #34 Тоолуурын хүрд ═══ */
+.roll{display:inline-flex;align-items:baseline}
+.roll-fix{display:inline-block}
+.roll-d{display:inline-block;height:1em;overflow:hidden;vertical-align:baseline}
+.roll-col{display:flex;flex-direction:column;animation:rollTo .75s cubic-bezier(.22,1,.36,1) both;animation-delay:var(--delay,0ms)}
+.roll-col > span{height:1em;line-height:1em;display:flex;align-items:center;justify-content:center}
+@keyframes rollTo{from{transform:translateY(0)}to{transform:translateY(calc(-1em * (10 + var(--target))))}}
+@media (prefers-reduced-motion: reduce){.roll-col{animation:none;transform:translateY(calc(-1em * var(--target)))}}
 </style>
 </head>
 <body>
@@ -2069,7 +2080,7 @@ function openMeterModal(editId){
 function saveMeter(){
   const name=document.getElementById('mt-name').value.trim();
   const type=document.getElementById('mt-type').value;
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
     m.name=name; m.type=type; m.unit=(METER_TYPES[type]||METER_TYPES.huiten).unit; m.updatedAt=Date.now();
@@ -2150,10 +2161,10 @@ function saveReading(){
   const meterId=document.getElementById('rd-meter').value;
   const date=document.getElementById('rd-date').value;
   const val=parseFloat(document.getElementById('rd-value').value);
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
-  if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
-  if(val<0){ toast('Заалт сөрөг байж болохгүй'); return; }
-  if(val>1e9){ toast('Заалт хэт том байна'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  if(isNaN(val)){ formErr('Заалт оруулна уу'); return; }
+  if(val<0){ formErr('Заалт сөрөг байж болохгүй'); return; }
+  if(val>1e9){ formErr('Заалт хэт том байна'); return; }
   // Ижил тоолуур дээр ижил огноонд заалт байвал анхааруулах
   const dup=readingsOf(meterId).find(r=>r.date===date && r.id!==editingReadingId);
   if(dup && !confirm('Энэ тоолуур дээр '+date+'-нд заалт ('+dup.value+') аль хэдийн байна.\nДахин нэмэх үү?'))return;
@@ -2172,7 +2183,13 @@ function saveReading(){
     data.readings.push({ id:'r'+Date.now(), meterId, date, value:val, updatedAt:Date.now() });
     toast('Заалт хадгалагдлаа');
   }
+  const _rollNew=!editingReadingId;
   persist(); closeModal('reading-modal'); render();
+  if(_rollNew) requestAnimationFrame(()=>{
+    const el=document.querySelector(`.meter-card[data-mid="${meterId}"] .mc-usage .big`);
+    const mrs=readingsOf(meterId);
+    if(el && mrs.length>=2) rollNumber(el, fmt(mrs[mrs.length-1].value-mrs[mrs.length-2].value));
+  });
   if(isModalOpen('hist-modal'))openHistory(histMeterId);
 }
 function deleteReading(id){
@@ -2227,7 +2244,7 @@ function renderNotes(meterId){
 function addNote(){
   const date=document.getElementById('nt-date').value;
   const text=document.getElementById('nt-text').value.trim();
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
   if(!text){ toast('Тэмдэглэл бичнэ үү'); return; }
   data.notes.push({ id:'n'+Date.now(), meterId:histMeterId, date, text, updatedAt:Date.now() });
   document.getElementById('nt-text').value='';
@@ -2389,7 +2406,7 @@ function saveRecur(){
   const g=id=>document.getElementById(id);
   const kind=g('rc-kind').value;
   const amount=parseFloat(g('rc-amount').value);
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ formErr(va.msg); return; }
   let day=parseInt(g('rc-day').value); if(isNaN(day)||day<0)day=0; if(day>31)day=31;
   if(kind==='variable' && data.categories.length===0){ toast('Эхлээд ангилал нэмнэ үү'); return; }
   const obj={ kind, amount, day, active:g('rc-active').checked,
@@ -2628,7 +2645,7 @@ function confirmPaid(){
   const raw=document.getElementById('pd-amount').value;
   const amt=parseFloat(raw);
   if(raw!=='' ){
-    const va=validAmount(amt); if(!va.ok){ toast(va.msg,'warn'); return; }
+    const va=validAmount(amt); if(!va.ok){ formErr(va.msg); return; }
   }
   const patch={ paid:true };
   if(!isNaN(amt) && it && it.type==='helbelzeh') patch.amount=amt;
@@ -3049,8 +3066,8 @@ function saveReminder(){
   const date=g('rm-date').value;
   const note=g('rm-note').value.trim();
   const remindDays=[...document.querySelectorAll('#rm-days input:checked')].map(c=>parseInt(c.value)).sort((a,b)=>b-a);
-  if(!title){ toast('Юуны сануулга болохыг бичнэ үү'); return; }
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
+  if(!title){ formErr('Юуны сануулга болохыг бичнэ үү'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
   if(editingReminderId){
     const r=data.reminders.find(x=>x.id===editingReminderId);
     r.title=title; r.date=date; r.note=note; r.remindDays=remindDays; r.updatedAt=Date.now();
@@ -3235,13 +3252,13 @@ function saveLoan(){
   const g=id=>document.getElementById(id);
   const name=g('ln-name').value.trim();
   const type=g('ln-type').value;
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   for(const [f,lbl] of [['ln-total','Нийт дүн'],['ln-monthly','Сарын төлбөр'],['ln-partamt','Хэсгийн дүн']]){
-    const v=parseFloat(g(f).value); if(!isNaN(v)&&v<0){ toast(lbl+' сөрөг байж болохгүй'); return; }
+    const v=parseFloat(g(f).value); if(!isNaN(v)&&v<0){ formErr(lbl+' сөрөг байж болохгүй'); return; }
   }
   const parts=parseInt(g('ln-parts').value)||0, paidP=parseInt(g('ln-paid').value)||0;
-  if(parts<0||paidP<0){ toast('Хэсгийн тоо сөрөг байж болохгүй'); return; }
-  if(parts>0&&paidP>parts){ toast('Төлсөн хэсэг нийт хэсгээс их байж болохгүй'); return; }
+  if(parts<0||paidP<0){ formErr('Хэсгийн тоо сөрөг байж болохгүй'); return; }
+  if(parts>0&&paidP>parts){ formErr('Төлсөн хэсэг нийт хэсгээс их байж болохгүй'); return; }
   const obj={ name, type, total:parseFloat(g('ln-total').value)||0, next:g('ln-next').value,
     monthly:parseFloat(g('ln-monthly').value)||0, due:g('ln-due').value,
     parts:parseInt(g('ln-parts').value)||0, partAmount:parseFloat(g('ln-partamt').value)||0,
@@ -3285,7 +3302,7 @@ function openSavingModal(editId){
 function saveSaving(){
   const g=id=>document.getElementById(id);
   const name=g('sv-name').value.trim();
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   const tgt=parseFloat(g('sv-target').value)||0, cur=parseFloat(g('sv-current').value)||0;
   if(tgt<0||cur<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); return; }
   const obj={ name, target:tgt, current:cur,
@@ -3362,7 +3379,7 @@ function saveMember(){
   const name=document.getElementById('mb-name').value.trim();
   const birth=document.getElementById('mb-birth').value;
   const note=document.getElementById('mb-note').value.trim();
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   if(editingMemberId){
     const mb=data.members.find(x=>x.id===editingMemberId);
     mb.name=name; mb.birth=birth; mb.note=note; mb.updatedAt=Date.now();
@@ -3436,8 +3453,8 @@ function saveTreat(){
   const date=document.getElementById('tr-date').value;
   const desc=document.getElementById('tr-desc').value.trim();
   const amount=parseFloat(document.getElementById('tr-amount').value);
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ formErr(va.msg); return; }
   if(!editingTreatId){ const ms=document.getElementById('tr-member'); if(ms&&ms.value)treatMemberId=ms.value; }
   if(editingTreatId){
     const t=data.treatments.find(x=>x.id===editingTreatId);
@@ -3519,7 +3536,7 @@ function saveVehicle(){
   const name=document.getElementById('vh-name').value.trim();
   const plate=document.getElementById('vh-plate').value.trim();
   const brand=document.getElementById('vh-brand').value.trim();
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   if(editingVehicleId){
     const v=data.vehicles.find(x=>x.id===editingVehicleId);
     v.name=name; v.plate=plate; v.brand=brand; v.updatedAt=Date.now();
@@ -3593,8 +3610,8 @@ function saveRepair(){
   const date=document.getElementById('rp-date').value;
   const desc=document.getElementById('rp-desc').value.trim();
   const amount=parseFloat(document.getElementById('rp-amount').value);
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ formErr(va.msg); return; }
   if(!editingRepairId){ const vs=document.getElementById('rp-vehicle'); if(vs&&vs.value)repairVehicleId=vs.value; }
   if(editingRepairId){
     const r=data.repairs.find(x=>x.id===editingRepairId);
@@ -3652,7 +3669,7 @@ function budgetAlerts(month){
 }
 function addCategory(){
   const name=document.getElementById('cat-new').value.trim();
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
   data.categories.push({ id:'c'+Date.now(), name, updatedAt:Date.now() });
   document.getElementById('cat-new').value='';
   persist(); renderCatList(); renderVariable();
@@ -3793,8 +3810,8 @@ function saveVariable(){
   const memberId=document.getElementById('vx-member').value;
   const note=document.getElementById('vx-note').value.trim();
   const amount=parseFloat(document.getElementById('vx-amount').value);
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ formErr(va.msg); return; }
   if(editingVariableId){
     const v=data.variable.find(x=>x.id===editingVariableId);
     v.date=date; v.categoryId=categoryId; v.memberId=memberId; v.note=note; v.amount=amount; v.updatedAt=Date.now();
@@ -3877,8 +3894,8 @@ function saveIncome(){
   const type=document.getElementById('in-type').value;
   const note=document.getElementById('in-note').value.trim();
   const amount=parseFloat(document.getElementById('in-amount').value);
-  if(!date){ toast('Огноо оруулна уу','warn'); return; }
-  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  const va=validAmount(amount,{allowZero:false}); if(!va.ok){ formErr(va.msg); return; }
   if(editingIncomeId){
     const i=data.income.find(x=>x.id===editingIncomeId);
     i.date=date; i.type=type; i.note=note; i.amount=amount; i.updatedAt=Date.now();
@@ -4092,8 +4109,8 @@ function saveFixedItem(){
   const type=document.getElementById('fx-type').value;
   const group=document.getElementById('fx-group').value;
   const amount=parseFloat(document.getElementById('fx-amount').value)||0;
-  if(!name){ toast('Нэр оруулна уу','warn'); return; }
-  const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!name){ formErr('Нэр оруулна уу'); return; }
+  const va=validAmount(amount); if(!va.ok){ formErr(va.msg); return; }
   const billApp=document.getElementById('fx-billapp').value;
   const payMode=document.getElementById('fx-paymode').value;
   const bankAccount=payMode==='bank'?document.getElementById('fx-account').value.trim():'';
@@ -4550,7 +4567,7 @@ function renderMeters(){
       body=`<div class="mc-usage"><span class="big num">${fmt(d)}</span><span class="u">${m.unit} хэрэглээ</span></div>
         <div class="mc-sub num">${sub}</div>${bars}`;
     }
-    html+=`<div class="meter-card">
+    html+=`<div class="meter-card" data-mid="${m.id}">
       <div class="mc-head">
         <div class="mc-icon ${mt.cls}"><i class="ti ti-${mt.icon}"></i></div>
         <div><div class="mc-title">${escapeHtml(m.name)}</div><div class="mc-date">${last?last.date:''}${noteCount?' · '+noteCount+' тэмдэглэгээ':''}</div></div>
@@ -4652,7 +4669,36 @@ function showModalEl(id){
   if(f.length)setTimeout(()=>f[0].focus(),50);
   return bg;
 }
+function formErr(msg){
+  const shown=document.querySelectorAll('.modal-bg.show');
+  const bg=shown[shown.length-1];
+  const modal=bg&&bg.querySelector('.modal');
+  if(!modal){ toast(msg,'warn'); return; }
+  let e=modal.querySelector('.form-err');
+  if(!e){ e=document.createElement('div'); e.className='form-err';
+    const h=modal.querySelector('h3');
+    if(h) h.insertAdjacentElement('afterend', e); else modal.insertBefore(e, modal.firstChild); }
+  e.textContent=msg; e.scrollIntoView({block:'nearest'});
+}
+function clearFormErr(id){
+  const m=document.getElementById(id); if(!m)return;
+  const e=m.querySelector('.form-err'); if(e)e.remove();
+}
+/* ═══ #34 Тоолуурын хүрд — зөвхөн шинэ заалтад ═══ */
+function rollNumber(el, value){
+  const next=String(value);
+  if(el.dataset.rollValue===next) return;
+  el.dataset.rollValue=next;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ el.textContent=next; return; }
+  el.classList.add('roll');
+  el.innerHTML=next.split('').map((ch,i)=>{
+    if(!/[0-9]/.test(ch)) return `<span class="roll-fix">${escapeHtml(ch)}</span>`;
+    const col=Array.from({length:10},(_,d)=>`<span>${d}</span>`).join('');
+    return `<span class="roll-d" style="--target:${Number(ch)};--delay:${i*40}ms"><span class="roll-col">${col}${col}</span></span>`;
+  }).join('');
+}
 function openModal(id){
+  clearFormErr(id);
   if(modalStack.some(m=>m.id===id)){   // аль хэдийн стект байвал зүгээр л дээш гаргана
     modalStack.filter(m=>m.id!==id).forEach(m=>document.getElementById(m.id).classList.remove('show'));
     showModalEl(id); return;
