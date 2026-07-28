@@ -1470,6 +1470,9 @@ input,select{font-family:inherit;font-size:15px}
       <button type="button" class="act-item" onclick="cycleTheme()">
         <span class="ai ai-gray"><i class="ti ti-moon"></i></span>
         <span><span class="at">Дэлгэцийн горим</span><br><span class="ad2" id="theme-label">Системийн дагуу</span></span></button>
+      <button type="button" class="act-item" onclick="wipeLocalData()">
+        <span class="ai ai-gray"><i class="ti ti-eraser"></i></span>
+        <span><span class="at">Энэ төхөөрөмжөөс өгөгдөл арчих</span><br><span class="ad2">Дундын/нийтийн төхөөрөмжид</span></span></button>
       <button type="button" class="act-item" onclick="closeModal('settings-modal');logout()">
         <span class="ai ai-gray"><i class="ti ti-logout"></i></span>
         <span><span class="at">Гарах</span><br><span class="ad2" id="st-email"></span></span></button>
@@ -1668,10 +1671,15 @@ function logout(){
   accessToken=null; tokenExpiresAt=0; currentUser=null;
   localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
   sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
-  if(confirm('Энэ төхөөрөмжөөс санхүүгийн өгөгдлийг бас арчих уу?\n(Drive-д хадгалагдсан хэвээр үлдэнэ. Дундын/нийтийн төхөөрөмжид зөвлөнө.)')){
-    localStorage.removeItem('hb_data');
-  }
   goScreen('home-screen');
+}
+function wipeLocalData(){
+  if(!confirm('Энэ төхөөрөмжөөс бүх санхүүгийн өгөгдлийг арчих уу?\n(Drive дээрх нөөц хэвээр үлдэнэ. Дараагийн нэвтрэлтэд буцаж татагдана. Дундын/нийтийн төхөөрөмжид зөвлөнө.)')) return;
+  localStorage.removeItem('hb_data');
+  accessToken=null; tokenExpiresAt=0; currentUser=null;
+  localStorage.removeItem('hb_tok'); localStorage.removeItem('hb_tok_exp'); localStorage.removeItem('hb_usr');
+  sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
+  location.reload();
 }
 function enterApp(){
   goScreen('app-screen');
