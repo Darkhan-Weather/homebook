@@ -425,6 +425,8 @@ input,select{font-family:inherit;font-size:15px}
   display:flex;align-items:center;justify-content:center;gap:7px;
   transition:background .15s, box-shadow .15s, transform .1s}
 .fab button:hover{background:var(--accent-hover);box-shadow:0 8px 24px rgba(13,148,136,.44)}
+.sw-update{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:9999;background:var(--accent);color:#fff;display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:14px;max-width:calc(100% - 24px)}
+.sw-update button{background:#fff;color:var(--accent);border:0;border-radius:8px;padding:.4rem .8rem;font-weight:700;cursor:pointer;font-size:14px}
 .fab button:active{transform:scale(.985)}
 .sync-badge{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--surface-2);
   color:var(--text-2);display:inline-flex;align-items:center;gap:5px}
@@ -1147,6 +1149,10 @@ input,select{font-family:inherit;font-size:15px}
 <div class="modal-bg" id="repair-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rp-modal-title">
     <h3 id="rp-modal-title">Засвар нэмэх</h3>
+    <div class="field" id="rp-vehicle-wrap">
+      <label>Машин</label>
+      <select id="rp-vehicle"></select>
+    </div>
     <div class="field">
       <label>Огноо</label>
       <input type="date" id="rp-date">
@@ -1207,6 +1213,10 @@ input,select{font-family:inherit;font-size:15px}
 <div class="modal-bg" id="treat-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tr-modal-title">
     <h3 id="tr-modal-title">Эмчилгээ нэмэх</h3>
+    <div class="field" id="tr-member-wrap">
+      <label>Гишүүн</label>
+      <select id="tr-member"></select>
+    </div>
     <div class="field">
       <label>Огноо</label>
       <input type="date" id="tr-date">
@@ -1681,6 +1691,14 @@ function wipeLocalData(){
   sessionStorage.removeItem('hb_tok'); sessionStorage.removeItem('hb_tok_exp');
   location.reload();
 }
+function startViewFromUrl(){
+  try{
+    const go=new URLSearchParams(location.search).get('go');
+    const ok=['home','meters','fixed','variable','income','finance','vehicles','health','reminders'];
+    if(go && ok.includes(go)){ history.replaceState(null,'',location.pathname); return go; }
+  }catch(e){}
+  return null;
+}
 function enterApp(){
   goScreen('app-screen');
   const name=currentUser&&currentUser.name?currentUser.name.split(' ')[0]:'';
@@ -1699,7 +1717,7 @@ function enterApp(){
     nu.innerHTML=`${pic}<span class="nu-n">${escapeHtml(name||'Хэрэглэгч')}</span><i class="ti ti-settings"></i>`;
   }
   processRecurring();              // огноо болсон давтагдах бичлэгүүдийг үүсгэх
-  showView(currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
+  showView(startViewFromUrl()||currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
 }
 
 /* ═══ Токен ба auth алдаа барих ═══
@@ -2073,6 +2091,9 @@ function saveReading(){
   if(isNaN(val)){ toast('Заалт оруулна уу'); return; }
   if(val<0){ toast('Заалт сөрөг байж болохгүй'); return; }
   if(val>1e9){ toast('Заалт хэт том байна'); return; }
+  // Ижил тоолуур дээр ижил огноонд заалт байвал анхааруулах
+  const dup=readingsOf(meterId).find(r=>r.date===date && r.id!==editingReadingId);
+  if(dup && !confirm('Энэ тоолуур дээр '+date+'-нд заалт ('+dup.value+') аль хэдийн байна.\nДахин нэмэх үү?'))return;
   // Өмнөх заалтаас буурсан бол — тоолуур солигдсон эсэхийг лавлах
   let prevRs=readingsOf(meterId);
   if(editingReadingId)prevRs=prevRs.filter(r=>r.id!==editingReadingId);
@@ -2260,6 +2281,7 @@ function processRecurring(silent){
     while(m<=curM && guard++<RECUR_MAX_BACKFILL){
       const dt=recurDate(m, r.day);
       if(dt>today)break;                                     // огноо болоогүй — хүлээнэ
+      if(r.kind!=='income' && !data.categories.some(c=>c.id===r.categoryId))break;  // ангилал устсан — lastCreated шилжүүлэхгүй, сэргээх хүртэл хүлээнэ
       if(createFromRecurring(r, m, dt))created++;
       r.lastCreated=m; r.updatedAt=Date.now(); changed=true;
       m=nextMonth(m);
@@ -2399,21 +2421,26 @@ function copyPrevAmounts(){
    Android дээр intent:// ашиглан апп нээнэ. Апп суулгаагүй бол Play Store руу.
    iOS болон компьютер дээр Play Store хуудсыг шинэ табд нээнэ. */
 const PAY_APPS={
-  billcenter:{ name:'BillCenter', pkg:'com.bc4' },
-  dds:       { name:'DDS.mn',     pkg:'mn.ritus.dds' },
-  mobicom:   { name:'Mobicom',    pkg:'mn.mobicom.onemediastore' },
-  looktv:    { name:'LookTV',     pkg:'net.giitd.looktv.main' },
-  ddishtv:   { name:'ДДШ-TV',     pkg:'mn.ddishtv.ddish' },
-  khanbank:  { name:'Хаан банк',  pkg:'com.khanbank.retail' }
+  billcenter:{ name:'BillCenter', pkg:'com.bc4',                    appId:'1574428727' },
+  dds:       { name:'DDS.mn',     pkg:'mn.ritus.dds',               appId:'1597043910' },
+  mobicom:   { name:'Mobicom',    pkg:'mn.mobicom.onemediastore',   appId:'567384694'  },
+  looktv:    { name:'LookTV',     pkg:'net.giitd.looktv.main',      appId:'1073891066' },
+  ddishtv:   { name:'ДДШ-TV',     pkg:'mn.ddishtv.ddish',           appId:'1474913045' },
+  khanbank:  { name:'Хаан банк',  pkg:'com.khanbank.retail',        appId:'1555908766' }
 };
 const IS_ANDROID=/Android/i.test(navigator.userAgent||'');
+const IS_IOS=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
 function storeUrl(pkg){ return 'https://play.google.com/store/apps/details?id='+pkg; }
+function appStoreUrl(appId){ return 'https://apps.apple.com/app/id'+appId; }
 function openApp(key){
   const a=PAY_APPS[key];
   if(!a){ toast('Апп тохируулаагүй байна'); return false; }
   if(IS_ANDROID){
     window.location.href='intent://#Intent;package='+a.pkg+
       ';S.browser_fallback_url='+encodeURIComponent(storeUrl(a.pkg))+';end';
+  }else if(IS_IOS && a.appId){
+    window.open(appStoreUrl(a.appId),'_blank','noopener');
+    toast(a.name+' — App Store дээр нээж байна');
   }else{
     window.open(storeUrl(a.pkg),'_blank','noopener');
     toast(a.name+' — зөвхөн гар утсан дээр шууд нээгдэнэ');
@@ -2794,13 +2821,13 @@ function quickGo(what){
         showView('vehicles');
         if(data.vehicles.length===0){ toast('Эхлээд машин нэмнэ үү'); openVehicleModal(); }
         else if(data.vehicles.length===1){ repairVehicleId=data.vehicles[0].id; openRepairModal(); }
-        else toast('Аль машины засвар болохыг сонгоно уу');
+        else { repairVehicleId=data.vehicles[0].id; openRepairModal(); }
         break;
       case 'treat':
         showView('health');
         if(data.members.length===0){ toast('Эхлээд гишүүн нэмнэ үү'); openMemberModal(); }
         else if(data.members.length===1){ treatMemberId=data.members[0].id; openTreatModal(); }
-        else toast('Аль гишүүний эмчилгээ болохыг сонгоно уу');
+        else { treatMemberId=data.members[0].id; openTreatModal(); }
         break;
     }
   },180);
@@ -3331,6 +3358,15 @@ function openTreatModal(editId){
     document.getElementById('tr-amount').value='';
     delWrap.innerHTML='';
   }
+  const tmw=document.getElementById('tr-member-wrap'), tms=document.getElementById('tr-member');
+  if(tms){
+    if(editingTreatId){ tmw.style.display='none'; }
+    else{
+      tms.innerHTML=data.members.map(mb=>`<option value="${mb.id}">${escapeHtml(mb.name)}</option>`).join('');
+      tms.value=treatMemberId||(data.members[0]&&data.members[0].id)||'';
+      tmw.style.display=data.members.length>1?'':'none';
+    }
+  }
   openModal('treat-modal');
 }
 function saveTreat(){
@@ -3339,6 +3375,7 @@ function saveTreat(){
   const amount=parseFloat(document.getElementById('tr-amount').value);
   if(!date){ toast('Огноо оруулна уу','warn'); return; }
   const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!editingTreatId){ const ms=document.getElementById('tr-member'); if(ms&&ms.value)treatMemberId=ms.value; }
   if(editingTreatId){
     const t=data.treatments.find(x=>x.id===editingTreatId);
     t.date=date; t.desc=desc; t.amount=amount; t.updatedAt=Date.now();
@@ -3478,6 +3515,15 @@ function openRepairModal(editId){
     document.getElementById('rp-amount').value='';
     delWrap.innerHTML='';
   }
+  const rvw=document.getElementById('rp-vehicle-wrap'), rvs=document.getElementById('rp-vehicle');
+  if(rvs){
+    if(editingRepairId){ rvw.style.display='none'; }
+    else{
+      rvs.innerHTML=data.vehicles.map(v=>`<option value="${v.id}">${escapeHtml(v.name)}</option>`).join('');
+      rvs.value=repairVehicleId||(data.vehicles[0]&&data.vehicles[0].id)||'';
+      rvw.style.display=data.vehicles.length>1?'':'none';
+    }
+  }
   openModal('repair-modal');
 }
 function saveRepair(){
@@ -3486,6 +3532,7 @@ function saveRepair(){
   const amount=parseFloat(document.getElementById('rp-amount').value);
   if(!date){ toast('Огноо оруулна уу','warn'); return; }
   const va=validAmount(amount); if(!va.ok){ toast(va.msg,'warn'); return; }
+  if(!editingRepairId){ const vs=document.getElementById('rp-vehicle'); if(vs&&vs.value)repairVehicleId=vs.value; }
   if(editingRepairId){
     const r=data.repairs.find(x=>x.id===editingRepairId);
     r.date=date; r.desc=desc; r.amount=amount; r.updatedAt=Date.now();
@@ -4587,8 +4634,28 @@ window.addEventListener('online',()=>{
 
 /* ═══ Service worker — офлайн ажиллагаа ═══ */
 if('serviceWorker' in navigator){
+  window.showUpdateBanner=function(worker){
+    if(!worker || document.getElementById('sw-update'))return;
+    const bar=document.createElement('div');
+    bar.id='sw-update'; bar.className='sw-update';
+    bar.innerHTML='<span>Шинэ хувилбар бэлэн боллоо</span><button type="button" id="sw-update-btn">Шинэчлэх</button>';
+    document.body.appendChild(bar);
+    document.getElementById('sw-update-btn').onclick=()=>{ worker.postMessage({type:'SKIP_WAITING'}); };
+  };
+  let hbReloading=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(hbReloading)return; hbReloading=true; location.reload();
+  });
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW бүртгэгдсэнгүй:',e));
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      if(reg.waiting) showUpdateBanner(reg.waiting);
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing; if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed' && navigator.serviceWorker.controller) showUpdateBanner(nw);
+        });
+      });
+    }).catch(e=>console.warn('SW бүртгэгдсэнгүй:',e));
   });
 }
 

@@ -1,33 +1,52 @@
 {
-  "name": "HomeBook — Гэрийн систем",
+  "name": "HomeBook — Өрхийн бүртгэл",
   "short_name": "HomeBook",
-  "description": "Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор",
+  "description": "Тоолуур, өрхийн санхүү, машин, эрүүл мэндийн бүртгэлийг нэг дор хөтөлнө.",
+  "lang": "mn",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#f5f5f4",
+  "background_color": "#f7f5f0",
   "theme_color": "#0d9488",
-  "lang": "mn",
-  "dir": "ltr",
+  "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512-maskable.png",
+      "src": "./icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Тоолуурын заалт",
+      "short_name": "Заалт",
+      "url": "./?go=meters"
+    },
+    {
+      "name": "Зардал нэмэх",
+      "short_name": "Зардал",
+      "url": "./?go=variable"
+    },
+    {
+      "name": "Тогтмол төлбөр",
+      "short_name": "Төлбөр",
+      "url": "./?go=fixed"
     }
   ]
 }
