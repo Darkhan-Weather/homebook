@@ -503,7 +503,7 @@ input,select{font-family:inherit;font-size:15px}
   background:linear-gradient(90deg,var(--m-income),var(--accent))}
 .hero.neg::before{background:linear-gradient(90deg,var(--m-expense),var(--warn-strong))}
 .hero-label{font-size:13px;color:var(--text-2);margin-bottom:5px}
-.hero-val{font-size:clamp(28px,8vw,36px);font-weight:700;letter-spacing:-.03em;line-height:1.1;
+.hero-val{font-size:clamp(30px,9vw,44px);font-weight:700;letter-spacing:-.03em;line-height:1.1;
   font-variant-numeric:tabular-nums;color:var(--success)}
 .hero.neg .hero-val{color:var(--danger)}
 .hero-split{display:flex;gap:10px;margin-top:1.1rem}
@@ -803,6 +803,8 @@ input,select{font-family:inherit;font-size:15px}
   .screen,.bottom-nav,.fab,.modal-bg,.toast,.topbar{ display:none !important }
   #print-area{ display:block !important; color:#000; font-size:11pt; line-height:1.45 }
   #print-area *{ -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  .pr-chart{ max-width:360px; margin:0 0 12px }
+  .pr-chart svg{ width:100%; height:auto }
 
   .pr-head{ display:flex; align-items:flex-start; justify-content:space-between;
     border-bottom:2px solid #0d9488; padding-bottom:8px; margin-bottom:14px }
@@ -888,6 +890,9 @@ input,select{font-family:inherit;font-size:15px}
 .roll-col > span{height:1em;line-height:1em;display:flex;align-items:center;justify-content:center}
 @keyframes rollTo{from{transform:translateY(0)}to{transform:translateY(calc(-1em * (10 + var(--target))))}}
 @media (prefers-reduced-motion: reduce){.roll-col{animation:none;transform:translateY(calc(-1em * var(--target)))}}
+/* ═══ #25 Ангиллын donut ═══ */
+.cat-donut{display:flex;justify-content:center;margin-bottom:.75rem}
+.cat-donut svg{display:block}
 </style>
 </head>
 <body>
@@ -3720,7 +3725,17 @@ function renderVariable(){
   const mx=catRows.length?catRows[0][1]:1;
   let catPanel='';
   if(catRows.length){
-    catPanel=`<div class="cat-panel"><h4>Ангиллаар (${fxMonthLabel(variableMonth)})</h4>`+
+    const _tot=catRows.reduce((a,[,v])=>a+v,0)||1;
+    let _donut='';
+    if(catRows.length>=2){
+      const R=42, Cc=2*Math.PI*R; let _off=0;
+      const _sh=['#0d9488','#2a9d92','#4bab9f','#6fb9ad','#93c7bd','#b7d5cd'];
+      const _segs=catRows.map(([,v],ix)=>{ const ln=Cc*(v/_tot);
+        const g=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${_sh[ix%6]}" stroke-width="13" stroke-dasharray="${ln} ${Cc-ln}" stroke-dashoffset="${-_off}" transform="rotate(-90 50 50)"/>`;
+        _off+=ln; return g; }).join('');
+      _donut=`<div class="cat-donut"><svg viewBox="0 0 100 100" width="128" height="128">${_segs}<text x="50" y="47" text-anchor="middle" font-size="7" fill="var(--text-muted)">Нийт зардал</text><text x="50" y="59" text-anchor="middle" font-size="9" font-weight="600" fill="var(--text)">${fmt(_tot)}₮</text></svg></div>`;
+    }
+    catPanel=`<div class="cat-panel"><h4>Ангиллаар (${fxMonthLabel(variableMonth)})</h4>`+_donut+
       catRows.map(([cid,amt])=>{
         const c=data.categories.find(x=>x.id===cid);
         const bud=c&&c.budget>0?c.budget:0;
@@ -4153,6 +4168,10 @@ function lastNMonths(n){
   for(let i=n-1;i>=0;i--){ const x=new Date(d.getFullYear(),d.getMonth()-i,1); arr.push(monthLocal(x)); }
   return arr;
 }
+function monthChartTap(ym){
+  const q=monthlyTotals(ym), b=q.income-q.expense;
+  toast(`${fxMonthLabel(ym)}: орлого ${fmt(q.income)}₮ · зардал ${fmt(q.expense)}₮ · ${b>=0?'хэмнэлт':'хэтрэлт'} ${fmt(Math.abs(b))}₮`);
+}
 function buildMonthChart(){
   const months=lastNMonths(6);
   const rows=months.map(ym=>({ ym, ...monthlyTotals(ym) }));
@@ -4165,9 +4184,13 @@ function buildMonthChart(){
     const cx=pad+groupW*i+groupW/2;
     const ih=Math.round(r.income/mx*(H-30));
     const eh=Math.round(r.expense/mx*(H-30));
-    bars+=`<rect x="${cx-bw-gap/2}" y="${H-20-ih}" width="${bw}" height="${ih}" rx="3" fill="${cIncome}"/>`;
-    bars+=`<rect x="${cx+gap/2}" y="${H-20-eh}" width="${bw}" height="${eh}" rx="3" fill="${cExpense}"/>`;
-    bars+=`<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="${cMuted}">${parseInt(r.ym.slice(5))}-р</text>`;
+    bars+=`<g style="cursor:pointer" onclick="monthChartTap('${r.ym}')">`+
+      `<title>${fxMonthLabel(r.ym)} — орлого ${fmt(r.income)}₮, зардал ${fmt(r.expense)}₮</title>`+
+      `<rect x="${pad+groupW*i}" y="0" width="${groupW}" height="${H}" fill="transparent"/>`+
+      `<rect x="${cx-bw-gap/2}" y="${H-20-ih}" width="${bw}" height="${ih}" rx="3" fill="${cIncome}"/>`+
+      `<rect x="${cx+gap/2}" y="${H-20-eh}" width="${bw}" height="${eh}" rx="3" fill="${cExpense}"/>`+
+      `<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="${cMuted}">${parseInt(r.ym.slice(5))}-р</text>`+
+      `</g>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${bars}</svg>`;
 }
@@ -4222,7 +4245,7 @@ function buildPrintReport(ym){
   const bal=t.income-t.expense;
   const esc=escapeHtml;
   let h=`<div class="pr-head">
-    <div><div class="pr-title">HomeBook</div><div class="pr-sub">Гэр бүлийн санхүүгийн тайлан</div></div>
+    <div style="display:flex;align-items:center;gap:10px"><img src="icon-192.png" alt="" style="width:34px;height:34px;border-radius:7px"><div><div class="pr-title">HomeBook</div><div class="pr-sub">Гэр бүлийн санхүүгийн тайлан</div></div></div>
     <div class="pr-meta">${fxMonthLabel(ym)}<br>Хэвлэсэн: ${todayLocal()}</div>
   </div>
   <div class="pr-kpi">
@@ -4322,7 +4345,7 @@ function buildPrintReport(ym){
 
   // ── Сүүлийн 6 сарын харьцуулалт ──
   const ms=lastNMonths(6);
-  h+=`<div class="pr-sect"><h2>Сүүлийн 6 сар</h2><table>
+  h+=`<div class="pr-sect"><h2>Сүүлийн 6 сар</h2><div class="pr-chart">${buildMonthChart()}</div><table>
     <thead><tr><th>Сар</th><th class="r">Орлого</th><th class="r">Зардал</th><th class="r">Зөрүү</th></tr></thead><tbody>`+
     ms.map(x=>{ const q=monthlyTotals(x); const b=q.income-q.expense;
       return `<tr${x===ym?' style="font-weight:700"':''}><td>${fxMonthLabel(x)}</td>
