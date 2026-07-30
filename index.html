@@ -893,6 +893,21 @@ input,select{font-family:inherit;font-size:15px}
 /* ═══ #25 Ангиллын donut ═══ */
 .cat-donut{display:flex;justify-content:center;margin-bottom:.75rem}
 .cat-donut svg{display:block}
+
+/* ═══ #1 Эмийн бүртгэл ═══ */
+.med-block{margin-top:.6rem;border-top:1px solid var(--border);padding-top:.5rem}
+.med-block-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:.15rem}
+.med-grp{font-size:11px;color:var(--text-muted);margin:.4rem 0 .1rem;text-transform:uppercase;letter-spacing:.03em}
+.med-row{display:flex;align-items:center;gap:.5rem;padding:5px 0;border-bottom:1px solid var(--border)}
+.med-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.med-name{font-size:14px;font-weight:500}
+.med-sub{font-size:11px;color:var(--text-muted)}
+.med-stat{font-size:11px;font-weight:600;white-space:nowrap;padding:2px 8px;border-radius:20px}
+.med-stat.md-green{color:var(--success);background:var(--success-bg)}
+.med-stat.md-yellow{color:var(--warn-fg,#b45309);background:var(--warn-bg,#fef3c7)}
+.med-stat.md-red{color:var(--danger-fg);background:var(--danger-bg)}
+.ob-check{display:flex;align-items:center;gap:.5rem;font-size:14px;margin:.25rem 0 .6rem;cursor:pointer}
+.ob-check input{width:auto}
 </style>
 </head>
 <body>
@@ -1289,6 +1304,54 @@ input,select{font-family:inherit;font-size:15px}
 </div>
 
 <!-- MODAL: эмчилгээ нэмэх/засах -->
+<div class="modal-bg" id="oblig-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ob-modal-title">
+    <h3 id="ob-modal-title">Үүрэг нэмэх</h3>
+    <div class="field"><label>Төрөл</label>
+      <select id="ob-type"><option>Татвар</option><option>Оношилгоо</option><option>Машины даатгал</option><option>Жолоочийн даатгал</option></select></div>
+    <div class="field"><label>Дүн (₮)</label><input type="number" min="0" id="ob-amount" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Дуусах / төлөх огноо</label><input type="date" id="ob-due"></div>
+    <div class="field"><label>Тэмдэглэл</label><input type="text" id="ob-note" placeholder="Сонголтоор"></div>
+    <label class="ob-check"><input type="checkbox" id="ob-paid"> Төлсөн / сунгасан</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('oblig-modal')">Болих</button>
+      <button class="btn acc" onclick="saveOblig()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="fine-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fn-modal-title">
+    <h3 id="fn-modal-title">Торгууль нэмэх</h3>
+    <div class="field"><label>Дүн (₮)</label><input type="number" min="0" id="fn-amount" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Огноо</label><input type="date" id="fn-date"></div>
+    <label class="ob-check"><input type="checkbox" id="fn-paid"> Төлсөн</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('fine-modal')">Болих</button>
+      <button class="btn acc" onclick="saveFine()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="med-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="md-modal-title">
+    <h3 id="md-modal-title">Эм нэмэх</h3>
+    <div class="field"><label>Эмийн нэр</label>
+      <input type="text" id="md-name" placeholder="Жишээ: Верошпирон"></div>
+    <div class="field"><label>Ангилал</label>
+      <select id="md-category"><option value="Хөнгөлөлттэй">Хөнгөлөлттэй</option><option value="Хөнгөлөлтгүй">Хөнгөлөлтгүй</option></select></div>
+    <div class="field"><label>Нэг багц дахь ширхэг</label>
+      <input type="number" min="1" id="md-perpack" inputmode="numeric" placeholder="20"></div>
+    <div class="field"><label>Авсан багц</label>
+      <input type="number" min="1" id="md-packs" inputmode="numeric" placeholder="2"></div>
+    <div class="field"><label>Өдөрт хэдэн ширхэг</label>
+      <input type="number" min="0.25" step="0.25" id="md-perday" inputmode="decimal" placeholder="1"></div>
+    <div class="field"><label>Авсан огноо</label>
+      <input type="date" id="md-bought"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('med-modal')">Болих</button>
+      <button class="btn acc" onclick="saveMed()">Хадгалах</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="treat-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tr-modal-title">
     <h3 id="tr-modal-title">Эмчилгээ нэмэх</h3>
@@ -1660,7 +1723,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], tombstones:{} };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], meds:[], vehObligations:[], vehFines:[], waterHeader:'', tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -1671,6 +1734,8 @@ let variableMonth=monthLocal();
 let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
+let editingMedId=null, medMemberId=null;
+let editingObligId=null, obligVehicleId=null, editingFineId=null, fineVehicleId=null;
 let editingLoanId=null, editingSavingId=null;
 let editingReminderId=null;
 let editingRecurId=null;
@@ -1906,6 +1971,10 @@ async function loadFromDrive(){
       data.reminders=mergeById(data.reminders, remote.reminders||[]);
       data.recurring=mergeById(data.recurring, remote.recurring||[]);
       data.balances=mergeById(data.balances, remote.balances||[]);
+      data.meds=mergeById(data.meds, remote.meds||[]);
+      data.vehObligations=mergeById(data.vehObligations, remote.vehObligations||[]);
+      data.vehFines=mergeById(data.vehFines, remote.vehFines||[]);
+      if(remote.waterHeader!=null) data.waterHeader=remote.waterHeader;
       migrate(); saveLocal();
     }
     processRecurring();            // Drive-аас lastCreated шинэчлэгдсэний дараа
@@ -2032,7 +2101,7 @@ function migrate(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[]; if(!data.tombstones)data.tombstones={};
+  if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; });
   migratePayments();
@@ -3326,6 +3395,87 @@ function deleteSaving(id){
 /* ═══ Эрүүл мэнд (гишүүн + эмчилгээ) ═══ */
 function treatsOf(memberId){ return data.treatments.filter(t=>t.memberId===memberId).sort((a,b)=>b.date.localeCompare(a.date)); }
 function memberTotal(memberId){ return treatsOf(memberId).reduce((s,t)=>s+(t.amount||0),0); }
+function medsOf(memberId){ return data.meds.filter(m=>m.memberId===memberId); }
+function medRunOut(m){
+  const per=(+m.perPack||0)*(+m.packs||0);
+  const days=(+m.perDay>0)? per/(+m.perDay) : 0;
+  const out=new Date(m.boughtDate+'T00:00:00'); out.setDate(out.getDate()+Math.round(days));
+  const left=Math.round((out-new Date(todayLocal()+'T00:00:00'))/86400000);
+  return { total:per, days:Math.round(days), runOut:fmtDateLocal(out), left };
+}
+function buildMedBlock(memberId){
+  const meds=medsOf(memberId);
+  let inner='';
+  if(meds.length){
+    const sorted=meds.map(m=>({m,ro:medRunOut(m)})).sort((a,b)=>a.ro.left-b.ro.left);
+    const one=x=>{ const {m,ro}=x;
+      const st=ro.left<=0?'md-red':(ro.left<=7?'md-yellow':'md-green');
+      const txt=ro.left<=0?'Дууссан':ro.left+' хоног';
+      return `<div class="med-row"><div class="med-info"><span class="med-name">${escapeHtml(m.name)}</span>`+
+        `<span class="med-sub num">${ro.total} ширхэг · өдөрт ${m.perDay} · ${ro.runOut}-нд дуусна</span></div>`+
+        `<span class="med-stat ${st}">${txt}</span>`+
+        `<span class="card-actions"><button type="button" class="ic" onclick="refillMed('${memberId}','${m.id}')" aria-label="Дахин авах"><i class="ti ti-refresh"></i></button>`+
+        `<button type="button" class="ic" onclick="openMedModal('${memberId}','${m.id}')" aria-label="Засах"><i class="ti ti-pencil"></i></button>`+
+        `<button type="button" class="ic" onclick="deleteMed('${m.id}')" aria-label="Устгах"><i class="ti ti-trash"></i></button></span></div>`;
+    };
+    const sec=cat=>{ const g=sorted.filter(x=>x.m.category===cat); return g.length?`<div class="med-grp">${cat}</div>`+g.map(one).join(''):''; };
+    inner=sec('Хөнгөлөлттэй')+sec('Хөнгөлөлтгүй');
+  } else inner='<div class="veh-empty">Эм бүртгээгүй</div>';
+  return `<div class="med-block"><div class="med-block-head"><span><i class="ti ti-pill"></i> Эм</span>`+
+    `<button type="button" class="ic" onclick="openMedModal('${memberId}')" aria-label="Эм нэмэх"><i class="ti ti-plus"></i></button></div>${inner}</div>`;
+}
+function openMedModal(memberId, medId){
+  editingMedId=medId||null; medMemberId=memberId;
+  const g=id=>document.getElementById(id);
+  const t=g('md-modal-title');
+  if(medId){ const m=data.meds.find(x=>x.id===medId);
+    t.textContent='Эм засах';
+    g('md-name').value=m.name; g('md-category').value=m.category;
+    g('md-perpack').value=m.perPack; g('md-packs').value=m.packs;
+    g('md-perday').value=m.perDay; g('md-bought').value=m.boughtDate;
+  }else{
+    t.textContent='Эм нэмэх';
+    g('md-name').value=''; g('md-category').value='Хөнгөлөлттэй';
+    g('md-perpack').value=''; g('md-packs').value=''; g('md-perday').value=''; g('md-bought').value=todayLocal();
+  }
+  openModal('med-modal');
+}
+function refillMed(memberId, medId){
+  openMedModal(memberId, medId);
+  document.getElementById('md-bought').value=todayLocal();
+  document.getElementById('md-modal-title').textContent='Дахин авах';
+}
+function saveMed(){
+  const g=id=>document.getElementById(id);
+  const name=g('md-name').value.trim(), category=g('md-category').value;
+  const perPack=parseFloat(g('md-perpack').value), packs=parseFloat(g('md-packs').value);
+  const perDay=parseFloat(g('md-perday').value), boughtDate=g('md-bought').value;
+  if(!name){ formErr('Эмийн нэр оруулна уу'); return; }
+  if(!(perPack>0)){ formErr('Нэг багцын ширхэг оруулна уу'); return; }
+  if(!(packs>0)){ formErr('Авсан багц оруулна уу'); return; }
+  if(!(perDay>0)){ formErr('Өдөрт хэдэн ширхэгийг оруулна уу'); return; }
+  if(!boughtDate){ formErr('Авсан огноо оруулна уу'); return; }
+  let med;
+  if(editingMedId){ med=data.meds.find(x=>x.id===editingMedId);
+    Object.assign(med,{name,category,perPack,packs,perDay,boughtDate,updatedAt:Date.now()}); toast('Засагдлаа');
+  }else{ med={ id:'md'+Date.now(), memberId:medMemberId, name,category,perPack,packs,perDay,boughtDate, updatedAt:Date.now() };
+    data.meds.push(med); toast('Эм нэмэгдлээ'); }
+  syncMedReminder(med);
+  persist(); closeModal('med-modal'); render();
+}
+function syncMedReminder(med){
+  const ro=medRunOut(med), rid='rm_med_'+med.id, title=med.name+' дуусах';
+  const r=data.reminders.find(x=>x.id===rid);
+  if(r){ r.title=title; r.date=ro.runOut; r.updatedAt=Date.now(); }
+  else data.reminders.push({ id:rid, title, date:ro.runOut, note:'Эмийн үлдэгдэл дуусна', remindDays:[7], calEvents:[], updatedAt:Date.now() });
+}
+function deleteMed(id){
+  if(!confirm('Энэ эмийг устгах уу?'))return;
+  data.meds=data.meds.filter(m=>m.id!==id); tombstone(id);
+  const rid='rm_med_'+id;
+  if(data.reminders.find(x=>x.id===rid)){ data.reminders=data.reminders.filter(x=>x.id!==rid); tombstone(rid); }
+  persist(); render(); toast('Устгагдлаа');
+}
 function renderHealth(){
   const wrap=document.getElementById('view-health');
   if(data.members.length===0){
@@ -3340,6 +3490,7 @@ function renderHealth(){
   data.members.forEach(mb=>{
     const ts=treatsOf(mb.id);
     const total=memberTotal(mb.id);
+    const medBlock=buildMedBlock(mb.id);
     html+=`<div class="veh-card health">
       <div class="veh-head">
         <div class="veh-icon mem-icon"><i class="ti ti-user-heart"></i></div>
@@ -3355,6 +3506,7 @@ function renderHealth(){
         <span><span class="num" style="color:var(--text-2)">${t.date}</span> · ${escapeHtml(t.desc||'')}</span>
         <span class="num" style="font-weight:500">${fmt(t.amount)}₮</span></div>`).join(''):'<div class="veh-empty">Эмчилгээ хараахан алга</div>'}
       ${ts.length>3?`<div style="font-size:12px;color:var(--text-muted);padding:2px 0 6px">+${ts.length-3} эмчилгээ...</div>`:''}
+      ${medBlock}
       <button class="add-reading-btn" onclick="openTreatsModal('${mb.id}')"><i class="ti ti-history"></i> Эмчилгээний түүх</button>
     </div>`;
   });
@@ -3483,6 +3635,109 @@ function deleteTreat(id){
 /* ═══ Машин ═══ */
 function repairsOf(vehicleId){ return data.repairs.filter(r=>r.vehicleId===vehicleId).sort((a,b)=>b.date.localeCompare(a.date)); }
 function vehicleTotal(vehicleId){ return repairsOf(vehicleId).reduce((s,r)=>s+(r.amount||0),0); }
+function obligsOf(vid){ return data.vehObligations.filter(o=>o.vehicleId===vid); }
+function finesOf(vid){ return data.vehFines.filter(f=>f.vehicleId===vid); }
+function obligStatus(o){
+  const left = o.dueDate ? Math.round((new Date(o.dueDate+'T00:00:00')-new Date(todayLocal()+'T00:00:00'))/86400000) : null;
+  if(o.paid && o.type==='Татвар') return {cls:'md-green', txt:'төлсөн ✓', left:99999};
+  if(left==null) return {cls:'md-green', txt:'', left:99999};
+  if(left<=0) return {cls:'md-red', txt:'дууссан', left};
+  if(left<=7) return {cls:'md-yellow', txt:left+' хоног', left};
+  return {cls:'md-green', txt:o.dueDate+' хүртэл', left};
+}
+function buildVehObligBlock(vid){
+  const obs=obligsOf(vid).map(o=>({o,st:obligStatus(o)})).sort((a,b)=>a.st.left-b.st.left);
+  const fines=finesOf(vid);
+  const groupOf=t=>(t==='Машины даатгал'||t==='Жолоочийн даатгал')?'Даатгал':'Улсын';
+  const oneOb=x=>{ const {o,st}=x;
+    return `<div class="med-row"><div class="med-info"><span class="med-name">${escapeHtml(o.type)}</span>`+
+      `<span class="med-sub num">${o.amount?fmt(o.amount)+'₮ · ':''}${o.dueDate||''}${o.note?' · '+escapeHtml(o.note):''}</span></div>`+
+      `<span class="med-stat ${st.cls}">${st.txt}</span>`+
+      `<span class="card-actions">`+
+      `<button type="button" class="ic" onclick="toggleObligPaid('${o.id}')" aria-label="Төлсөн"><i class="ti ti-${o.paid?'circle-check':'circle'}"></i></button>`+
+      `<button type="button" class="ic" onclick="openObligModal('${vid}','${o.id}')" aria-label="Засах"><i class="ti ti-pencil"></i></button>`+
+      `<button type="button" class="ic" onclick="deleteOblig('${o.id}')" aria-label="Устгах"><i class="ti ti-trash"></i></button></span></div>`;
+  };
+  const grp=g=>{ const items=obs.filter(x=>groupOf(x.o.type)===g); return items.length?`<div class="med-grp">${g}</div>`+items.map(oneOb).join(''):''; };
+  let finesHtml='';
+  if(fines.length){
+    finesHtml='<div class="med-grp">Торгууль</div>'+fines.map(f=>`<div class="med-row"><div class="med-info"><span class="med-name num">${fmt(f.amount)}₮</span><span class="med-sub num">${f.date||''}</span></div>`+
+      `<span class="med-stat ${f.paid?'md-green':'md-red'}">${f.paid?'төлсөн':'төлөөгүй'}</span>`+
+      `<span class="card-actions"><button type="button" class="ic" onclick="toggleFinePaid('${f.id}')" aria-label="Төлсөн"><i class="ti ti-${f.paid?'circle-check':'circle'}"></i></button>`+
+      `<button type="button" class="ic" onclick="deleteFine('${f.id}')" aria-label="Устгах"><i class="ti ti-trash"></i></button></span></div>`).join('');
+  }
+  const body=(grp('Даатгал')+grp('Улсын')+finesHtml) || '<div class="veh-empty">Үүрэг бүртгээгүй</div>';
+  return `<div class="med-block"><div class="med-block-head"><span><i class="ti ti-file-invoice"></i> Үүрэг</span>`+
+    `<span><button type="button" class="ic" onclick="openFineModal('${vid}')" aria-label="Торгууль нэмэх"><i class="ti ti-alert-triangle"></i></button>`+
+    `<button type="button" class="ic" onclick="openObligModal('${vid}')" aria-label="Үүрэг нэмэх"><i class="ti ti-plus"></i></button></span></div>${body}</div>`;
+}
+function openObligModal(vid, oid){
+  editingObligId=oid||null; obligVehicleId=vid;
+  const g=id=>document.getElementById(id);
+  if(oid){ const o=data.vehObligations.find(x=>x.id===oid);
+    g('ob-modal-title').textContent='Үүрэг засах';
+    g('ob-type').value=o.type; g('ob-amount').value=o.amount||''; g('ob-due').value=o.dueDate||''; g('ob-note').value=o.note||''; g('ob-paid').checked=!!o.paid;
+  }else{ g('ob-modal-title').textContent='Үүрэг нэмэх';
+    g('ob-type').value='Татвар'; g('ob-amount').value=''; g('ob-due').value=''; g('ob-note').value=''; g('ob-paid').checked=false; }
+  openModal('oblig-modal');
+}
+function saveOblig(){
+  const g=id=>document.getElementById(id);
+  const type=g('ob-type').value, amount=parseFloat(g('ob-amount').value)||0, dueDate=g('ob-due').value, note=g('ob-note').value.trim(), paid=g('ob-paid').checked;
+  if(!dueDate){ formErr('Дуусах / төлөх огноо оруулна уу'); return; }
+  let o;
+  if(editingObligId){ o=data.vehObligations.find(x=>x.id===editingObligId);
+    const wasPaid=o.paid; Object.assign(o,{type,amount,dueDate,note,paid,updatedAt:Date.now()});
+    if(paid && (!wasPaid || !o.paidDate)) o.paidDate=todayLocal();
+    if(!paid) o.paidDate=null; toast('Засагдлаа');
+  }else{ o={ id:'ob'+Date.now(), vehicleId:obligVehicleId, type, amount, dueDate, note, paid, paidDate:paid?todayLocal():null, updatedAt:Date.now() };
+    data.vehObligations.push(o); toast('Үүрэг нэмэгдлээ'); }
+  syncObligReminder(o);
+  persist(); closeModal('oblig-modal'); render();
+}
+function toggleObligPaid(id){
+  const o=data.vehObligations.find(x=>x.id===id); if(!o)return;
+  o.paid=!o.paid; o.paidDate=o.paid?todayLocal():null; o.updatedAt=Date.now();
+  persist(); render(); toast(o.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
+}
+function deleteOblig(id){
+  if(!confirm('Энэ үүргийг устгах уу?'))return;
+  data.vehObligations=data.vehObligations.filter(o=>o.id!==id); tombstone(id);
+  const rid='rm_oblig_'+id; if(data.reminders.find(x=>x.id===rid)){ data.reminders=data.reminders.filter(x=>x.id!==rid); tombstone(rid); }
+  persist(); render(); toast('Устгагдлаа');
+}
+function syncObligReminder(o){
+  const rid='rm_oblig_'+o.id, title=o.type+' дуусах/төлөх';
+  const r=data.reminders.find(x=>x.id===rid);
+  if(r){ r.title=title; r.date=o.dueDate; r.updatedAt=Date.now(); }
+  else data.reminders.push({ id:rid, title, date:o.dueDate, note:'Машины үүрэг', remindDays:[7], calEvents:[], updatedAt:Date.now() });
+}
+function openFineModal(vid, fid){
+  editingFineId=fid||null; fineVehicleId=vid;
+  const g=id=>document.getElementById(id);
+  if(fid){ const f=data.vehFines.find(x=>x.id===fid); g('fn-modal-title').textContent='Торгууль засах'; g('fn-amount').value=f.amount||''; g('fn-date').value=f.date||''; g('fn-paid').checked=!!f.paid; }
+  else { g('fn-modal-title').textContent='Торгууль нэмэх'; g('fn-amount').value=''; g('fn-date').value=todayLocal(); g('fn-paid').checked=false; }
+  openModal('fine-modal');
+}
+function saveFine(){
+  const g=id=>document.getElementById(id);
+  const amount=parseFloat(g('fn-amount').value)||0, date=g('fn-date').value, paid=g('fn-paid').checked;
+  if(!(amount>0)){ formErr('Дүн оруулна уу'); return; }
+  if(!date){ formErr('Огноо оруулна уу'); return; }
+  if(editingFineId){ const f=data.vehFines.find(x=>x.id===editingFineId); Object.assign(f,{amount,date,paid,paidDate:paid?(f.paidDate||todayLocal()):null,updatedAt:Date.now()}); toast('Засагдлаа'); }
+  else { data.vehFines.push({ id:'fn'+Date.now(), vehicleId:fineVehicleId, amount, date, paid, paidDate:paid?todayLocal():null, updatedAt:Date.now() }); toast('Торгууль нэмэгдлээ'); }
+  persist(); closeModal('fine-modal'); render();
+}
+function toggleFinePaid(id){
+  const f=data.vehFines.find(x=>x.id===id); if(!f)return;
+  f.paid=!f.paid; f.paidDate=f.paid?todayLocal():null; f.updatedAt=Date.now();
+  persist(); render(); toast(f.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
+}
+function deleteFine(id){
+  if(!confirm('Энэ торгуулийг устгах уу?'))return;
+  data.vehFines=data.vehFines.filter(f=>f.id!==id); tombstone(id);
+  persist(); render(); toast('Устгагдлаа');
+}
 function renderVehicles(){
   const wrap=document.getElementById('view-vehicles');
   if(data.vehicles.length===0){
@@ -3497,6 +3752,7 @@ function renderVehicles(){
   data.vehicles.forEach(v=>{
     const reps=repairsOf(v.id);
     const total=vehicleTotal(v.id);
+    const obligBlock=buildVehObligBlock(v.id);
     html+=`<div class="veh-card">
       <div class="veh-head">
         <div class="veh-icon"><i class="ti ti-car"></i></div>
@@ -3512,6 +3768,7 @@ function renderVehicles(){
         <span><span class="num" style="color:var(--text-2)">${r.date}</span> · ${escapeHtml(r.desc||'')}</span>
         <span class="num" style="font-weight:500">${fmt(r.amount)}₮</span></div>`).join(''):'<div class="veh-empty">Засвар хараахан алга</div>'}
       ${reps.length>3?`<div style="font-size:12px;color:var(--text-muted);padding:2px 0 6px">+${reps.length-3} засвар...</div>`:''}
+      ${obligBlock}
       <button class="add-reading-btn" onclick="openRepairsModal('${v.id}')"><i class="ti ti-history"></i> Засварын түүх</button>
     </div>`;
   });
@@ -4159,7 +4416,9 @@ function monthlyTotals(ym){
   const income=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
   let fixed=0; data.fixedItems.forEach(it=>fixed+=monthAmount(it,ym));
   const variable=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
-  const repairs=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0);
+  const repairs=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0)
+    + data.vehObligations.filter(o=>o.paid&&o.paidDate&&o.paidDate.slice(0,7)===ym).reduce((s,o)=>s+(o.amount||0),0)
+    + data.vehFines.filter(f=>f.paid&&f.paidDate&&f.paidDate.slice(0,7)===ym).reduce((s,f)=>s+(f.amount||0),0);
   const treats=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
   return { income, fixed, variable, repairs, treats, expense:fixed+variable+repairs+treats };
 }
