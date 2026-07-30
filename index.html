@@ -908,6 +908,8 @@ input,select{font-family:inherit;font-size:15px}
 .med-stat.md-red{color:var(--danger-fg);background:var(--danger-bg)}
 .ob-check{display:flex;align-items:center;gap:.5rem;font-size:14px;margin:.25rem 0 .6rem;cursor:pointer}
 .ob-check input{width:auto}
+.water-report-bar{margin-bottom:.75rem}
+.water-report-bar .btn{width:100%}
 </style>
 </head>
 <body>
@@ -1009,6 +1011,7 @@ input,select{font-family:inherit;font-size:15px}
         <option value="tsahilgaan">Цахилгаан (кВт·ц)</option>
       </select>
     </div>
+    <label class="ob-check"><input type="checkbox" id="mt-water"> Усны нэгтгэлд оруулах</label>
     <div class="hint" style="margin-top:-.5rem;margin-bottom:.5rem">Тоолуур зөвхөн хэрэглээ хянана. Бодит төлбөрийг Тогтмол таб дээр бүртгэнэ.</div>
 
     <div class="modal-actions">
@@ -1304,6 +1307,18 @@ input,select{font-family:inherit;font-size:15px}
 </div>
 
 <!-- MODAL: эмчилгээ нэмэх/засах -->
+<div class="modal-bg" id="water-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wr-modal-title">
+    <h3 id="wr-modal-title">Усны заалт нэгтгэл</h3>
+    <div class="field"><label>Толгой (хаяг)</label><input type="text" id="wr-header" placeholder="Хуучин хороолол 34-33 тоот"></div>
+    <div class="field"><label>Нэгтгэл (сүүлийн заалтууд)</label><textarea id="wr-body" rows="9" readonly style="width:100%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;resize:vertical;box-sizing:border-box"></textarea></div>
+    <div class="hint" style="margin-bottom:.5rem">«Хуулах» дарж мессежээ paste хийж илгээнэ. Толгойг өөрчилвөл хадгалагдана.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('water-modal')">Хаах</button>
+      <button class="btn acc" onclick="copyWaterReport()">Хуулах</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="oblig-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ob-modal-title">
     <h3 id="ob-modal-title">Үүрэг нэмэх</h3>
@@ -2103,7 +2118,7 @@ function migrate(){
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
-  (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; });
+  (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
   purgeTombstones();
 }
@@ -2144,10 +2159,12 @@ function openMeterModal(editId){
     document.getElementById('mt-modal-title').textContent='Тоолуур засах';
     document.getElementById('mt-name').value=m.name;
     document.getElementById('mt-type').value=m.type;
+    document.getElementById('mt-water').checked=!!m.inWaterReport;
   }else{
     document.getElementById('mt-modal-title').textContent='Тоолуур нэмэх';
     document.getElementById('mt-name').value='';
     document.getElementById('mt-type').value='huiten';
+    document.getElementById('mt-water').checked=true;
   }
   openModal('meter-modal');
 }
@@ -2157,11 +2174,11 @@ function saveMeter(){
   if(!name){ formErr('Нэр оруулна уу'); return; }
   if(editingMeterId){
     const m=data.meters.find(x=>x.id===editingMeterId);
-    m.name=name; m.type=type; m.unit=(METER_TYPES[type]||METER_TYPES.huiten).unit; m.updatedAt=Date.now();
+    m.name=name; m.type=type; m.unit=(METER_TYPES[type]||METER_TYPES.huiten).unit; m.inWaterReport=document.getElementById('mt-water').checked; m.updatedAt=Date.now();
     toast('Тоолуур засагдлаа');
   }else{
     data.meters.push({ id:'m'+Date.now(), name, type,
-      unit:(METER_TYPES[type]||METER_TYPES.huiten).unit, updatedAt:Date.now() });
+      unit:(METER_TYPES[type]||METER_TYPES.huiten).unit, inWaterReport:document.getElementById('mt-water').checked, updatedAt:Date.now() });
     toast('Тоолуур нэмэгдлээ');
   }
   persist(); closeModal('meter-modal'); render();
@@ -4805,6 +4822,38 @@ function renderHome(){
 }
 
 /* ═══ Render — тоолуурын карт ═══ */
+function waterMeters(){ return data.meters.filter(m=>m.inWaterReport); }
+function buildWaterReport(){
+  const meters=waterMeters();
+  let maxDate='';
+  meters.forEach(m=>{ const l=lastReadingOf(m.id); if(l && l.date>maxDate) maxDate=l.date; });
+  const dShort = maxDate ? maxDate.slice(5) : todayLocal().slice(5);
+  const lines=[dShort];
+  let lastGroup=null;
+  meters.forEach(m=>{
+    const l=lastReadingOf(m.id); if(!l) return;
+    if(m.name.includes('\u00b7')){
+      const parts=m.name.split('\u00b7').map(x=>x.trim());
+      const grp=parts[0], label=parts.slice(1).join(' ');
+      if(grp!==lastGroup){ lines.push(grp); lastGroup=grp; }
+      lines.push((label?label+' ':'')+l.value);
+    } else { lines.push(m.name+' '+l.value); lastGroup=null; }
+  });
+  return lines.join('\n');
+}
+function openWaterReport(){
+  document.getElementById('wr-header').value=data.waterHeader||'';
+  document.getElementById('wr-body').value=buildWaterReport();
+  openModal('water-modal');
+}
+function copyWaterReport(){
+  const header=document.getElementById('wr-header').value.trim();
+  data.waterHeader=header; persist();
+  const body=document.getElementById('wr-body').value;
+  const lines=body.split('\n');
+  const full = header ? [lines[0], header].concat(lines.slice(1)).join('\n') : body;
+  copyText(full, 'Усны нэгтгэл');
+}
 function renderMeters(){
   const wrap=document.getElementById('meters-list');
   if(data.meters.length===0){
@@ -4815,7 +4864,7 @@ function renderMeters(){
     </div>`;
     return;
   }
-  let html='<div class="meters-grid">';
+  let html='<div class="water-report-bar"><button class="btn" onclick="openWaterReport()"><i class="ti ti-clipboard-text"></i> Усны нэгтгэл хуулах</button></div><div class="meters-grid">';
   data.meters.forEach(m=>{
     const rs=readingsOf(m.id);
     const last=rs[rs.length-1], prev=rs[rs.length-2];
