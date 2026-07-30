@@ -3716,6 +3716,7 @@ function saveOblig(){
 function toggleObligPaid(id){
   const o=data.vehObligations.find(x=>x.id===id); if(!o)return;
   o.paid=!o.paid; o.paidDate=o.paid?todayLocal():null; o.updatedAt=Date.now();
+  syncObligReminder(o);
   persist(); render(); toast(o.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
 }
 function deleteOblig(id){
@@ -3726,7 +3727,10 @@ function deleteOblig(id){
 }
 function syncObligReminder(o){
   const rid='rm_oblig_'+o.id, title=o.type+' дуусах/төлөх';
+  const isPast = o.dueDate && o.dueDate < todayLocal();
   const r=data.reminders.find(x=>x.id===rid);
+  // Төлсөн бөгөөд огноо өнгөрсөн бол сануулга хэрэггүй — арилгана
+  if(o.paid && isPast){ if(r){ data.reminders=data.reminders.filter(x=>x.id!==rid); tombstone(rid); } return; }
   if(r){ r.title=title; r.date=o.dueDate; r.updatedAt=Date.now(); }
   else data.reminders.push({ id:rid, title, date:o.dueDate, note:'Машины үүрэг', remindDays:[7], calEvents:[], updatedAt:Date.now() });
 }
