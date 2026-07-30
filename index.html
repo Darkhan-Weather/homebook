@@ -2117,6 +2117,7 @@ function migrate(){
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
+  { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); }
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
