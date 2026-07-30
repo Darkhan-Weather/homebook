@@ -25,8 +25,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="HomeBook">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css" integrity="sha384-UsOvy6Miuagj2Q/9aXCTRHaUDZjxTxMGk9ZsU2m0MDw8eIOyV129Qd9NszbyyFQM" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <style>
 :root{
   /* Брэнд */
@@ -657,6 +657,7 @@ input,select{font-family:inherit;font-size:15px}
    ═══════════════════════════════════════════ */
 @media(min-width:900px){
   #app{ max-width:900px; padding:0 1.5rem 3rem; margin-left:230px; margin-right:auto }
+  .card-box{ max-width:420px }
 
   /* Доод навигац → зүүн талын багана */
   .bottom-nav{
@@ -1722,6 +1723,7 @@ const CLIENT_ID='381344772393-3i8bb6flqqonu5qgmjngsma2031r0biv.apps.googleuserco
 const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar.events';
 const FOLDER_NAME='HomeBook';
 const DATA_FILE='homebook_data.json';
+function driveEsc(s){ return String(s).split("'").join(String.fromCharCode(92)+"'"); }
 
 /* ═══ Огноо — ОРОН НУТГИЙН цаг (UTC биш) ═══
    toISOString() нь UTC буцаадаг тул UB (UTC+8) цагаар шөнө 00:00–08:00-д
@@ -1855,7 +1857,7 @@ function startViewFromUrl(){
     const go=new URLSearchParams(location.search).get('go');
     const ok=['home','meters','fixed','variable','income','finance','vehicles','health','reminders'];
     if(go && ok.includes(go)){ history.replaceState(null,'',location.pathname); return go; }
-  }catch(e){}
+  }catch(e){console.warn('HomeBook алдаа:',e);}
   return null;
 }
 function enterApp(){
@@ -1866,12 +1868,12 @@ function enterApp(){
   const now=new Date();
   document.getElementById('month-label').textContent=now.getFullYear()+' оны '+months[now.getMonth()];
   const av=document.getElementById('avatar');
-  if(currentUser&&currentUser.picture){ av.innerHTML='<img src="'+currentUser.picture+'" alt="">'; }
+  if(currentUser&&currentUser.picture){ av.replaceChildren(); const _im=document.createElement('img'); _im.src=currentUser.picture; _im.alt=''; av.appendChild(_im); }
   else{ av.textContent=name?name[0].toUpperCase():'Т'; }
   const nu=document.getElementById('nav-user');
   if(nu){
     const pic=currentUser&&currentUser.picture
-      ? `<img src="${currentUser.picture}" alt="">`
+      ? `<img src="${escapeHtml(currentUser.picture)}" alt="">`
       : `<span class="nu-av">${name?escapeHtml(name[0].toUpperCase()):'Т'}</span>`;
     nu.innerHTML=`${pic}<span class="nu-n">${escapeHtml(name||'Хэрэглэгч')}</span><i class="ti ti-settings"></i>`;
   }
@@ -1914,7 +1916,7 @@ async function apiFetch(url, opts){
 /* ═══ Drive sync ═══ */
 async function getOrCreateFolder(){
   if(driveFolderId)return driveFolderId;
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(FOLDER_NAME))}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   if(res.files&&res.files.length>0){ driveFolderId=res.files[0].id; }
   else{
@@ -1927,7 +1929,7 @@ async function getOrCreateFolder(){
   return driveFolderId;
 }
 async function findDataFile(folderId){
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILE}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(DATA_FILE))}' and '${folderId}' in parents and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   return res.files&&res.files.length>0?res.files[0].id:null;
 }
@@ -2005,7 +2007,7 @@ async function loadFromDrive(){
 let backupFolderId=null, lastBackupAt=0, sessionBackupDone=false;
 const MAX_BACKUPS=14;
 async function findFileInFolder(name,folderId){
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(name)}' and '${folderId}' in parents and trashed=false&spaces=drive`,
+  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(name))}' and '${folderId}' in parents and trashed=false&spaces=drive`,
     {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
   return res.files&&res.files.length>0?res.files[0].id:null;
 }
@@ -2095,7 +2097,7 @@ function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(s
 function saveLocal(){ localStorage.setItem('hb_data',JSON.stringify(data)); }
 function loadLocal(){
   const s=localStorage.getItem('hb_data');
-  if(s){ try{ data=JSON.parse(s); }catch(e){} }
+  if(s){ try{ data=JSON.parse(s); }catch(e){console.warn('HomeBook алдаа:',e);} }
   if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
@@ -2118,7 +2120,7 @@ function migrate(){
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
   { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); }
-  try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){}
+  try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){console.warn('HomeBook алдаа:',e);}
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
@@ -3188,7 +3190,7 @@ async function addToCalendar(id){
   if(r.calEvents&&r.calEvents.length){
     for(const eid of r.calEvents){
       try{ await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eid}`,
-        {method:'DELETE',headers:{Authorization:'Bearer '+accessToken}}); }catch(e){}
+        {method:'DELETE',headers:{Authorization:'Bearer '+accessToken}}); }catch(e){console.warn('HomeBook алдаа:',e);}
     }
   }
   const newIds=[];
@@ -5130,13 +5132,13 @@ window.addEventListener('load',()=>{
   if(tok && exp>Date.now()){
     // Хүчинтэй токен бий — шууд орно
     accessToken=tok; tokenExpiresAt=exp;
-    if(usr){ try{currentUser=JSON.parse(usr);}catch(e){} }
+    if(usr){ try{currentUser=JSON.parse(usr);}catch(e){console.warn('HomeBook алдаа:',e);} }
     enterApp();
     const tryLoad=setInterval(()=>{ if(window.google&&google.accounts){ clearInterval(tryLoad); initGSI(); loadFromDrive(); } },300);
     setTimeout(()=>clearInterval(tryLoad),6000);
   }else if(usr){
     // Токен дууссан ч өмнө нэвтэрсэн хэрэглэгч — hint-ээр чимээгүй сэргээхийг оролдоно
-    try{ currentUser=JSON.parse(usr); }catch(e){}
+    try{ currentUser=JSON.parse(usr); }catch(e){console.warn('HomeBook алдаа:',e);}
     goScreen('login-screen');
     const tryAuth=setInterval(()=>{
       if(window.google&&google.accounts){ clearInterval(tryAuth); requestToken({silent:true}); }
