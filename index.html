@@ -3655,7 +3655,7 @@ function deleteTreat(id){
 
 /* ═══ Машин ═══ */
 function repairsOf(vehicleId){ return data.repairs.filter(r=>r.vehicleId===vehicleId).sort((a,b)=>b.date.localeCompare(a.date)); }
-function vehicleTotal(vehicleId){ return repairsOf(vehicleId).reduce((s,r)=>s+(r.amount||0),0); }
+function vehicleTotal(vehicleId){ return repairsOf(vehicleId).reduce((s,r)=>s+(r.amount||0),0) + obligsOf(vehicleId).filter(o=>o.paid).reduce((s,o)=>s+(o.amount||0),0) + finesOf(vehicleId).filter(f=>f.paid).reduce((s,f)=>s+(f.amount||0),0); }
 function obligsOf(vid){ return data.vehObligations.filter(o=>o.vehicleId===vid); }
 function finesOf(vid){ return data.vehFines.filter(f=>f.vehicleId===vid); }
 function obligStatus(o){
@@ -3790,7 +3790,7 @@ function renderVehicles(){
           <button type="button" class="ic" onclick="deleteVehicle('${v.id}')" aria-label="Машин устгах"><i class="ti ti-trash"></i></button>
         </span>
       </div>
-      <div class="veh-total"><span class="l">Нийт зардал (${reps.length} засвар)</span><span class="v num">${fmt(total)}₮</span></div>
+      <div class="veh-total"><span class="l">Нийт зардал</span><span class="v num">${fmt(total)}₮</span></div>
       ${reps.length?reps.slice(0,3).map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
         <span><span class="num" style="color:var(--text-2)">${r.date}</span> · ${escapeHtml(r.desc||'')}</span>
         <span class="num" style="font-weight:500">${fmt(r.amount)}₮</span></div>`).join(''):'<div class="veh-empty">Засвар хараахан алга</div>'}
