@@ -913,9 +913,9 @@ input,select{font-family:inherit;font-size:15px}
 .water-report-bar .btn{width:100%}
 
 /* ═══ #3 Таб солих зөөлөн анимаци ═══ */
-.view.active{ animation: viewIn .28s cubic-bezier(.16,1,.3,1) both }
-@keyframes viewIn{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:none } }
-@media (prefers-reduced-motion: reduce){ .view.active{ animation:none } }
+.view.anim-in{ animation: viewIn .3s cubic-bezier(.16,1,.3,1) both }
+@keyframes viewIn{ from{ opacity:0; transform:translateY(10px) } to{ opacity:1; transform:none } }
+@media (prefers-reduced-motion: reduce){ .view.anim-in{ animation:none } }
 </style>
 </head>
 <body>
@@ -3078,8 +3078,10 @@ function addMongolTemplate(){
 let currentView='home';
 function showView(name){
   currentView=name;
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>{ v.classList.remove('active'); v.classList.remove('anim-in'); });
+  const _v=document.getElementById('view-'+name);
+  _v.classList.add('active');
+  void _v.offsetWidth; _v.classList.add('anim-in');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
   document.getElementById('fab').style.display='block';   // Quick add үргэлж бэлэн
   render();
@@ -4940,7 +4942,10 @@ function currentTheme(){ return localStorage.getItem('hb_theme')||'auto'; }
 function toggleTheme(){
   const cur=currentTheme();
   const eff = cur==='auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light') : cur;
-  setTheme(eff==='dark'?'light':'dark');
+  const next = eff==='dark'?'light':'dark';
+  localStorage.setItem('hb_theme', next);
+  applyTheme(next);
+  if(typeof toast==='function') toast(next==='dark'?'Харанхуй горим':'Гэрэлтэй горим');
 }
 function applyTheme(t){
   if(t==='auto')document.documentElement.removeAttribute('data-theme');
