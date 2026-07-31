@@ -916,6 +916,26 @@ input,select{font-family:inherit;font-size:15px}
 .view.anim-in{ animation: viewIn .3s cubic-bezier(.16,1,.3,1) both }
 @keyframes viewIn{ from{ opacity:0; transform:translateY(10px) } to{ opacity:1; transform:none } }
 @media (prefers-reduced-motion: reduce){ .view.anim-in{ animation:none } }
+
+/* ═══ ХАЙЛТ ═══ */
+.search-btn{ width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);flex-shrink:0;transition:background .15s }
+.search-btn:hover{ background:var(--surface-2) }
+.search-bar-wrap{ display:none;align-items:center;gap:8px;padding:.75rem 0 .5rem }
+.search-bar-wrap.open{ display:flex }
+.search-bar-wrap input{ flex:1;padding:10px 14px;border:1px solid var(--border-strong);border-radius:var(--radius);font-size:15px;background:var(--surface);color:var(--text);transition:border-color .15s }
+.search-bar-wrap input:focus{ outline:none;border-color:var(--accent) }
+.btn-close-search{ width:40px;height:40px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);flex-shrink:0 }
+.filter-row{ display:flex;gap:6px;flex-wrap:wrap;padding:.4rem 0 .75rem }
+.filter-chip{ display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap }
+.filter-chip.active{ background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);font-weight:500 }
+.filter-chip i{ font-size:14px }
+.date-filter-row{ display:none;gap:8px;align-items:center;padding:.4rem 0 .6rem;flex-wrap:wrap }
+.date-filter-row.open{ display:flex }
+.date-filter-row label{ font-size:13px;color:var(--text-2);flex-shrink:0 }
+.date-filter-row input[type=date]{ padding:6px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text) }
+.search-result-empty{ text-align:center;padding:2.5rem 1rem;color:var(--text-2) }
+.search-result-empty i{ font-size:32px;color:var(--text-muted);display:block;margin-bottom:.75rem }
+.sr-tag{ display:inline-flex;align-items:center;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:6px }
 </style>
 </head>
 <body>
@@ -958,11 +978,16 @@ input,select{font-family:inherit;font-size:15px}
         <div class="month" id="month-label"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="search-btn" onclick="toggleSearch()" id="search-toggle-btn" aria-label="Хайлт" title="Хайлт"><i class="ti ti-search"></i></button>
         <button type="button" class="sync-badge" id="sync-badge" onclick="onSyncBadgeClick()" aria-label="Синкийн төлөв"><i class="ti ti-cloud"></i> <span>Синктэй</span></button>
         <button type="button" class="gear-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Өдөр/шөнө солих" title="Өдөр/шөнө"><i class="ti ti-moon" id="theme-toggle-ic"></i></button>
         <button type="button" class="gear-btn" onclick="openSettings()" aria-label="Тохиргоо" title="Тохиргоо"><i class="ti ti-settings"></i></button>
         <button type="button" class="avatar" id="avatar" onclick="openSettings()" aria-label="Тохиргоо">Т</button>
       </div>
+    </div>
+    <div class="search-bar-wrap" id="search-bar-wrap">
+      <input type="search" id="search-input" placeholder="Хайх... (зардал, орлого, машин, эм...)" oninput="runSearch()" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="btn-close-search" onclick="closeSearch()" aria-label="Хаах"><i class="ti ti-x"></i></button>
     </div>
     <!-- Хураангуй -->
     <div id="view-home" class="view active"></div>
@@ -984,6 +1009,23 @@ input,select{font-family:inherit;font-size:15px}
     <div id="view-finance" class="view"></div>
     <!-- Сануулга -->
     <div id="view-reminders" class="view"></div>
+    <div id="view-search" class="view">
+      <div class="filter-row" id="search-filter-row">
+        <button class="filter-chip active" data-type="all" onclick="setSearchType('all')"><i class="ti ti-layout-grid"></i> Бүгд</button>
+        <button class="filter-chip" data-type="variable" onclick="setSearchType('variable')"><i class="ti ti-basket"></i> Хувьсах</button>
+        <button class="filter-chip" data-type="income" onclick="setSearchType('income')"><i class="ti ti-coin"></i> Орлого</button>
+        <button class="filter-chip" data-type="fixed" onclick="setSearchType('fixed')"><i class="ti ti-receipt"></i> Тогтмол</button>
+        <button class="filter-chip" data-type="vehicle" onclick="setSearchType('vehicle')"><i class="ti ti-car"></i> Машин</button>
+        <button class="filter-chip" data-type="med" onclick="setSearchType('med')"><i class="ti ti-pill"></i> Эм</button>
+        <button class="filter-chip" data-type="reminder" onclick="setSearchType('reminder')"><i class="ti ti-bell"></i> Сануулга</button>
+        <button class="filter-chip" data-type="date" onclick="toggleDateFilter()"><i class="ti ti-calendar"></i> Огноо</button>
+      </div>
+      <div class="date-filter-row" id="date-filter-row">
+        <label>Эхлэх:</label><input type="date" id="sf-date-from" onchange="runSearch()">
+        <label>Дуусах:</label><input type="date" id="sf-date-to" onchange="runSearch()">
+      </div>
+      <div id="search-results"></div>
+    </div>
   </div>
   <div class="fab" id="fab"><button onclick="openQuickAdd()" aria-label="Хурдан нэмэх"><i class="ti ti-plus"></i> Нэмэх</button></div>
   <nav class="bottom-nav">
@@ -3078,6 +3120,7 @@ function addMongolTemplate(){
 let currentView='home';
 function showView(name){
   currentView=name;
+  if(name!=='search' && searchOpen){ const _sw=document.getElementById('search-bar-wrap'); if(_sw)_sw.classList.remove('open'); searchOpen=false; }
   document.querySelectorAll('.view').forEach(v=>{ v.classList.remove('active'); v.classList.remove('anim-in'); });
   const _v=document.getElementById('view-'+name);
   _v.classList.add('active');
@@ -4939,6 +4982,93 @@ function renderMeters(){
 /* ═══ Гэрэл / харанхуй горим ═══ */
 const THEMES=['auto','light','dark'];
 function currentTheme(){ return localStorage.getItem('hb_theme')||'auto'; }
+/* ═══════════ ХАЙЛТ & ШҮҮЛТ ═══════════ */
+let searchType='all', searchOpen=false;
+function hbNorm(s){ return String(s==null?'':s).toLowerCase().replace(/\u0451/g,'\u0435'); } // ё→е
+function matchText(q, fields){ if(!q) return true; const nq=hbNorm(q); return fields.some(f=>hbNorm(f).includes(nq)); }
+function matchDate(date, from, to){ if(!from && !to) return true; if(!date) return false; if(from && date<from) return false; if(to && date>to) return false; return true; }
+function toggleSearch(){ searchOpen ? closeSearch() : openSearch(); }
+function openSearch(){
+  searchOpen=true;
+  document.getElementById('search-bar-wrap').classList.add('open');
+  showView('search');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fab').style.display='none';
+  setTimeout(()=>document.getElementById('search-input').focus(), 80);
+  runSearch();
+}
+function closeSearch(){
+  searchOpen=false;
+  document.getElementById('search-bar-wrap').classList.remove('open');
+  document.getElementById('search-input').value='';
+  showView('home');
+  const hb=document.querySelector('.nav-btn[data-view="home"]'); if(hb)hb.classList.add('active');
+}
+function setSearchType(type){
+  searchType=type;
+  document.querySelectorAll('#search-filter-row .filter-chip').forEach(c=>c.classList.toggle('active', c.dataset.type===type));
+  runSearch();
+}
+function toggleDateFilter(){
+  const row=document.getElementById('date-filter-row');
+  const isOpen=row.classList.toggle('open');
+  document.querySelector('.filter-chip[data-type="date"]').classList.toggle('active', isOpen);
+  if(!isOpen){ document.getElementById('sf-date-from').value=''; document.getElementById('sf-date-to').value=''; runSearch(); }
+}
+function runSearch(){
+  const q=(document.getElementById('search-input').value||'').trim();
+  const dFrom=document.getElementById('sf-date-from').value, dTo=document.getElementById('sf-date-to').value;
+  const out=document.getElementById('search-results');
+  if(!q && !dFrom && !dTo){
+    out.innerHTML='<div class="search-result-empty"><i class="ti ti-search"></i><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Хайх үгээ бич</div><div style="font-size:13px">Зардал, орлого, машин, эм, сануулгаас хайна</div></div>';
+    return;
+  }
+  const T=searchType, res=[];
+  const is=t=>T==='all'||T===t;
+  if(is('variable')) data.variable.forEach(v=>{
+    if(matchText(q,[catName(v.categoryId),v.note||'',memberName(v.memberId)]) && matchDate(v.date,dFrom,dTo))
+      res.push({icon:'ti-basket',bg:'var(--m-variable-bg)',ic:'var(--m-variable)',label:catName(v.categoryId),sub:v.note||'',meta:v.date,badge:memberName(v.memberId),ac:'var(--danger)',amt:'-'+fmt(v.amount)+'₮',click:`openVariableModal('${v.id}')`,tl:'Хувьсах',sd:v.date}); });
+  if(is('income')) data.income.forEach(i=>{
+    if(matchText(q,[i.type||'',i.note||'']) && matchDate(i.date,dFrom,dTo))
+      res.push({icon:'ti-coin',bg:'var(--m-income-bg)',ic:'var(--m-income)',label:i.type||'Орлого',sub:i.note||'',meta:i.date,badge:'',ac:'var(--success)',amt:'+'+fmt(i.amount)+'₮',click:`openIncomeModal('${i.id}')`,tl:'Орлого',sd:i.date}); });
+  if(is('fixed')) data.fixedItems.forEach(f=>{
+    if(matchText(q,[f.name||'',f.note||'']))
+      res.push({icon:'ti-receipt',bg:'var(--m-fixed-bg)',ic:'var(--m-fixed)',label:f.name,sub:f.note||'',meta:'',badge:'',ac:'var(--text)',amt:fmt(f.amount)+'₮',click:`openFixedModal('${f.id}')`,tl:'Тогтмол',sd:''}); });
+  if(is('vehicle')){
+    data.vehicles.forEach(vh=>{ if(matchText(q,[vh.plate||'',vh.name||'']))
+      res.push({icon:'ti-car',bg:'var(--m-vehicle-bg)',ic:'var(--m-vehicle)',label:vh.name||vh.plate,sub:vh.plate||'',meta:'',badge:'',ac:'var(--text)',amt:'',click:`showView('vehicles')`,tl:'Машин',sd:''}); });
+    data.repairs.forEach(r=>{ const vh=data.vehicles.find(x=>x.id===r.vehicleId), vn=vh?(vh.name||vh.plate):'';
+      if(matchText(q,[r.desc||'',vn]) && matchDate(r.date,dFrom,dTo))
+        res.push({icon:'ti-tool',bg:'var(--m-vehicle-bg)',ic:'var(--m-vehicle)',label:r.desc||'Засвар',sub:vn,meta:r.date,badge:'',ac:'var(--danger)',amt:r.amount?fmt(r.amount)+'₮':'',click:`showView('vehicles')`,tl:'Засвар',sd:r.date}); });
+    data.vehObligations.forEach(o=>{ const vh=data.vehicles.find(x=>x.id===o.vehicleId), vn=vh?(vh.name||vh.plate):'';
+      if(matchText(q,[o.type||'',o.note||'',vn]) && matchDate(o.dueDate,dFrom,dTo))
+        res.push({icon:'ti-file-invoice',bg:'var(--m-vehicle-bg)',ic:'var(--m-vehicle)',label:o.type,sub:vn,meta:o.dueDate||'',badge:o.paid?'✓ төлсөн':'',ac:'var(--text)',amt:o.amount?fmt(o.amount)+'₮':'',click:`openObligModal('${o.vehicleId}','${o.id}')`,tl:'Үүрэг',sd:o.dueDate||''}); });
+    data.vehFines.forEach(f=>{ const vh=data.vehicles.find(x=>x.id===f.vehicleId), vn=vh?(vh.name||vh.plate):'';
+      if(matchText(q,[vn,'торгууль']) && matchDate(f.date,dFrom,dTo))
+        res.push({icon:'ti-alert-triangle',bg:'var(--danger-bg)',ic:'var(--danger)',label:'Торгууль',sub:vn,meta:f.date||'',badge:f.paid?'✓ төлсөн':'⚠ төлөөгүй',ac:'var(--danger)',amt:fmt(f.amount)+'₮',click:`openFineModal('${f.vehicleId}','${f.id}')`,tl:'Торгууль',sd:f.date||''}); });
+  }
+  if(is('med')) data.meds.forEach(m=>{
+    if(matchText(q,[m.name||'',m.category||'',memberName(m.memberId)]))
+      res.push({icon:'ti-pill',bg:'var(--m-health-bg)',ic:'var(--m-health)',label:m.name,sub:memberName(m.memberId)+(m.category?' · '+m.category:''),meta:'',badge:'',ac:'var(--text)',amt:'',click:`showView('health')`,tl:'Эм',sd:''}); });
+  if(is('reminder')) data.reminders.forEach(rm=>{
+    if(matchText(q,[rm.title||'',rm.note||'']) && matchDate(rm.date,dFrom,dTo)){
+      const over=rm.date && rm.date<todayLocal();
+      res.push({icon:'ti-bell',bg:over?'var(--danger-bg)':'var(--m-remind-bg)',ic:over?'var(--danger)':'var(--m-remind)',label:rm.title,sub:rm.note||'',meta:rm.date||'',badge:over?'⚠ хугацаа хэтэрсэн':'',ac:'var(--text)',amt:'',click:`openReminderModal('${rm.id}')`,tl:'Сануулга',sd:rm.date||''}); }
+  });
+  res.sort((a,b)=>{ if(!a.sd&&!b.sd)return 0; if(!a.sd)return 1; if(!b.sd)return -1; return b.sd.localeCompare(a.sd); });
+  if(!res.length){
+    out.innerHTML='<div class="search-result-empty"><i class="ti ti-mood-empty"></i><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Үр дүн олдсонгүй</div><div style="font-size:13px">"'+escapeHtml(q)+'" — тохирох зүйл алга</div></div>';
+    return;
+  }
+  const head='<div class="section-label"><i class="ti ti-list-search"></i> '+res.length+' үр дүн</div>';
+  out.innerHTML=head+res.map(r=>`<div class="vx-row" style="cursor:pointer" onclick="${r.click}" role="button" tabindex="0">`+
+    `<div class="vx-icon" style="background:${r.bg}"><i class="ti ${r.icon}" style="color:${r.ic}"></i></div>`+
+    `<div class="vx-main" style="flex:1;min-width:0"><div class="vx-name">${escapeHtml(r.label)}`+
+    `${r.sub?`<span style="color:var(--text-2);font-weight:400"> — ${escapeHtml(r.sub)}</span>`:''}`+
+    `<span class="sr-tag">${r.tl}</span>${r.badge?`<span class="mem-chip">${escapeHtml(r.badge)}</span>`:''}</div>`+
+    `${r.meta?`<div class="vx-sub num">${r.meta}</div>`:''}</div>`+
+    `${r.amt?`<span class="vx-amt num" style="color:${r.ac}">${r.amt}</span>`:''}</div>`).join('');
+}
 function toggleTheme(){
   const cur=currentTheme();
   const eff = cur==='auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light') : cur;
