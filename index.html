@@ -936,6 +936,10 @@ input,select{font-family:inherit;font-size:15px}
 .search-result-empty{ text-align:center;padding:2.5rem 1rem;color:var(--text-2) }
 .search-result-empty i{ font-size:32px;color:var(--text-muted);display:block;margin-bottom:.75rem }
 .sr-tag{ display:inline-flex;align-items:center;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:6px }
+.field input[type=date]{ min-height:47px }
+input[type=date]{ -webkit-appearance:none; appearance:none }
+input[type=date]::-webkit-date-and-time-value{ text-align:left; margin:0 }
+input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
 </style>
 </head>
 <body>
@@ -1368,6 +1372,21 @@ input,select{font-family:inherit;font-size:15px}
     </div>
   </div>
 </div>
+<div class="modal-bg" id="debt-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="db-modal-title">
+    <h3 id="db-modal-title">Өр нэмэх</h3>
+    <div class="field"><label>Төрөл</label>
+      <select id="db-dir"><option value="owe">Өглөг — би өгнө</option><option value="owed">Авлага — надад өгнө</option></select></div>
+    <div class="field"><label>Хэн</label><input type="text" id="db-person" placeholder="Нэр"></div>
+    <div class="field"><label>Дүн (₮)</label><input type="number" min="0" id="db-amount" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Тэмдэглэл</label><input type="text" id="db-note" placeholder="Сонголтоор"></div>
+    <label class="ob-check"><input type="checkbox" id="db-paid"> Төлсөн / барагдсан</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('debt-modal')">Болих</button>
+      <button class="btn acc" onclick="saveDebt()">Хадгалах</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="oblig-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ob-modal-title">
     <h3 id="ob-modal-title">Үүрэг нэмэх</h3>
@@ -1788,7 +1807,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], meds:[], vehObligations:[], vehFines:[], waterHeader:'', tombstones:{} };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], meds:[], vehObligations:[], vehFines:[], debts:[], waterHeader:'', tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -1801,7 +1820,7 @@ let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
 let editingMedId=null, medMemberId=null;
 let editingObligId=null, obligVehicleId=null, editingFineId=null, fineVehicleId=null;
-let editingLoanId=null, editingSavingId=null;
+let editingLoanId=null, editingSavingId=null, editingDebtId=null;
 let editingReminderId=null;
 let editingRecurId=null;
 
@@ -1988,7 +2007,7 @@ async function saveToDrive(){
   try{
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, waterHeader:data.waterHeader, tombstones:data.tombstones };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, debts:data.debts, waterHeader:data.waterHeader, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
@@ -2039,6 +2058,7 @@ async function loadFromDrive(){
       data.meds=mergeById(data.meds, remote.meds||[]);
       data.vehObligations=mergeById(data.vehObligations, remote.vehObligations||[]);
       data.vehFines=mergeById(data.vehFines, remote.vehFines||[]);
+      data.debts=mergeById(data.debts, remote.debts||[]);
       if(remote.waterHeader!=null) data.waterHeader=remote.waterHeader;
       migrate(); saveLocal();
     }
@@ -2079,7 +2099,7 @@ async function doBackup(){
     const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,meds:data.meds,vehObligations:data.vehObligations,vehFines:data.vehFines,waterHeader:data.waterHeader,tombstones:data.tombstones})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,meds:data.meds,vehObligations:data.vehObligations,vehFines:data.vehFines,debts:data.debts,waterHeader:data.waterHeader,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -2166,8 +2186,8 @@ function migrate(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
-  { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); }
+  if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(!data.debts)data.debts=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
+  { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); data.debts=dd(data.debts); }
   try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){console.warn('HomeBook алдаа:',e);}
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
@@ -3284,6 +3304,46 @@ async function addToCalendar(id){
 }
 
 /* ═══ Санхүү: зээл + хуримтлал ═══ */
+function buildDebtBlock(){
+  const owe=data.debts.filter(d=>d.dir==='owe'), owed=data.debts.filter(d=>d.dir==='owed');
+  const uSum=arr=>arr.filter(d=>!d.paid).reduce((s,d)=>s+(d.amount||0),0);
+  const one=d=>`<div class="med-row"><div class="med-info"><span class="med-name">${escapeHtml(d.person||'—')}</span>`+
+    `<span class="med-sub num">${fmt(d.amount)}₮${d.note?' · '+escapeHtml(d.note):''}</span></div>`+
+    `<span class="med-stat ${d.paid?'md-green':(d.dir==='owe'?'md-red':'md-yellow')}">${d.paid?'барагдсан':(d.dir==='owe'?'өгөх':'авах')}</span>`+
+    `<span class="card-actions"><button type="button" class="ic" onclick="toggleDebtPaid('${d.id}')" aria-label="Барагдсан"><i class="ti ti-${d.paid?'circle-check':'circle'}"></i></button>`+
+    `<button type="button" class="ic" onclick="openDebtModal('${d.id}')" aria-label="Засах"><i class="ti ti-pencil"></i></button>`+
+    `<button type="button" class="ic" onclick="deleteDebt('${d.id}')" aria-label="Устгах"><i class="ti ti-trash"></i></button></span></div>`;
+  const sec=(arr,label)=> arr.length ? `<div class="med-grp">${label}${uSum(arr)?' · үлдэгдэл '+fmt(uSum(arr))+'₮':''}</div>`+arr.map(one).join('') : '';
+  const body=(sec(owe,'Өглөг (би өгнө)')+sec(owed,'Авлага (надад өгнө)')) || '<div class="fin-empty">Өр бүртгээгүй</div>';
+  return `<div class="fin-card">${body}</div>`;
+}
+function openDebtModal(id){
+  editingDebtId=id||null;
+  const g=x=>document.getElementById(x);
+  if(id){ const d=data.debts.find(x=>x.id===id);
+    g('db-modal-title').textContent='Өр засах';
+    g('db-dir').value=d.dir; g('db-person').value=d.person||''; g('db-amount').value=d.amount||''; g('db-note').value=d.note||''; g('db-paid').checked=!!d.paid;
+  }else{ g('db-modal-title').textContent='Өр нэмэх';
+    g('db-dir').value='owe'; g('db-person').value=''; g('db-amount').value=''; g('db-note').value=''; g('db-paid').checked=false; }
+  openModal('debt-modal');
+}
+function saveDebt(){
+  const g=x=>document.getElementById(x);
+  const dir=g('db-dir').value, person=g('db-person').value.trim(), amount=parseFloat(g('db-amount').value)||0, note=g('db-note').value.trim(), paid=g('db-paid').checked;
+  if(!person){ formErr('Хэн болохыг бичнэ үү'); return; }
+  if(!(amount>0)){ formErr('Дүн оруулна уу'); return; }
+  if(editingDebtId){ const d=data.debts.find(x=>x.id===editingDebtId); Object.assign(d,{dir,person,amount,note,paid,updatedAt:Date.now()}); toast('Засагдлаа'); }
+  else { data.debts.push({ id:'db'+Date.now(), dir, person, amount, note, paid, updatedAt:Date.now() }); toast('Өр нэмэгдлээ'); }
+  persist(); closeModal('debt-modal'); render();
+}
+function toggleDebtPaid(id){
+  const d=data.debts.find(x=>x.id===id); if(!d)return;
+  d.paid=!d.paid; d.updatedAt=Date.now(); persist(); render(); toast(d.paid?'Барагдсан гэж тэмдэглэв':'Идэвхтэй болгов');
+}
+function deleteDebt(id){
+  if(!confirm('Энэ өрийг устгах уу?'))return;
+  data.debts=data.debts.filter(d=>d.id!==id); tombstone(id); persist(); render(); toast('Устгагдлаа');
+}
 function renderFinance(){
   const wrap=document.getElementById('view-finance');
   // ── Зээл ──
@@ -3353,6 +3413,7 @@ function renderFinance(){
       ${dTxt}
     </div>`;
   }).join('');
+  const debtBlock=buildDebtBlock();
   wrap.innerHTML=`
     <div class="sec-title"><i class="ti ti-scale"></i> Дансны үлдэгдэл</div>
     <div class="fin-card">
@@ -3365,6 +3426,9 @@ function renderFinance(){
     <div class="sec-title"><i class="ti ti-target"></i> Хуримтлал</div>
     ${svHtml}
     <button class="btn" style="width:100%;justify-content:center" onclick="openSavingModal()"><i class="ti ti-plus"></i> Хуримтлал нэмэх</button>
+    <div class="sec-title"><i class="ti ti-users"></i> Хүн хоорондын өр</div>
+    ${debtBlock}
+    <button class="btn" style="width:100%;justify-content:center" onclick="openDebtModal()"><i class="ti ti-plus"></i> Өр нэмэх</button>
   `;
 }
 
