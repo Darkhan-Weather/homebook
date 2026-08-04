@@ -9,15 +9,40 @@
 <!-- CSP: XSS гарсан ч гадны домэйн руу өгөгдөл илгээхийг хориглоно -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com;
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com https://js.sentry-cdn.com https://browser.sentry-cdn.com;
   style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   font-src 'self' https://cdn.jsdelivr.net;
   img-src 'self' data: https://lh3.googleusercontent.com;
-  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net;
+  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.us.sentry.io;
   frame-src https://accounts.google.com;
   base-uri 'self';
   object-src 'none';
   form-action 'none'">
+<!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
+<script>
+window.sentryOnLoad = function () {
+  Sentry.init({
+    environment: (location.hostname === 'localhost') ? 'development' : 'production',
+    release: 'homebook@' + (window.HB_VERSION || 'unknown'),
+    tracesSampleRate: 0,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
+    sendDefaultPii: false,
+    beforeSend: function(event) {
+      try {
+        var s = JSON.stringify(event);
+        if (s.indexOf('Bearer ') !== -1 || s.indexOf('access_token') !== -1 ||
+            s.indexOf('hb_tok') !== -1) {
+          if (event.request && event.request.headers) delete event.request.headers;
+          if (event.extra) delete event.extra;
+        }
+      } catch(e) {}
+      return event;
+    }
+  });
+};
+</script>
+<script src="https://js.sentry-cdn.com/9273247da68710367ed8dca734a3221d.min.js" crossorigin="anonymous"></script>
 <meta name="description" content="Гэр бүлийн зардал, хөрөнгө, эрүүл мэндийг нэг дор">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1924,7 +1949,7 @@ function startViewFromUrl(){
     const go=new URLSearchParams(location.search).get('go');
     const ok=['home','meters','fixed','variable','income','finance','vehicles','health','reminders'];
     if(go && ok.includes(go)){ history.replaceState(null,'',location.pathname); return go; }
-  }catch(e){console.warn('HomeBook алдаа:',e);}
+  }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;}
   return null;
 }
 function enterApp(){
@@ -2165,7 +2190,7 @@ function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(s
 function saveLocal(){ localStorage.setItem('hb_data',JSON.stringify(data)); }
 function loadLocal(){
   const s=localStorage.getItem('hb_data');
-  if(s){ try{ data=JSON.parse(s); }catch(e){console.warn('HomeBook алдаа:',e);} }
+  if(s){ try{ data=JSON.parse(s); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;} }
   if(!data.meters)data.meters=[]; if(!data.readings)data.readings=[]; if(!data.notes)data.notes=[];
   if(!data.fixedItems)data.fixedItems=[]; if(!data.payments)data.payments=[]; if(!data.income)data.income=[];
   if(!data.categories)data.categories=[]; if(!data.variable)data.variable=[];
@@ -2188,7 +2213,7 @@ function migrate(){
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
   if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(!data.debts)data.debts=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
   { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); data.debts=dd(data.debts); }
-  try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){console.warn('HomeBook алдаа:',e);}
+  try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;}
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
@@ -3261,7 +3286,7 @@ async function addToCalendar(id){
   if(r.calEvents&&r.calEvents.length){
     for(const eid of r.calEvents){
       try{ await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eid}`,
-        {method:'DELETE',headers:{Authorization:'Bearer '+accessToken}}); }catch(e){console.warn('HomeBook алдаа:',e);}
+        {method:'DELETE',headers:{Authorization:'Bearer '+accessToken}}); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;}
     }
   }
   const newIds=[];
@@ -5308,6 +5333,7 @@ window.addEventListener('online',()=>{
 });
 
 /* ═══ Service worker — офлайн ажиллагаа ═══ */
+window.HB_VERSION='v1.5.0';
 if('serviceWorker' in navigator){
   window.showUpdateBanner=function(worker){
     if(!worker || document.getElementById('sw-update'))return;
@@ -5345,13 +5371,13 @@ window.addEventListener('load',()=>{
   if(tok && exp>Date.now()){
     // Хүчинтэй токен бий — шууд орно
     accessToken=tok; tokenExpiresAt=exp;
-    if(usr){ try{currentUser=JSON.parse(usr);}catch(e){console.warn('HomeBook алдаа:',e);} }
+    if(usr){ try{currentUser=JSON.parse(usr);}catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;} }
     enterApp();
     const tryLoad=setInterval(()=>{ if(window.google&&google.accounts){ clearInterval(tryLoad); initGSI(); loadFromDrive(); } },300);
     setTimeout(()=>clearInterval(tryLoad),6000);
   }else if(usr){
     // Токен дууссан ч өмнө нэвтэрсэн хэрэглэгч — hint-ээр чимээгүй сэргээхийг оролдоно
-    try{ currentUser=JSON.parse(usr); }catch(e){console.warn('HomeBook алдаа:',e);}
+    try{ currentUser=JSON.parse(usr); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;}
     goScreen('login-screen');
     const tryAuth=setInterval(()=>{
       if(window.google&&google.accounts){ clearInterval(tryAuth); requestToken({silent:true}); }
