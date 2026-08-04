@@ -13,7 +13,7 @@
   style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   font-src 'self' https://cdn.jsdelivr.net;
   img-src 'self' data: https://lh3.googleusercontent.com;
-  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.us.sentry.io;
+  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://odd-breeze-d4e0.examples-code.workers.dev;
   frame-src https://accounts.google.com;
   base-uri 'self';
   object-src 'none';
@@ -1795,6 +1795,15 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
     <button class="btn" style="width:100%;justify-content:center" onclick="exportReport()">
       <i class="ti ti-file-text"></i> Word файл татах</button>
     <div class="hint" style="margin-top:.75rem">PDF болгохын тулд хэвлэх цонхонд "Хэвлэгч" хэсгээс <b>"Save as PDF"</b> сонгоно уу.</div>
+    <div id="ai-report-section" style="margin-top:12px;display:none">
+      <div style="background:var(--accent-bg);border:1.5px solid var(--accent);border-radius:10px;padding:12px">
+        <div style="font-size:11px;font-weight:600;color:var(--accent-text);margin-bottom:6px"><i class="ti ti-sparkles"></i> AI дүн шинжилгээ</div>
+        <div id="ai-report-content" style="font-size:13px;line-height:1.7;color:var(--text)"></div>
+      </div>
+    </div>
+    <button class="btn" id="ai-report-btn" style="width:100%;justify-content:center;margin-top:8px;border-color:var(--accent);color:var(--accent-text)" onclick="generateAIReport()">
+      <i class="ti ti-brain"></i> AI-аар дүн шинжилгээ хий
+    </button>
     <div class="modal-actions"><button class="btn" onclick="closeModal('report-modal')">Хаах</button></div>
   </div>
 </div>
@@ -5385,6 +5394,83 @@ window.addEventListener('load',()=>{
     setTimeout(()=>clearInterval(tryAuth),6000);
   }else{ goScreen('home-screen'); }
 });
+
+/* ══ AI сарын дүн шинжилгээ (Cloudflare Worker) ══ */
+const WORKER_URL='https://odd-breeze-d4e0.examples-code.workers.dev';
+
+async function generateAIReport(){
+  const sel=document.getElementById('rp2-month');
+  const ym=sel?sel.value:monthLocal();
+  const t=monthlyTotals(ym);
+  const bal=t.income-t.expense;
+
+  // Хувьсах зардлын ангилал — data.variable (HomeBook-ийн бодит талбар)
+  const expMap={};
+  (data.variable||[]).filter(e=>e.date&&e.date.slice(0,7)===ym).forEach(e=>{
+    const cat=catName(e.categoryId)||'Бусад';
+    expMap[cat]=(expMap[cat]||0)+(e.amount||0);
+  });
+  const expList=Object.entries(expMap).sort((a,b)=>b[1]-a[1])
+    .map(([cat,amt])=>`- ${cat}: ${fmt(amt)}₮`).join('\n');
+
+  // Тогтмол зардал нэмэх
+  const fixedTotal=data.fixedItems?data.fixedItems.reduce((s,f)=>s+(f.amount||0),0):0;
+
+  const prompt=`${fxMonthLabel(ym)}-ын санхүүгийн тайлан:
+Орлого: ${fmt(t.income)}₮
+Нийт зардал: ${fmt(t.expense)}₮
+${bal>=0?'Хэмнэлт':'Хэтрэлт'}: ${fmt(Math.abs(bal))}₮
+Тогтмол зардал: ${fmt(fixedTotal)}₮
+
+Хувьсах зардлын ангилал:
+${expList||'- Мэдээлэл алга'}
+
+Дүн шинжилгээ хий: зардлын гол хандлага, хэмнэлтийн боломж, практик зөвлөгөө.`;
+
+  const btn=document.getElementById('ai-report-btn');
+  const section=document.getElementById('ai-report-section');
+  const content=document.getElementById('ai-report-content');
+  btn.disabled=true;
+  btn.innerHTML='<i class="ti ti-loader-2"></i> Шинжилж байна...';
+  section.style.display='block';
+  content.innerHTML='<span style="color:var(--accent)">⏳ AI шинжилж байна...</span>';
+
+  try{
+    const res=await fetch(WORKER_URL+'/api/ai',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        prompt,
+        system:`Чи бол гэр бүлийн санхүүгийн зөвлөх.
+Монгол хэлээр товч, ойлгомжтой дүн шинжилгээ хий.
+Дүрэм:
+- 3-5 өгүүлбэрт багтаа
+- Тоо баримтыг ашигла (₮, %)
+- Практик зөвлөгөө өг
+- Хэтэрхий мэргэжлийн хэл хэрэглэхгүй — энгийн, ойлгомжтой байх`
+      })
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j=await res.json();
+    content.innerHTML=(j.result||'Хариу ирсэнгүй').replace(/\n/g,'<br>');
+    if(window.Sentry) Sentry.addBreadcrumb({message:'AI report generated',level:'info'});
+  }catch(err){
+    content.innerHTML='<span style="color:var(--danger-fg)">Алдаа гарлаа. Дахин оролдоно уу.</span>';
+    if(window.Sentry) Sentry.captureException(err,{tags:{op:'generateAIReport'}});
+    console.warn('HomeBook алдаа:',err);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-brain"></i> AI-аар дүн шинжилгээ хий';
+  }
+}
+
+// Тайлан modal нээхэд AI хэсгийг нуух
+const _origOpenReport=openReportModal;
+openReportModal=function(){
+  _origOpenReport();
+  const sec=document.getElementById('ai-report-section');
+  if(sec) sec.style.display='none';
+};
 </script>
 </body>
 </html>
