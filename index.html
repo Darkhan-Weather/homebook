@@ -5413,8 +5413,33 @@ async function generateAIReport(){
   const expList=Object.entries(expMap).sort((a,b)=>b[1]-a[1])
     .map(([cat,amt])=>`- ${cat}: ${fmt(amt)}₮`).join('\n');
 
-  // Тогтмол зардал нэмэх
+  // Тогтмол зардал
   const fixedTotal=data.fixedItems?data.fixedItems.reduce((s,f)=>s+(f.amount||0),0):0;
+
+  // Засварын зардал (тухайн сар)
+  const repairItems=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym);
+  const repairTotal=repairItems.reduce((s,r)=>s+(r.amount||0),0);
+  const repairList=repairItems.map(r=>{
+    const vh=data.vehicles.find(v=>v.id===r.vehicleId);
+    return `- ${vh?vh.name||vh.plate:'Машин'}: ${escapeHtml(r.desc||'')} ${fmt(r.amount||0)}₮`;
+  }).join('\n');
+
+  // Машины үүрэг — тухайн сард төлсөн
+  const obligItems=data.vehObligations.filter(o=>o.paid&&o.paidDate&&o.paidDate.slice(0,7)===ym);
+  const obligTotal=obligItems.reduce((s,o)=>s+(o.amount||0),0);
+  const obligList=obligItems.map(o=>{
+    const vh=data.vehicles.find(v=>v.id===o.vehicleId);
+    return `- ${vh?vh.name||vh.plate:'Машин'}: ${o.type} ${fmt(o.amount||0)}₮`;
+  }).join('\n');
+
+  // Эмийн хяналт — дуусах дөхсөн (7 хоног)
+  const medWarn=data.meds.filter(m=>{
+    const ro=medRunOut(m); return ro.left>=0 && ro.left<=14;
+  }).map(m=>`- ${m.name} (${medRunOut(m).left} хоног үлдсэн)`).join('\n');
+
+  // Хүн хоорондын өр — төлөгдөөгүй
+  const debtOwe=data.debts.filter(d=>d.dir==='owe'&&!d.paid).reduce((s,d)=>s+(d.amount||0),0);
+  const debtOwed=data.debts.filter(d=>d.dir==='owed'&&!d.paid).reduce((s,d)=>s+(d.amount||0),0);
 
   const prompt=`${fxMonthLabel(ym)}-ын санхүүгийн тайлан:
 Орлого: ${fmt(t.income)}₮
@@ -5425,7 +5450,12 @@ ${bal>=0?'Хэмнэлт':'Хэтрэлт'}: ${fmt(Math.abs(bal))}₮
 Хувьсах зардлын ангилал:
 ${expList||'- Мэдээлэл алга'}
 
-Дүн шинжилгээ хий: зардлын гол хандлага, хэмнэлтийн боломж, практик зөвлөгөө.`;
+${repairTotal>0?`Машины засвар (${fmt(repairTotal)}₮):\n${repairList}`:''}
+${obligTotal>0?`\nМашины үүрэг төлсөн (${fmt(obligTotal)}₮):\n${obligList}`:''}
+${medWarn?`\nЭмийн анхааруулга:\n${medWarn}`:''}
+${debtOwe>0?`\nОлгох өр: ${fmt(debtOwe)}₮`:''}${debtOwed>0?`\nАвах авлага: ${fmt(debtOwed)}₮`:''}
+
+Дүн шинжилгээ хий: зардлын гол хандлага, хэмнэлтийн боломж, эмийн нөхцөл, практик зөвлөгөө.`;
 
   const btn=document.getElementById('ai-report-btn');
   const section=document.getElementById('ai-report-section');
