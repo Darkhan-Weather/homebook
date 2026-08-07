@@ -838,7 +838,8 @@ input,select{font-family:inherit;font-size:15px}
   @page{ size:A4; margin:14mm }
   html,body{ background:#fff !important; color:#000 !important; overflow:visible !important }
   .screen,.bottom-nav,.fab,.modal-bg,.toast,.topbar{ display:none !important }
-  #print-area{ display:block !important; color:#000; font-size:11pt; line-height:1.45 }
+  #print-area{ display:block !important; color:#1a1a1a; font-size:11pt; line-height:1.5;
+    font-family:'Noto Sans',-apple-system,sans-serif }
   #print-area *{ -webkit-print-color-adjust:exact; print-color-adjust:exact }
   .pr-chart{ max-width:360px; margin:0 0 12px }
   .pr-chart svg{ width:100%; height:auto }
@@ -850,17 +851,27 @@ input,select{font-family:inherit;font-size:15px}
   .pr-meta{ font-size:9pt; color:#777; text-align:right }
 
   .pr-kpi{ display:flex; gap:10px; margin-bottom:16px }
-  .pr-kpi div{ flex:1; border:1px solid #ddd; border-radius:6px; padding:9px 11px }
+  .pr-kpi div{ flex:1; border:1px solid #d5dddb; border-radius:8px; padding:11px 13px;
+    background:linear-gradient(#fbfdfc,#f4f9f8) }
   .pr-kpi .k{ font-size:9pt; color:#666 }
   .pr-kpi .v{ font-size:14pt; font-weight:700; font-variant-numeric:tabular-nums }
   .pr-kpi .v.inc{ color:#15803d } .pr-kpi .v.exp{ color:#b91c1c }
 
-  #print-area h2{ font-size:12pt; margin:16px 0 6px; padding-bottom:4px;
-    border-bottom:1px solid #ccc; page-break-after:avoid }
+  #print-area h2{ font-size:12.5pt; margin:18px 0 8px; padding:6px 10px;
+    background:#f0faf8; border-left:3px solid #0d9488; border-radius:0 5px 5px 0;
+    color:#0d5750; font-weight:700; page-break-after:avoid }
   #print-area table{ width:100%; border-collapse:collapse; font-size:10pt; page-break-inside:auto }
-  #print-area th{ text-align:left; font-size:9pt; color:#555; font-weight:600;
-    border-bottom:1px solid #bbb; padding:5px 6px }
-  #print-area td{ padding:4px 6px; border-bottom:1px solid #eee; vertical-align:top }
+  #print-area table{ border:1px solid #d5dddb; border-radius:5px; overflow:hidden }
+  #print-area thead tr{ background:#0d9488 }
+  #print-area th{ text-align:left; font-size:8.5pt; color:#fff; font-weight:600;
+    padding:6px 8px; text-transform:uppercase; letter-spacing:.03em }
+  #print-area th.r{ text-align:right }
+  #print-area td{ padding:5px 8px; border-bottom:1px solid #eef2f1; vertical-align:top;
+    font-size:9.5pt }
+  #print-area tbody tr:nth-child(even){ background:#f6faf9 }
+  #print-area tbody tr:last-child td{ border-bottom:none }
+  #print-area tfoot tr{ background:#e8f5f2; font-weight:700 }
+  #print-area tfoot td{ padding:6px 8px; border-top:1.5px solid #0d9488 }
   #print-area tr{ page-break-inside:avoid }
   #print-area .r{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap }
   #print-area tfoot td{ font-weight:700; border-top:1px solid #999; border-bottom:none }
@@ -1999,6 +2010,7 @@ function enterApp(){
     nu.innerHTML=`${pic}<span class="nu-n">${escapeHtml(name||'Хэрэглэгч')}</span><i class="ti ti-settings"></i>`;
   }
   processRecurring();              // огноо болсон давтагдах бичлэгүүдийг үүсгэх
+  if(typeof syncWaterReminder==='function') syncWaterReminder();  // усны заалт 15-ны сануулга
   showView(startViewFromUrl()||currentView||'home');   // FAB, таб, render-ийг жигдрүүлнэ
 }
 
@@ -4739,7 +4751,20 @@ function buildBreakdown(ym){
 function exportExcel(){
   if(!window.XLSX){ toast(navigator.onLine?'Excel сан ачаалагдаж байна, түр хүлээнэ үү':'Excel экспорт хийхэд нэг удаа онлайн байх шаардлагатай'); return; }
   const wb=XLSX.utils.book_new();
-  const add=(name,rows)=>{ if(rows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name); };
+  const add=(name,rows)=>{
+    if(!rows.length)return;
+    const ws=XLSX.utils.json_to_sheet(rows);
+    // Багана өргөнийг агуулгаар автоматаар тохируулах
+    const keys=Object.keys(rows[0]);
+    ws['!cols']=keys.map(k=>{
+      let w=k.length;
+      rows.forEach(r=>{ const v=String(r[k]==null?'':r[k]); if(v.length>w)w=v.length; });
+      return { wch: Math.min(Math.max(w+2,10), 40) };
+    });
+    // Хөлдөөх толгой мөр
+    ws['!freeze']={ xSplit:0, ySplit:1 };
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  };
   add('Орлого', data.income.map(i=>({Огноо:i.date,Төрөл:i.type,Тайлбар:i.note||'',Дүн:i.amount})));
   const fxRows=[];
   data.payments.forEach(p=>{ const it=data.fixedItems.find(x=>x.id===p.itemId); if(it)fxRows.push({Сар:p.month,Зүйл:it.name,Дүн:monthAmount(it,p.month),Төлсөн:p.paid?'Тийм':'Үгүй'}); });
