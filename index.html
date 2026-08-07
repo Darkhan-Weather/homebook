@@ -561,6 +561,9 @@ input,select{font-family:inherit;font-size:15px}
 .rec-note{font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:.6rem}
 .bal-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .bal-row:last-child{border-bottom:none}
+.fin-card-done{ opacity:.65 }
+.fin-card-done .fin-name{ text-decoration:line-through; color:var(--text-muted) }
+
 .bal-history{ margin-top:4px }
 .bal-toggle{ display:flex;align-items:center;gap:6px;width:100%;padding:8px 0;font-size:13px;font-weight:500;color:var(--text-2);background:none;border:none;cursor:pointer }
 .bal-toggle:hover{ color:var(--text) }
@@ -2566,6 +2569,10 @@ function saveDashBalance(val){
   }
   persist(); renderHome(); renderFinance();
 }
+function deleteBalanceFor(month){
+  data.balances=data.balances.filter(b=>b.month!==month);
+  persist(); render(); toast('Устгагдлаа');
+}
 function saveBalanceFor(month, val){
   let a=parseFloat(val);
   if(val===''||isNaN(a)){
@@ -3466,12 +3473,16 @@ function renderFinance(){
             `<div class="fin-actions"><button class="btn acc" onclick="payPart('${l.id}')"><i class="ti ti-check"></i> Хэсэг төлсөн</button></div>`}
         </div>`;
       }else{
-        return `<div class="fin-card">
+        const _lpaid=l.paid||false;
+        return `<div class="fin-card${_lpaid?' fin-card-done':''}">
           <div class="fin-head"><span class="fin-name">${escapeHtml(l.name)}</span>
-            <span class="card-actions"><button type="button" class="ic" onclick="openLoanModal('${l.id}')" aria-label="Зээл засах"><i class="ti ti-pencil"></i></button>
+            <span class="card-actions">
+            <button type="button" class="ic" onclick="toggleLoanPaid('${l.id}')" aria-label="Төлсөн/Төлөөгүй" title="Төлсөн/Төлөөгүй"><i class="ti ti-${_lpaid?'circle-check':'circle'}"></i></button>
+            <button type="button" class="ic" onclick="openLoanModal('${l.id}')" aria-label="Зээл засах"><i class="ti ti-pencil"></i></button>
             <button type="button" class="ic" onclick="deleteLoan('${l.id}')" aria-label="Зээл устгах"><i class="ti ti-trash"></i></button></span></div>
-          <div class="fin-line">Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
-          ${l.next?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b></div>`:''}
+          <div class="fin-line">${_lpaid?'<span style="color:var(--success)">✓ Төлсөн</span> · ':''}Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
+          ${!_lpaid&&l.next?`<div class="fin-line" style="color:var(--warn-fg,#b45309)"><i class="ti ti-calendar-due"></i> Дараагийн төлөлт: <b class="num">${l.next}</b>${l.monthly?' ('+fmt(l.monthly)+'₮)':''}</div>`:''}
+          ${_lpaid&&l.next?`<div class="fin-line" style="color:var(--text-muted)">Сүүлийн төлсөн: ${l.next}</div>`:''}
           ${l.due?`<div class="fin-line">Дуусах: <b class="num">${l.due}</b></div>`:''}
         </div>`;
       }
@@ -3510,6 +3521,7 @@ function renderFinance(){
         value="${b&&b.actual!=null?b.actual:''}" aria-label="${fxMonthLabel(m)} — дансны үлдэгдэл"
         onchange="saveBalanceFor('${m}',this.value)">
       ${dTxt}
+      <button type="button" class="ic" onclick="deleteBalanceFor('${m}')" aria-label="Устгах" title="Энэ саруудыг устгах" style="margin-left:auto;flex-shrink:0"><i class="ti ti-x"></i></button>
     </div>`;
   }
   /* Одоогийн сар → гадаад, хуучин сарууд → collapse */
@@ -3547,6 +3559,11 @@ function lnTypeChanged(){
   const t=document.getElementById('ln-type').value;
   document.getElementById('ln-zeel-fields').style.display=(t==='zeel')?'block':'none';
   document.getElementById('ln-hes-fields').style.display=(t==='heseglen')?'block':'none';
+}
+function toggleLoanPaid(id){
+  const l=data.loans.find(x=>x.id===id); if(!l)return;
+  l.paid=!l.paid; l.updatedAt=Date.now();
+  persist(); render(); toast(l.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
 }
 function openLoanModal(editId){
   editingLoanId=editId||null;
@@ -4736,6 +4753,11 @@ function exportExcel(){
   add('Хуримтлал', data.savings.map(s=>({'Нэр':s.name,'Зорилтот дүн':s.target||0,'Одоогийн дүн':s.current||0,'Огноо':s.date||''})));
   add('Сануулга', data.reminders.map(r=>({'Гарчиг':r.title,'Огноо':r.date,'Тэмдэглэл':r.note||''})));
   add('Дансны тааруулга', data.balances.filter(b=>b.actual!=null).map(b=>({'Сар':b.month,'Бодит үлдэгдэл':b.actual,'Тэмдэглэл':b.note||''})));
+  // Шинэ хуудсууд
+  add('Эм', data.meds.map(m=>{ const ro=medRunOut(m); return {'Гишүүн':memberName(m.memberId),'Эмийн нэр':m.name,'Ангилал':m.category,'Нэг багц':m.perPack,'Авсан багц':m.packs,'Өдөрт':m.perDay,'Авсан огноо':m.boughtDate,'Дуусах огноо':ro.runOut,'Үлдсэн хоног':ro.left}; }));
+  add('Машины үүрэг', data.vehObligations.map(o=>{ const vh=data.vehicles.find(v=>v.id===o.vehicleId); return {'Машин':(vh?vh.name||vh.plate:''),'Төрөл':o.type,'Дүн':o.amount||0,'Дуусах огноо':o.dueDate||'','Төлсөн':o.paid?'Тийм':'Үгүй','Тэмдэглэл':o.note||''}; }));
+  add('Торгууль', data.vehFines.map(f=>{ const vh=data.vehicles.find(v=>v.id===f.vehicleId); return {'Машин':(vh?vh.name||vh.plate:''),'Дүн':f.amount||0,'Огноо':f.date||'','Төлсөн':f.paid?'Тийм':'Үгүй'}; }));
+  add('Хүн хоорондын өр', data.debts.map(d=>({'Төрөл':d.dir==='owe'?'Өглөг':'Авлага','Хэн':d.person||'','Дүн':d.amount||0,'Тэмдэглэл':d.note||'','Барагдсан':d.paid?'Тийм':'Үгүй'})));
   if(wb.SheetNames.length===0){ toast('Экспортлох өгөгдөл алга'); return; }
   XLSX.writeFile(wb,'HomeBook_'+todayLocal()+'.xlsx');
   toast('Excel татагдлаа');
@@ -5077,9 +5099,23 @@ function buildWaterReport(){
   return lines.join('\n');
 }
 function openWaterReport(){
+  syncWaterReminder(); persist();
   document.getElementById('wr-header').value=data.waterHeader||'';
   document.getElementById('wr-body').value=buildWaterReport();
   openModal('water-modal');
+}
+function syncWaterReminder(){
+  /* Сарын 15-нд усны заалт илгээх сануулга — waterHeader тохируулсан бол автомат */
+  if(!data.waterHeader) return;
+  const rid='rm_water_monthly';
+  /* Дараагийн 15-ыг олох */
+  const today=todayLocal(), [y,mo]=today.split('-').map(Number);
+  const day15=`${String(y).padStart(4,'0')}-${String(mo).padStart(2,'0')}-15`;
+  const nextDate=day15>=today?day15:`${mo===12?y+1:y}-${String(mo===12?1:mo+1).padStart(2,'0')}-15`;
+  const r=data.reminders.find(x=>x.id===rid);
+  if(r){ r.title='Усны заалт илгээх'; r.date=nextDate; r.updatedAt=Date.now(); }
+  else data.reminders.push({ id:rid, title:'Усны заалт илгээх', date:nextDate,
+    note:'Усны байцаагчид заалт илгээх өдөр', remindDays:[1], calEvents:[], updatedAt:Date.now() });
 }
 function copyWaterReport(){
   const header=document.getElementById('wr-header').value.trim();
