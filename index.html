@@ -1889,6 +1889,7 @@ let editingVariableId=null;
 let editingVehicleId=null, editingRepairId=null, repairVehicleId=null;
 let editingMemberId=null, editingTreatId=null, treatMemberId=null;
 let editingMedId=null, medMemberId=null;
+let varShowAll=false;
 let editingObligId=null, obligVehicleId=null, editingFineId=null, fineVehicleId=null;
 let editingLoanId=null, editingSavingId=null, editingDebtId=null;
 let editingReminderId=null;
@@ -4278,6 +4279,7 @@ function addDefaultCategories(){
 
 /* ═══ Хувьсах зардал ═══ */
 function changeVariableMonth(delta){
+  varShowAll=false;
   const [y,m]=variableMonth.split('-').map(Number);
   variableMonth=monthLocal(new Date(y, m-1+delta, 1));
   renderVariable();
@@ -4336,18 +4338,24 @@ function renderVariable(){
         </div>`;
       }).join('')+`</div>`;
   }
-  // Зардлын жагсаалт
+  // Зардлын жагсаалт — эхний 10, бусдыг "Бусад N харах"-аар
   let rows='';
-  if(list.length===0){ rows='<div class="empty-line" style="padding:1rem 0">Энэ сард зардал алга</div>'; }
-  else{
-    rows=list.map(v=>`<div class="vx-row">
+  const _VAR_PAGE=10;
+  const _varRow=v=>`<div class="vx-row">
       <div class="vx-icon"><i class="ti ti-shopping-cart"></i></div>
       <button type="button" class="vx-main" onclick="openVariableModal('${v.id}')" aria-label="Зардал засах">
         <div class="vx-name">${escapeHtml(catName(v.categoryId))}${v.note?' — '+escapeHtml(v.note):''}${v.memberId?`<span class="mem-chip"><i class="ti ti-user"></i>${escapeHtml(memberName(v.memberId))}</span>`:''}${v.recurringId?'<span class="rc-auto"><i class="ti ti-repeat"></i>авто</span>':''}</div>
         <div class="vx-sub num">${v.date}</div>
       </button>
       <span class="vx-amt">${fmt(v.amount)}₮</span>
-    </div>`).join('');
+    </div>`;
+  if(list.length===0){ rows='<div class="empty-line" style="padding:1rem 0">Энэ сард зардал алга</div>'; }
+  else if(list.length<=_VAR_PAGE || varShowAll){
+    rows=list.map(_varRow).join('');
+    if(list.length>_VAR_PAGE) rows+=`<button type="button" class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="varShowAll=false;renderVariable()"><i class="ti ti-chevron-up"></i> Хураангуйлах</button>`;
+  } else {
+    rows=list.slice(0,_VAR_PAGE).map(_varRow).join('')+
+      `<button type="button" class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="varShowAll=true;renderVariable()"><i class="ti ti-chevron-down"></i> Бусад ${list.length-_VAR_PAGE} харах</button>`;
   }
   // Гишүүнээр нэгтгэх
   const byMem={};
