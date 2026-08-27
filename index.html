@@ -1877,7 +1877,7 @@ function monthLocal(d){ return fmtDateLocal(d||new Date()).slice(0,7); }
 /* ═══ Төлөв ═══ */
 let tokenClient=null, accessToken=null, tokenExpiresAt=0, currentUser=null;
 let driveFolderId=null, driveDataFileId=null;
-let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], meds:[], vehObligations:[], vehFines:[], debts:[], waterHeader:'', tombstones:{} };
+let data={ meters:[], readings:[], notes:[], fixedItems:[], payments:[], income:[], categories:[], variable:[], vehicles:[], repairs:[], members:[], treatments:[], loans:[], savings:[], reminders:[], recurring:[], balances:[], meds:[], vehObligations:[], vehFines:[], debts:[], waterHeader:'', hiddenBalMonths:[], tombstones:{} };
 let saveTimer=null;
 let editingMeterId=null, editingReadingId=null, histMeterId=null;
 let editingFixedId=null;
@@ -2110,7 +2110,7 @@ async function saveToDrive(){
         setSync('Хамгаалагдсан',cssVar('--warn')); return;
       }
     }
-    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, debts:data.debts, waterHeader:data.waterHeader, tombstones:data.tombstones };
+    const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, debts:data.debts, waterHeader:data.waterHeader, hiddenBalMonths:data.hiddenBalMonths, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
@@ -2166,6 +2166,7 @@ async function loadFromDrive(){
       data.vehFines=mergeById(data.vehFines, remote.vehFines||[]);
       data.debts=mergeById(data.debts, remote.debts||[]);
       if(remote.waterHeader!=null) data.waterHeader=remote.waterHeader;
+      if(Array.isArray(remote.hiddenBalMonths)) data.hiddenBalMonths=Array.from(new Set([...(data.hiddenBalMonths||[]),...remote.hiddenBalMonths]));
       migrate(); saveLocal();
     }
     processRecurring();            // Drive-аас lastCreated шинэчлэгдсэний дараа
@@ -2205,7 +2206,7 @@ async function doBackup(){
     const today=todayLocal();
     const name='backup_'+today+'.json';
     let fid=await findFileInFolder(name,bf);
-    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,meds:data.meds,vehObligations:data.vehObligations,vehFines:data.vehFines,debts:data.debts,waterHeader:data.waterHeader,tombstones:data.tombstones})],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,meds:data.meds,vehObligations:data.vehObligations,vehFines:data.vehFines,debts:data.debts,waterHeader:data.waterHeader,hiddenBalMonths:data.hiddenBalMonths,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
       const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
@@ -2303,7 +2304,7 @@ function migrate(){
   if(!data.vehicles)data.vehicles=[]; if(!data.repairs)data.repairs=[];
   if(!data.members)data.members=[]; if(!data.treatments)data.treatments=[];
   if(!data.loans)data.loans=[]; if(!data.savings)data.savings=[];
-  if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(!data.debts)data.debts=[]; if(data.waterHeader==null)data.waterHeader=''; if(!data.tombstones)data.tombstones={};
+  if(!data.reminders)data.reminders=[]; if(!data.meds)data.meds=[]; if(!data.vehObligations)data.vehObligations=[]; if(!data.vehFines)data.vehFines=[]; if(!data.debts)data.debts=[]; if(data.waterHeader==null)data.waterHeader=''; if(!Array.isArray(data.hiddenBalMonths))data.hiddenBalMonths=[]; if(!data.tombstones)data.tombstones={};
   { const dd=arr=>{ const by={}; (arr||[]).forEach(x=>{ if(!x||!x.id)return; const e=by[x.id]; if(!e||(x.updatedAt||0)>=(e.updatedAt||0))by[x.id]=x; }); return Object.values(by); }; data.reminders=dd(data.reminders); data.meds=dd(data.meds); data.vehObligations=dd(data.vehObligations); data.vehFines=dd(data.vehFines); data.debts=dd(data.debts); }
   try{ (data.vehObligations||[]).forEach(o=>syncObligReminder(o)); (data.meds||[]).forEach(m=>syncMedReminder(m)); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;}
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
@@ -2588,7 +2589,11 @@ function saveDashBalance(val){
 }
 function deleteBalanceFor(month){
   data.balances=data.balances.filter(b=>b.month!==month);
-  persist(); render(); toast('Устгагдлаа');
+  if(!data.hiddenBalMonths.includes(month)) data.hiddenBalMonths.push(month);
+  persist(); render(); toast('Мөр нуугдлаа');
+}
+function restoreHiddenBalMonths(){
+  data.hiddenBalMonths=[]; persist(); render(); toast('Бүх сар сэргээгдлээ');
 }
 function saveBalanceFor(month, val){
   let a=parseFloat(val);
@@ -3542,7 +3547,8 @@ function renderFinance(){
     }).join('');
   }
   // ── Дансны үлдэгдлийн түүх ──
-  const months=lastNMonths(6).reverse();
+  const _hidden=data.hiddenBalMonths||[];
+  const months=lastNMonths(6).reverse().filter(m=>!_hidden.includes(m));
   const _curM=monthLocal();
   function _balRow(m){
     const b=getBalance(m), d=balanceDiff(m);
@@ -3574,7 +3580,7 @@ function renderFinance(){
     <div class="sec-title"><i class="ti ti-scale"></i> Дансны үлдэгдэл</div>
     <div class="fin-card">
       ${balHtml}
-      <div class="rec-note">Сар бүрийн эцсийн үлдэгдлээ бичихэд зөрүү (мэдэгдэхгүй зарлага) автоматаар гарна.</div>
+      <div class="rec-note">Сар бүрийн эцсийн үлдэгдлээ бичихэд зөрүү (мэдэгдэхгүй зарлага) автоматаар гарна.${(data.hiddenBalMonths&&data.hiddenBalMonths.length)?` · <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="restoreHiddenBalMonths()">${data.hiddenBalMonths.length} нуусан сар сэргээх</span>`:''}</div>
     </div>
     <div class="sec-title"><i class="ti ti-credit-card"></i> Зээл / өр</div>
     ${loanHtml}
