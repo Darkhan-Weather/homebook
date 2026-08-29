@@ -1555,6 +1555,8 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
       <div class="field"><label>Хэдэн хуваасан</label><input type="number" min="0" id="ln-parts" inputmode="numeric" placeholder="Жишээ: 4"></div>
       <div class="field"><label>Нэг хэсгийн дүн (₮)</label><input type="number" min="0" id="ln-partamt" inputmode="decimal"></div>
       <div class="field"><label>Төлсөн хэсэг</label><input type="number" min="0" id="ln-paid" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Дараагийн төлөлт хэдэн хугацаагаар сунгах</label>
+        <select id="ln-freq"><option value="15d">15 хоногоор</option><option value="month">Сараар</option></select></div>
     </div>
     <div class="field"><label>Дараагийн төлөх огноо</label><input type="date" id="ln-next"></div>
     <div class="modal-actions">
@@ -3631,6 +3633,7 @@ function openLoanModal(editId){
     g('ln-name').value=l.name; g('ln-type').value=l.type||'zeel';
     g('ln-total').value=l.total||''; g('ln-monthly').value=l.monthly||''; g('ln-due').value=l.due||'';
     g('ln-parts').value=l.parts||''; g('ln-partamt').value=l.partAmount||''; g('ln-paid').value=l.paidParts||0;
+    if(g('ln-freq'))g('ln-freq').value=l.freq||'month';
     g('ln-next').value=l.next||'';
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
@@ -3655,7 +3658,7 @@ function saveLoan(){
   const obj={ name, type, total:parseFloat(g('ln-total').value)||0, next:g('ln-next').value,
     monthly:parseFloat(g('ln-monthly').value)||0, due:g('ln-due').value,
     parts:parseInt(g('ln-parts').value)||0, partAmount:parseFloat(g('ln-partamt').value)||0,
-    paidParts:parseInt(g('ln-paid').value)||0, updatedAt:Date.now() };
+    paidParts:parseInt(g('ln-paid').value)||0, freq:g('ln-freq')?g('ln-freq').value:'month', updatedAt:Date.now() };
   if(editingLoanId){ Object.assign(data.loans.find(x=>x.id===editingLoanId), obj); toast('Засагдлаа'); }
   else{ obj.id='ln'+Date.now(); data.loans.push(obj); toast('Зээл нэмэгдлээ'); }
   persist(); closeModal('loan-modal'); renderFinance();
@@ -3670,7 +3673,13 @@ function payPart(id){
   const l=data.loans.find(x=>x.id===id);
   if(l.paidParts<l.parts){
     l.paidParts=(l.paidParts||0)+1;
-    if(l.next){ const [y,m,d]=l.next.split('-').map(Number); l.next=fmtDateLocal(new Date(y,m,d)); }
+    if(l.next){
+      const [y,m,d]=l.next.split('-').map(Number);
+      const nd=new Date(y,m-1,d);
+      if((l.freq||'month')==='15d') nd.setDate(nd.getDate()+15);
+      else nd.setMonth(nd.getMonth()+1);
+      l.next=fmtDateLocal(nd);
+    }
     l.updatedAt=Date.now(); persist(); renderFinance(); toast('Хэсэг төлөгдлөө');
   }
 }

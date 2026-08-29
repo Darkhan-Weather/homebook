@@ -12,7 +12,7 @@
    Эс бөгөөс хэрэглэгч хуучин хувилбарт гацна.
    ═══════════════════════════════════════════════════════════════ */
 
-const VERSION = 'v1.6.6';
+const VERSION = 'v1.6.7';
 const SHELL_CACHE  = 'hb-shell-'  + VERSION;
 const ASSET_CACHE  = 'hb-assets-' + VERSION;
 
