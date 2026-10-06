@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.6.8';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.6.9';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -650,6 +650,16 @@ input,select{font-family:inherit;font-size:15px}
 /* ── Эрүүл мэнд (машинтай ижил бүтэц) ── */
 .mem-icon{background:var(--m-health-bg) !important}
 .mem-icon i{color:var(--m-health) !important}
+/* Гишүүн бүрийн өөрийн өнгө (--mc) */
+.veh-card.health{ border-left-width:5px; border-left-color:var(--mc,var(--m-health)) }
+.veh-card.health .mem-icon{ background:color-mix(in srgb,var(--mc,var(--m-health)) 16%,transparent) !important }
+.veh-card.health .mem-icon i{ color:var(--mc,var(--m-health)) !important }
+.veh-card.health .veh-total .v{ color:var(--mc,var(--text)) }
+:root[data-theme="dark"] .veh-card.health .veh-total .v,:root[data-theme="dark"] .veh-card.health .mem-icon i{ color:color-mix(in srgb,var(--mc,#2dd4bf) 62%,#fff) !important }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .veh-card.health .veh-total .v,:root:not([data-theme="light"]) .veh-card.health .mem-icon i{ color:color-mix(in srgb,var(--mc,#2dd4bf) 62%,#fff) !important } }
+.color-pick{ display:flex; gap:10px; flex-wrap:wrap; padding:2px 0 }
+.color-pick button{ width:32px; height:32px; border-radius:50%; border:2px solid transparent; background:var(--c); cursor:pointer; padding:0; box-shadow:0 0 0 1px rgba(0,0,0,.15) inset }
+.color-pick button.sel{ border-color:var(--surface); box-shadow:0 0 0 2.5px var(--c) }
 
 /* ── Санхүү: зээл, хуримтлал ── */
 .sec-title{font-size:15px;font-weight:600;margin:1.25rem 0 .75rem;display:flex;align-items:center;gap:8px}
@@ -1403,6 +1413,11 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
     <div class="field">
       <label>Нэмэлт тэмдэглэл (заавал биш)</label>
       <input type="text" id="mb-note" placeholder="Жишээ: цусны бүлэг, харшил">
+    </div>
+    <div class="field">
+      <label>Картын өнгө</label>
+      <div class="color-pick" id="mb-color-pick" role="radiogroup" aria-label="Картын өнгө"></div>
+      <input type="hidden" id="mb-color">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('member-modal')">Болих</button>
@@ -3833,6 +3848,22 @@ function deleteMed(id){
   if(data.reminders.find(x=>x.id===rid)){ data.reminders=data.reminders.filter(x=>x.id!==rid); tombstone(rid); }
   persist(); render(); toast('Устгагдлаа');
 }
+const MEMBER_COLORS=['#0d9488','#2563eb','#7c3aed','#db2777','#ea580c','#ca8a04','#16a34a','#dc2626'];
+function memberColor(mb){
+  if(mb&&/^#[0-9a-fA-F]{6}$/.test(mb.color||''))return mb.color;
+  const i=Math.max(0,data.members.findIndex(x=>x.id===(mb&&mb.id)));
+  return MEMBER_COLORS[i%MEMBER_COLORS.length];
+}
+function pickMemberColor(c){
+  document.getElementById('mb-color').value=c;
+  document.querySelectorAll('#mb-color-pick button').forEach(b=>{
+    const on=b.dataset.c===c; b.classList.toggle('sel',on); b.setAttribute('aria-checked',on?'true':'false');
+  });
+}
+function buildColorPick(){
+  document.getElementById('mb-color-pick').innerHTML=MEMBER_COLORS.map(c=>
+    `<button type="button" role="radio" data-c="${c}" style="--c:${c}" aria-label="${c}" onclick="pickMemberColor('${c}')"></button>`).join('');
+}
 function renderHealth(){
   const wrap=document.getElementById('view-health');
   if(data.members.length===0){
@@ -3848,7 +3879,7 @@ function renderHealth(){
     const ts=treatsOf(mb.id);
     const total=memberTotal(mb.id);
     const medBlock=buildMedBlock(mb.id);
-    html+=`<div class="veh-card health">
+    html+=`<div class="veh-card health" style="--mc:${memberColor(mb)}">
       <div class="veh-head">
         <div class="veh-icon mem-icon"><i class="ti ti-user-heart"></i></div>
         <div style="flex:1"><div class="veh-title">${escapeHtml(mb.name)}</div>
@@ -3879,12 +3910,16 @@ function openMemberModal(editId){
     document.getElementById('mb-name').value=mb.name;
     document.getElementById('mb-birth').value=mb.birth||'';
     document.getElementById('mb-note').value=mb.note||'';
+    buildColorPick(); pickMemberColor(memberColor(mb));
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteMember('${mb.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     document.getElementById('mb-modal-title').textContent='Гишүүн нэмэх';
     document.getElementById('mb-name').value='';
     document.getElementById('mb-birth').value='';
     document.getElementById('mb-note').value='';
+    buildColorPick();
+    const used=data.members.map(memberColor);
+    pickMemberColor(MEMBER_COLORS.find(c=>!used.includes(c))||MEMBER_COLORS[data.members.length%MEMBER_COLORS.length]);
     delWrap.innerHTML='';
   }
   openModal('member-modal');
@@ -3893,13 +3928,14 @@ function saveMember(){
   const name=document.getElementById('mb-name').value.trim();
   const birth=document.getElementById('mb-birth').value;
   const note=document.getElementById('mb-note').value.trim();
+  const color=document.getElementById('mb-color').value;
   if(!name){ formErr('Нэр оруулна уу'); return; }
   if(editingMemberId){
     const mb=data.members.find(x=>x.id===editingMemberId);
-    mb.name=name; mb.birth=birth; mb.note=note; mb.updatedAt=Date.now();
+    mb.name=name; mb.birth=birth; mb.note=note; mb.color=color; mb.updatedAt=Date.now();
     toast('Засагдлаа');
   }else{
-    data.members.push({ id:'mem'+Date.now(), name, birth, note, updatedAt:Date.now() });
+    data.members.push({ id:'mem'+Date.now(), name, birth, note, color, updatedAt:Date.now() });
     toast('Гишүүн нэмэгдлээ');
   }
   persist(); closeModal('member-modal'); renderHealth();
