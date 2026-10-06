@@ -12,7 +12,7 @@
    Эс бөгөөс хэрэглэгч хуучин хувилбарт гацна.
    ═══════════════════════════════════════════════════════════════ */
 
-const VERSION = 'v1.6.7';
+const VERSION = 'v1.6.8';
 const SHELL_CACHE  = 'hb-shell-'  + VERSION;
 const ASSET_CACHE  = 'hb-assets-' + VERSION;
 
@@ -21,6 +21,13 @@ const SHELL_FILES = [
   './',
   './index.html',
   './manifest.json'
+];
+
+/* Офлайн анхны нээлтэд харагдах ёстой зургууд */
+const OPTIONAL_FILES = [
+  './icon-192.png',
+  './icon-512.png',
+  './Background.jpg'
 ];
 
 /* Гадаад CDN — офлайн үед icon болон Excel экспорт ажиллахын тулд */
@@ -37,6 +44,8 @@ self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const shell = await caches.open(SHELL_CACHE);
     await shell.addAll(SHELL_FILES);
+    // Icon, фон — байхгүй байж болзошгүй тул алдаа гарвал суулгалтыг зогсоохгүй
+    await Promise.allSettled(OPTIONAL_FILES.map(u=>shell.add(u)));
 
     // CDN нь унтарсан байж болзошгүй тул алдаа гарвал суулгалтыг зогсоохгүй
     const assets = await caches.open(ASSET_CACHE);

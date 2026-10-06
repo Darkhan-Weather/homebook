@@ -20,6 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
+window.HB_VERSION='v1.6.8';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -2097,11 +2098,12 @@ async function getDriveRecordCount(fileId){
     }catch(_){return -2;}
   }catch(_){return -2;}
 }
-async function saveToDrive(){
-  if(!accessToken)return;
+async function saveToDrive(opts){
+  if(!accessToken||archiveMode)return;
   if(tokenExpiringSoon()){ pendingSave=true; requestReauth(); return; }
   setSync('Хадгалж байна...',cssVar('--warn'));
   try{
+    let skipMerge=!!(opts&&opts.overwrite);
     const folderId=await getOrCreateFolder();
     if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
     /* Хоосон-бичих хамгаалалт */
@@ -2112,6 +2114,15 @@ async function saveToDrive(){
       if(_dc>5&&!confirm('⚠ Локал өгөгдөл хоосон, Drive-д '+_dc+' бичлэг байна.\n\nДарж бичвэл Drive-ийн өгөгдөл алдагдана. Үргэлжлүүлэх үү?')){
         setSync('Хамгаалагдсан',cssVar('--warn')); return;
       }
+      skipMerge=true;   // хэрэглэгч санаатайгаар дарж бичихийг зөвшөөрсөн
+    }
+    /* Бичихийн өмнө Drive-ийн одоогийн файлыг уншиж нэгтгэнэ — өөр төхөөрөмж дээр
+       нэмэгдсэн/засагдсан бичлэгүүдийг дарахгүй. Унших амжилтгүй бол бичихгүй (15 сек хойно дахин). */
+    if(driveDataFileId && !skipMerge){
+      const _txt=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`).then(r=>{ if(!r.ok)throw new Error('merge-read HTTP '+r.status); return r.text(); });
+      const _before=JSON.stringify(data);
+      mergeRemoteData(JSON.parse(_txt),{keepLocalHeader:true});
+      if(JSON.stringify(data)!==_before){ migrate(); saveLocal(); try{ render(); }catch(_e){} }
     }
     const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, debts:data.debts, waterHeader:data.waterHeader, hiddenBalMonths:data.hiddenBalMonths, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
@@ -2133,8 +2144,37 @@ async function saveToDrive(){
           clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,15000); }
   }
 }
+/* Drive-ийн өгөгдлийг локалтай нэгтгэх (record-level LWW + tombstone).
+   loadFromDrive болон saveToDrive хоёулаа ашиглана — хадгалахын өмнө нэгтгэснээр
+   өөр төхөөрөмжийн өөрчлөлт дарагдахгүй. */
+function mergeRemoteData(remote, opts){
+  mergeTombstones(remote.tombstones);   // эхлээд устгалтууд, дараа нь бичлэгүүд
+  data.meters=mergeById(data.meters, remote.meters||[]);
+  data.readings=mergeById(data.readings, remote.readings||[]);
+  data.notes=mergeById(data.notes, remote.notes||[]);
+  data.fixedItems=mergeById(data.fixedItems, remote.fixedItems||[]);
+  data.payments=mergeById(data.payments, remote.payments||[]);
+  data.income=mergeById(data.income, remote.income||[]);
+  data.categories=mergeById(data.categories, remote.categories||[]);
+  data.variable=mergeById(data.variable, remote.variable||[]);
+  data.vehicles=mergeById(data.vehicles, remote.vehicles||[]);
+  data.repairs=mergeById(data.repairs, remote.repairs||[]);
+  data.members=mergeById(data.members, remote.members||[]);
+  data.treatments=mergeById(data.treatments, remote.treatments||[]);
+  data.loans=mergeById(data.loans, remote.loans||[]);
+  data.savings=mergeById(data.savings, remote.savings||[]);
+  data.reminders=mergeById(data.reminders, remote.reminders||[]);
+  data.recurring=mergeById(data.recurring, remote.recurring||[]);
+  data.balances=mergeById(data.balances, remote.balances||[]);
+  data.meds=mergeById(data.meds, remote.meds||[]);
+  data.vehObligations=mergeById(data.vehObligations, remote.vehObligations||[]);
+  data.vehFines=mergeById(data.vehFines, remote.vehFines||[]);
+  data.debts=mergeById(data.debts, remote.debts||[]);
+  if(remote.waterHeader!=null && !(opts&&opts.keepLocalHeader)) data.waterHeader=remote.waterHeader;
+  if(Array.isArray(remote.hiddenBalMonths)) data.hiddenBalMonths=Array.from(new Set([...(data.hiddenBalMonths||[]),...remote.hiddenBalMonths]));
+}
 async function loadFromDrive(){
-  if(!accessToken)return;
+  if(!accessToken||archiveMode)return;
   const _fc=readFileIdCache();
   if(_fc){ if(_fc.folder)driveFolderId=driveFolderId||_fc.folder;
            if(_fc.data)driveDataFileId=driveDataFileId||_fc.data; }
@@ -2146,30 +2186,7 @@ async function loadFromDrive(){
       const text=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
         {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
       const remote=JSON.parse(text);
-      mergeTombstones(remote.tombstones);   // эхлээд устгалтууд, дараа нь бичлэгүүд
-      data.meters=mergeById(data.meters, remote.meters||[]);
-      data.readings=mergeById(data.readings, remote.readings||[]);
-      data.notes=mergeById(data.notes, remote.notes||[]);
-      data.fixedItems=mergeById(data.fixedItems, remote.fixedItems||[]);
-      data.payments=mergeById(data.payments, remote.payments||[]);
-      data.income=mergeById(data.income, remote.income||[]);
-      data.categories=mergeById(data.categories, remote.categories||[]);
-      data.variable=mergeById(data.variable, remote.variable||[]);
-      data.vehicles=mergeById(data.vehicles, remote.vehicles||[]);
-      data.repairs=mergeById(data.repairs, remote.repairs||[]);
-      data.members=mergeById(data.members, remote.members||[]);
-      data.treatments=mergeById(data.treatments, remote.treatments||[]);
-      data.loans=mergeById(data.loans, remote.loans||[]);
-      data.savings=mergeById(data.savings, remote.savings||[]);
-      data.reminders=mergeById(data.reminders, remote.reminders||[]);
-      data.recurring=mergeById(data.recurring, remote.recurring||[]);
-      data.balances=mergeById(data.balances, remote.balances||[]);
-      data.meds=mergeById(data.meds, remote.meds||[]);
-      data.vehObligations=mergeById(data.vehObligations, remote.vehObligations||[]);
-      data.vehFines=mergeById(data.vehFines, remote.vehFines||[]);
-      data.debts=mergeById(data.debts, remote.debts||[]);
-      if(remote.waterHeader!=null) data.waterHeader=remote.waterHeader;
-      if(Array.isArray(remote.hiddenBalMonths)) data.hiddenBalMonths=Array.from(new Set([...(data.hiddenBalMonths||[]),...remote.hiddenBalMonths]));
+      mergeRemoteData(remote);
       migrate(); saveLocal();
     }
     processRecurring();            // Drive-аас lastCreated шинэчлэгдсэний дараа
@@ -2202,7 +2219,7 @@ async function getBackupFolder(parentId){
   backupFolderId=id; return id;
 }
 async function doBackup(){
-  if(!accessToken)return;
+  if(!accessToken||archiveMode)return;
   try{
     const folderId=await getOrCreateFolder();
     const bf=await getBackupFolder(folderId);
@@ -2271,7 +2288,7 @@ function setSync(text,color){
   b.classList.toggle('need-auth', needAuth);
   b.setAttribute('aria-label', needAuth?'Дахин нэвтрэх':('Синкийн төлөв: '+text));
 }
-function persist(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
+function persist(){ if(archiveMode){ toast('Архивын горим — өөрчлөлт хадгалагдахгүй','warn'); return; } saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(saveToDrive,1200); }
 function safeSetItem(key,value){
   try{ localStorage.setItem(key,value); }
   catch(e){
@@ -2283,7 +2300,7 @@ function safeSetItem(key,value){
     } else { console.warn('HomeBook алдаа:',key,e); }
   }
 }
-function saveLocal(){ safeSetItem('hb_data',JSON.stringify(data)); }
+function saveLocal(){ if(archiveMode)return; safeSetItem('hb_data',JSON.stringify(data)); }
 function loadLocal(){
   const s=localStorage.getItem('hb_data');
   if(s){ try{ data=JSON.parse(s); }catch(e){console.warn('HomeBook алдаа:',e); if(window.Sentry) Sentry.captureException(e);;} }
@@ -2643,11 +2660,11 @@ function createFromRecurring(r, month, dateStr){
   return true;
 }
 function processRecurring(silent){
-  if(!data.recurring||data.recurring.length===0)return 0;
+  if(archiveMode||!data.recurring||data.recurring.length===0)return 0;
   const today=todayLocal(), curM=monthLocal();
   let created=0, changed=false;
   data.recurring.forEach(r=>{
-    if(!r.active)return;
+    if(r.active===false)return;     // active талбаргүй хуучин дүрэм идэвхтэй гэж үзнэ
     let m=r.lastCreated?nextMonth(r.lastCreated):curM;
     let guard=0;
     while(m<=curM && guard++<RECUR_MAX_BACKFILL){
@@ -2859,7 +2876,7 @@ function openPayModal(itemId){
 
   // 1. Нэхэмжлэл харах
   if(app){
-    h+=`<button class="btn" style="width:100%;justify-content:center;margin-bottom:.4rem" onclick="payOpenApp('${it.billApp}')">
+    h+=`<button class="btn" style="width:100%;justify-content:center;margin-bottom:.4rem" onclick="payOpenApp('${String(it.billApp).replace(/[^\w-]/g,'')}')">
       <i class="ti ti-file-invoice"></i> Нэхэмжлэл харах — ${escapeHtml(app.name)}</button>
       <p class="pay-step">Аппаас дүнгээ хараад буцаж ирнэ үү</p>`;
   }
@@ -2884,7 +2901,7 @@ function openPayModal(itemId){
     h+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:.5rem" onclick="payOpenApp('khanbank')">
       <i class="ti ti-building-bank"></i> Хаан банк нээх</button>`;
   }else if(it.payMode==='inapp'&&app){
-    h+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:.5rem" onclick="payOpenApp('${it.billApp}')">
+    h+=`<button class="btn acc" style="width:100%;justify-content:center;margin-top:.5rem" onclick="payOpenApp('${String(it.billApp).replace(/[^\w-]/g,'')}')">
       <i class="ti ti-external-link"></i> ${escapeHtml(app.name)} нээх</button>
       <p class="pay-step">Төлбөрөө апп дотроосоо картаар / QPay-ээр төлнө</p>`;
   }else if(!app){
@@ -2985,6 +3002,7 @@ async function manualBackup(){
   toast('Нөөц үүслээ','ok');
 }
 async function restoreBackup(fileId, label){
+  if(archiveMode){ toast('Эхлээд архивын горимоос гарна уу','warn'); return; }
   if(!confirm('"'+label+'" нөөцөөр сэргээх үү?\n\nОдоогийн өгөгдөл энэ хувилбараар солигдоно.\nСэргээхийн өмнө одоогийн байдлаар нэмэлт нөөц үүснэ.'))return;
   try{
     toast('Сэргээж байна...');
@@ -2993,11 +3011,14 @@ async function restoreBackup(fileId, label){
     const b=JSON.parse(text);
     const KEYS=['meters','readings','notes','fixedItems','payments','income',
                 'categories','variable','vehicles','repairs','members','treatments',
-                'loans','savings','reminders','recurring','balances'];
+                'loans','savings','reminders','recurring','balances',
+                'meds','vehObligations','vehFines','debts'];
     KEYS.forEach(k=>{ data[k]=Array.isArray(b[k])?b[k]:[]; });
+    data.waterHeader=(typeof b.waterHeader==='string')?b.waterHeader:'';
+    data.hiddenBalMonths=Array.isArray(b.hiddenBalMonths)?b.hiddenBalMonths:[];
     data.tombstones=b.tombstones&&typeof b.tombstones==='object'?b.tombstones:{};
     migrate(); saveLocal();
-    await saveToDrive();                    // сэргээсэн байдлыг үндсэн файлд бичих
+    await saveToDrive({overwrite:true});    // сэргээсэн байдлыг үндсэн файлд бичих (merge хийхгүй)
     closeModal('backup-modal'); render();
     toast('Сэргээгдлээ','ok');
   }catch(e){
@@ -3603,13 +3624,20 @@ function lnTypeChanged(){
   document.getElementById('ln-zeel-fields').style.display=(t==='zeel')?'block':'none';
   document.getElementById('ln-hes-fields').style.display=(t==='heseglen')?'block':'none';
 }
+/* Огноонд сар нэмэхдээ сарын төгсгөлд тулгарвал өдрийг тухайн сарын сүүлийн өдөр болгож хязгаарлана
+   (1-р сарын 31 + 1 сар = 2-р сарын 28/29; өмнө нь 3-р сарын 3 болдог байсан). */
+function addMonthsClamped(y, m, d, add){
+  const t=(m-1)+add, ny=y+Math.floor(t/12), nm=((t%12)+12)%12;
+  const dim=new Date(ny, nm+1, 0).getDate();
+  return new Date(ny, nm, Math.min(d, dim));
+}
 function toggleLoanPaid(id){
   const l=data.loans.find(x=>x.id===id); if(!l)return;
   l.paid=!l.paid;
   /* Төлсөн болгоход дараагийн төлбөрийн огноог +1 сар шилжүүлнэ */
   if(l.paid && l.next){
     const [y,m,d]=l.next.split('-').map(Number);
-    const nd=new Date(y,m-1,d); nd.setMonth(nd.getMonth()+1);
+    const nd=addMonthsClamped(y,m,d,1);
     l._prevNext=l.next;           /* буцаахад сэргээх */
     l.next=fmtDateLocal(nd);
     l.paid=false;                 /* шинэ хугацаа эхэлсэн тул дахин "төлөөгүй" */
@@ -3671,13 +3699,14 @@ function deleteLoan(id){
 }
 function payPart(id){
   const l=data.loans.find(x=>x.id===id);
+  if(!l)return;
   if(l.paidParts<l.parts){
     l.paidParts=(l.paidParts||0)+1;
     if(l.next){
       const [y,m,d]=l.next.split('-').map(Number);
-      const nd=new Date(y,m-1,d);
-      if((l.freq||'month')==='15d') nd.setDate(nd.getDate()+15);
-      else nd.setMonth(nd.getMonth()+1);
+      let nd;
+      if((l.freq||'month')==='15d'){ nd=new Date(y,m-1,d); nd.setDate(nd.getDate()+15); }
+      else nd=addMonthsClamped(y,m,d,1);
       l.next=fmtDateLocal(nd);
     }
     l.updatedAt=Date.now(); persist(); renderFinance(); toast('Хэсэг төлөгдлөө');
@@ -5374,7 +5403,7 @@ function runSearch(){
 }
 
 /* ─ Архив горим (ХСТИ-аас) ─ */
-let archiveMode=false;
+let archiveMode=false, archiveLiveData=null;   // archiveLiveData = архивын үед хадгалсан бодит өгөгдөл
 function initArchiveYearSel(){
   const sel=document.getElementById('archive-year-sel'); if(!sel)return;
   const y=new Date().getFullYear(); sel.innerHTML='';
@@ -5406,7 +5435,19 @@ async function loadArchiveYear(){
     const res=await apiFetch(`https://www.googleapis.com/drive/v3/files/${target.id}?alt=media`,
       {headers:{Authorization:'Bearer '+accessToken}});
     if(!res.ok)throw new Error('Файл уншиж чадсангүй');
-    archiveMode=true;
+    const ab=await res.json();
+    const AKEYS=['meters','readings','notes','fixedItems','payments','income','categories','variable',
+                 'vehicles','repairs','members','treatments','loans','savings','reminders','recurring',
+                 'balances','meds','vehObligations','vehFines','debts'];
+    const snap={ tombstones:{} };
+    AKEYS.forEach(k=>{ snap[k]=Array.isArray(ab[k])?ab[k]:[]; });
+    snap.waterHeader=(typeof ab.waterHeader==='string')?ab.waterHeader:'';
+    snap.hiddenBalMonths=Array.isArray(ab.hiddenBalMonths)?ab.hiddenBalMonths:[];
+    if(!archiveMode)archiveLiveData=data;     // бодит өгөгдлөө хадгална
+    data=snap; archiveMode=true;              // эндээс хойш persist/Drive/backup хаалттай
+    migrate();
+    fixedMonth=variableMonth=incomeMonth=year+'-12';
+    try{ render(); }catch(_e){ console.warn('HomeBook алдаа:',_e); }
     document.getElementById('archive-back-btn').style.display='';
     st.innerHTML=`<i class="ti ti-check" style="color:var(--success)"></i> ${year} оны өгөгдөл — зөвхөн харах горим`;
     let banner=document.getElementById('archive-banner');
@@ -5419,7 +5460,10 @@ async function loadArchiveYear(){
   }catch(e){console.warn('HomeBook алдаа:',e);st.textContent='Алдаа: '+e.message;st.style.color='var(--danger-fg)';}
 }
 function exitArchiveMode(){
+  if(archiveLiveData){ data=archiveLiveData; archiveLiveData=null; }
   archiveMode=false;
+  fixedMonth=variableMonth=incomeMonth=monthLocal();
+  try{ render(); }catch(_e){ console.warn('HomeBook алдаа:',_e); }
   const btn=document.getElementById('archive-back-btn'); if(btn)btn.style.display='none';
   const st=document.getElementById('archive-status'); if(st)st.textContent='';
   const banner=document.getElementById('archive-banner'); if(banner)banner.style.display='none';
@@ -5626,7 +5670,6 @@ window.addEventListener('online',()=>{
     _et();
   });
 })();
-window.HB_VERSION='v1.5.0';
 if('serviceWorker' in navigator){
   window.showUpdateBanner=function(worker){
     if(!worker || document.getElementById('sw-update'))return;
@@ -5705,7 +5748,7 @@ async function generateAIReport(){
   const repairTotal=repairItems.reduce((s,r)=>s+(r.amount||0),0);
   const repairList=repairItems.map(r=>{
     const vh=data.vehicles.find(v=>v.id===r.vehicleId);
-    return `- ${vh?vh.name||vh.plate:'Машин'}: ${escapeHtml(r.desc||'')} ${fmt(r.amount||0)}₮`;
+    return `- ${vh?vh.name||vh.plate:'Машин'}: ${r.desc||''} ${fmt(r.amount||0)}₮`;
   }).join('\n');
 
   // Машины үүрэг — тухайн сард төлсөн
@@ -5766,7 +5809,7 @@ ${debtOwe>0?`\nОлгох өр: ${fmt(debtOwe)}₮`:''}${debtOwed>0?`\nАвах 
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const j=await res.json();
-    content.innerHTML=(j.result||'Хариу ирсэнгүй').replace(/\n/g,'<br>');
+    content.innerHTML=escapeHtml(j.result||'Хариу ирсэнгүй').replace(/\n/g,'<br>');
     if(window.Sentry) Sentry.addBreadcrumb({message:'AI report generated',level:'info'});
   }catch(err){
     content.innerHTML='<span style="color:var(--danger-fg)">Алдаа гарлаа. Дахин оролдоно уу.</span>';
