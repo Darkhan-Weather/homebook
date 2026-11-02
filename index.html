@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.7.0';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.7.1';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -4853,7 +4853,7 @@ function lastNMonths(n){
 }
 function monthChartTap(ym){
   const q=monthlyTotals(ym), b=q.income-q.expense;
-  toast(`${fxMonthLabel(ym)}: орлого ${fmt(q.income)}₮ · зардал ${fmt(q.expense)}₮ · ${b>=0?'хэмнэлт':'хэтрэлт'} ${fmt(Math.abs(b))}₮`);
+  toast(`${fxMonthLabel(ym)}: орлого ${fmt(q.income)}₮ · зардал ${fmt(q.expense)}₮ · ${q.income===0&&q.expense>0?'орлого ороогүй':((b>=0?'хэмнэлт':'хэтрэлт')+' '+fmt(Math.abs(b))+'₮')}`);
 }
 function buildMonthChart(){
   const months=lastNMonths(6);
@@ -5138,6 +5138,7 @@ function renderHome(){
   const treatTotal=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
   const expenseTotal=fxTotal+varTotal+repairTotal+treatTotal;   // тогтмол + хувьсах + машин + эрүүл мэнд
   const balance=incomeTotal-expenseTotal;
+  const noIncomeYet=incomeTotal===0&&expenseTotal>0;   // сар эхэнд орлого ороогүй үед "хэтрэлт" гэж улаанаар харуулахгүй
   // Өнгөрсөн сартай харьцуулах
   const prevYm=(()=>{ const d=new Date(); return monthLocal(new Date(d.getFullYear(),d.getMonth()-1,1)); })();
   const prevExp=monthlyTotals(prevYm).expense;
@@ -5169,8 +5170,8 @@ function renderHome(){
 
   const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
   const moneyCard = hasMoney
-    ? `<div class="hero${balance<0?' neg':''}">
-        <div class="hero-label">${fxMonthLabel(ym)} · ${balance>=0?'хэмнэлт':'хэтрэлт'}</div>
+    ? `<div class="hero${(balance<0&&!noIncomeYet)?' neg':''}">
+        <div class="hero-label">${fxMonthLabel(ym)} · ${noIncomeYet?'орлого ороогүй':(balance>=0?'хэмнэлт':'хэтрэлт')}</div>
         <div class="hero-val">${fmt(balance)}₮</div>
         <div class="hero-split">
           <div class="hs inc"><div class="hl"><i class="ti ti-arrow-down-left"></i>Орлого</div><div class="hv">${fmt(incomeTotal)}₮</div></div>
