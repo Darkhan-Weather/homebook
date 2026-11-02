@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.8.0';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.8.1';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -1954,9 +1954,9 @@ function initGSI(){
       safeSetItem('hb_tok_exp',String(tokenExpiresAt));
       try{
         const info=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
-          {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+          {headers:{Authorization:'Bearer '+accessToken}}).then(r=>{ if(!r.ok)throw new Error('userinfo HTTP '+r.status); return r.json(); });
         currentUser=info; safeSetItem('hb_usr',JSON.stringify(info));
-      }catch(e){ currentUser={name:'Хэрэглэгч'}; }
+      }catch(e){ try{ currentUser=JSON.parse(localStorage.getItem('hb_usr')||'null'); }catch(_){ currentUser=null; } if(!currentUser)currentUser={name:'Хэрэглэгч'}; }
       reauthPending=false;
       enterApp(); await loadFromDrive();
       if(pendingSave){ pendingSave=false; await saveToDrive(); }
@@ -2072,6 +2072,18 @@ async function apiFetch(url, opts){
   return res;
 }
 
+/* ═══ Drive хариу шалгах ═══
+   Drive 429/5xx алдаа буцаахад алдааны JSON-ыг "файл олдсонгүй" гэж ойлгоод
+   давхар хавтас/файл үүсгэх, эсвэл алдаатай хариуг өгөгдөл гэж нэгтгэхээс сэргийлнэ. */
+function driveHttpError(what,res){ const e=new Error((what||'Drive')+' HTTP '+res.status); e.status=res.status; return e; }
+async function driveOk(url,opts,what){ const r=await apiFetch(url,opts); if(!r.ok)throw driveHttpError(what,r); return r; }
+async function driveJson(url,opts,what){ return (await driveOk(url,opts,what)).json(); }
+async function driveCreate(body,what){
+  const m=await driveJson('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},what);
+  if(!m||!m.id)throw new Error((what||'Drive')+': id ирсэнгүй');
+  return m.id;
+}
+
 /* ═══ Drive sync ═══ */
 
 /* ─ Drive file ID кэш (ХСТИ-аас) ─
@@ -2082,22 +2094,31 @@ function writeFileIdCache(){ try{safeSetItem(_FCKEY,JSON.stringify({folder:drive
 function clearFileIdCache(){ try{localStorage.removeItem(_FCKEY);}catch(_){} }
 async function getOrCreateFolder(){
   if(driveFolderId)return driveFolderId;
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(FOLDER_NAME))}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
-    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  const res=await driveJson(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(FOLDER_NAME))}' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`,
+    {},'folder-list');
   if(res.files&&res.files.length>0){ driveFolderId=res.files[0].id; }
   else{
-    const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
-      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({name:FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'})
-    }).then(r=>r.json());
-    driveFolderId=meta.id;
+    driveFolderId=await driveCreate({name:FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'},'folder-create');
   }
   return driveFolderId;
 }
 async function findDataFile(folderId){
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(DATA_FILE))}' and '${folderId}' in parents and trashed=false&spaces=drive`,
-    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  const res=await driveJson(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(DATA_FILE))}' and '${driveEsc(folderId)}' in parents and trashed=false&spaces=drive`,
+    {},'data-find');
   return res.files&&res.files.length>0?res.files[0].id:null;
+}
+/* Өгөгдлийн файлыг унших. Кэшлэгдсэн id устсан (404) бол нэг удаа дахин хайна.
+   Файл огт байхгүй бол null; бусад алдаанд throw (алдаатай хариуг өгөгдөл гэж авахгүй). */
+async function readDataFile(folderId){
+  for(let i=0;i<2;i++){
+    if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
+    if(!driveDataFileId)return null;
+    const r=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`);
+    if(r.status===404 && i===0){ driveDataFileId=null; clearFileIdCache(); continue; }
+    if(!r.ok)throw driveHttpError('data-read',r);
+    return r.text();
+  }
+  return null;
 }
 
 /* ─ Хоосон-бичих хамгаалалт (ХСТИ-аас) ─ */
@@ -2136,22 +2157,20 @@ async function saveToDrive(opts){
     /* Бичихийн өмнө Drive-ийн одоогийн файлыг уншиж нэгтгэнэ — өөр төхөөрөмж дээр
        нэмэгдсэн/засагдсан бичлэгүүдийг дарахгүй. Унших амжилтгүй бол бичихгүй (15 сек хойно дахин). */
     if(driveDataFileId && !skipMerge){
-      const _txt=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`).then(r=>{ if(!r.ok)throw new Error('merge-read HTTP '+r.status); return r.text(); });
-      const _before=JSON.stringify(data);
-      mergeRemoteData(JSON.parse(_txt),{keepLocalHeader:true});
-      if(JSON.stringify(data)!==_before){ migrate(); saveLocal(); try{ render(); }catch(_e){} }
+      const _txt=await readDataFile(folderId);
+      if(_txt!=null){
+        const _before=JSON.stringify(data);
+        mergeRemoteData(JSON.parse(_txt),{keepLocalHeader:true});
+        if(JSON.stringify(data)!==_before){ migrate(); saveLocal(); try{ render(); }catch(_e){} }
+      }
     }
     const payload={ updatedAt:Date.now(), meters:data.meters, readings:data.readings, notes:data.notes, fixedItems:data.fixedItems, payments:data.payments, income:data.income, categories:data.categories, variable:data.variable, vehicles:data.vehicles, repairs:data.repairs, members:data.members, treatments:data.treatments, loans:data.loans, savings:data.savings, reminders:data.reminders, recurring:data.recurring, balances:data.balances, meds:data.meds, vehObligations:data.vehObligations, vehFines:data.vehFines, debts:data.debts, waterHeader:data.waterHeader, hiddenBalMonths:data.hiddenBalMonths, tombstones:data.tombstones };
     const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
     if(!driveDataFileId){
-      const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
-        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-        body:JSON.stringify({name:DATA_FILE,mimeType:'application/json',parents:[folderId]})
-      }).then(r=>r.json());
-      driveDataFileId=meta.id;
+      driveDataFileId=await driveCreate({name:DATA_FILE,mimeType:'application/json',parents:[folderId]},'data-create');
     }
-    await apiFetch(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
-      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
+    await driveOk(`https://www.googleapis.com/upload/drive/v3/files/${driveDataFileId}?uploadType=media`,{
+      method:'PATCH',body:blob},'data-upload');      // амжилтгүй бол "Синктэй" гэж харуулахгүй
     writeFileIdCache(); setSync('Синктэй',cssVar('--accent-text'));
     // Нөөц — 5 минутанд нэгээс олонгүй
     if(Date.now()-lastBackupAt>5*60*1000)doBackup();
@@ -2198,10 +2217,8 @@ async function loadFromDrive(){
   setSync('Уншиж байна...',cssVar('--warn'));
   try{
     const folderId=await getOrCreateFolder();
-    if(!driveDataFileId)driveDataFileId=await findDataFile(folderId);
-    if(driveDataFileId){
-      const text=await apiFetch(`https://www.googleapis.com/drive/v3/files/${driveDataFileId}?alt=media`,
-        {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.text());
+    const text=await readDataFile(folderId);
+    if(text!=null){
       const remote=JSON.parse(text);
       mergeRemoteData(remote);
       migrate(); saveLocal();
@@ -2219,19 +2236,15 @@ async function loadFromDrive(){
 let backupFolderId=null, lastBackupAt=0, sessionBackupDone=false;
 const MAX_BACKUPS=14;
 async function findFileInFolder(name,folderId){
-  const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(name))}' and '${folderId}' in parents and trashed=false&spaces=drive`,
-    {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+  const res=await driveJson(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(driveEsc(name))}' and '${driveEsc(folderId)}' in parents and trashed=false&spaces=drive`,
+    {},'file-find');
   return res.files&&res.files.length>0?res.files[0].id:null;
 }
 async function getBackupFolder(parentId){
   if(backupFolderId)return backupFolderId;
   let id=await findFileInFolder('backups',parentId);
   if(!id){
-    const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
-      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({name:'backups',mimeType:'application/vnd.google-apps.folder',parents:[parentId]})
-    }).then(r=>r.json());
-    id=meta.id;
+    id=await driveCreate({name:'backups',mimeType:'application/vnd.google-apps.folder',parents:[parentId]},'backup-folder-create');
   }
   backupFolderId=id; return id;
 }
@@ -2245,22 +2258,19 @@ async function doBackup(){
     let fid=await findFileInFolder(name,bf);
     const blob=new Blob([JSON.stringify({updatedAt:Date.now(),meters:data.meters,readings:data.readings,notes:data.notes,fixedItems:data.fixedItems,payments:data.payments,income:data.income,categories:data.categories,variable:data.variable,vehicles:data.vehicles,repairs:data.repairs,members:data.members,treatments:data.treatments,loans:data.loans,savings:data.savings,reminders:data.reminders,recurring:data.recurring,balances:data.balances,meds:data.meds,vehObligations:data.vehObligations,vehFines:data.vehFines,debts:data.debts,waterHeader:data.waterHeader,hiddenBalMonths:data.hiddenBalMonths,tombstones:data.tombstones})],{type:'application/json'});
     if(!fid){
-      const meta=await apiFetch('https://www.googleapis.com/drive/v3/files',{
-        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-        body:JSON.stringify({name,mimeType:'application/json',parents:[bf]})
-      }).then(r=>r.json());
-      fid=meta.id;
+      fid=await driveCreate({name,mimeType:'application/json',parents:[bf]},'backup-create');
     }
-    await apiFetch(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
-      method:'PATCH',headers:{Authorization:'Bearer '+accessToken},body:blob});
+    await driveOk(`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=media`,{
+      method:'PATCH',body:blob},'backup-upload');
     lastBackupAt=Date.now();
     cleanupBackups(bf);
-  }catch(e){ if(!(e&&e.authError))console.error('Backup алдаа:',e); }
+    return true;
+  }catch(e){ if(!(e&&e.authError))console.error('Backup алдаа:',e); return false; }
 }
 async function cleanupBackups(bf){
   try{
-    const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
-      {headers:{Authorization:'Bearer '+accessToken}}).then(r=>r.json());
+    const res=await driveJson(`https://www.googleapis.com/drive/v3/files?q='${driveEsc(bf)}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name)`,
+      {},'backup-list');
     if(res.files&&res.files.length>MAX_BACKUPS){
       for(const f of res.files.slice(MAX_BACKUPS)){
         await apiFetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{Authorization:'Bearer '+accessToken}});
@@ -2995,8 +3005,8 @@ async function listBackups(){
   try{
     const folderId=await getOrCreateFolder();
     const bf=await getBackupFolder(folderId);
-    const res=await apiFetch(`https://www.googleapis.com/drive/v3/files?q='${bf}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name,size,modifiedTime)`)
-      .then(r=>r.json());
+    const res=await driveJson(`https://www.googleapis.com/drive/v3/files?q='${driveEsc(bf)}' in parents and trashed=false&orderBy=name desc&spaces=drive&fields=files(id,name,size,modifiedTime)`,
+      {},'backup-list');
     const files=(res.files||[]).filter(f=>f.name.indexOf('backup_')===0);
     if(files.length===0){ el.innerHTML='<div class="empty-line">Нөөц алга. Дээрх товчоор үүсгэнэ үү.</div>'; return; }
     el.innerHTML=files.map(f=>{
@@ -3015,22 +3025,24 @@ async function listBackups(){
 async function manualBackup(){
   if(!accessToken){ toast('Эхлээд нэвтэрнэ үү'); return; }
   toast('Нөөц үүсгэж байна...');
-  await doBackup();
+  const ok=await doBackup();
   await listBackups();
-  toast('Нөөц үүслээ','ok');
+  toast(ok?'Нөөц үүслээ':'Нөөц үүсгэж чадсангүй — дахин оролдоно уу',ok?'ok':'err');
 }
 async function restoreBackup(fileId, label){
   if(archiveMode){ toast('Эхлээд архивын горимоос гарна уу','warn'); return; }
   if(!confirm('"'+label+'" нөөцөөр сэргээх үү?\n\nОдоогийн өгөгдөл энэ хувилбараар солигдоно.\nСэргээхийн өмнө одоогийн байдлаар нэмэлт нөөц үүснэ.'))return;
   try{
     toast('Сэргээж байна...');
-    await doBackup();                       // одоогийн байдлыг эхлээд хамгаална
-    const text=await apiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`).then(r=>r.text());
+    if(!(await doBackup()))throw new Error('Сэргээхийн өмнөх нөөц үүссэнгүй');   // хамгаалалтгүйгээр сэргээхгүй
+    const text=await (await driveOk(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{},'backup-read')).text();
     const b=JSON.parse(text);
     const KEYS=['meters','readings','notes','fixedItems','payments','income',
                 'categories','variable','vehicles','repairs','members','treatments',
                 'loans','savings','reminders','recurring','balances',
                 'meds','vehObligations','vehFines','debts'];
+    // Нөөц мөн эсэхийг шалгана — алдааны хариуг сэргээвэл бүх өгөгдөл хоосорч Drive руу бичигдэнэ
+    if(!b||typeof b!=='object'||!KEYS.some(k=>Array.isArray(b[k])))throw new Error('Нөөцийн файл буруу бүтэцтэй');
     KEYS.forEach(k=>{ data[k]=Array.isArray(b[k])?b[k]:[]; });
     data.waterHeader=(typeof b.waterHeader==='string')?b.waterHeader:'';
     data.hiddenBalMonths=Array.isArray(b.hiddenBalMonths)?b.hiddenBalMonths:[];
@@ -3438,6 +3450,14 @@ function deleteReminder(id){
 }
 
 /* ── Google Calendar-д нэмэх ── */
+async function calApi(url,opts){
+  opts=Object.assign({},opts||{});
+  opts.headers=Object.assign({},opts.headers||{},{Authorization:'Bearer '+accessToken});
+  const res=await fetch(url,opts);
+  if(res.status===401||res.status===403){ const e=new Error('cal-auth'); e.calAuth=true; throw e; }
+  if(!res.ok)throw new Error('Calendar HTTP '+res.status);
+  return res;
+}
 async function addToCalendar(id){
   const r=data.reminders.find(x=>x.id===id);
   if(!r||!r.date){ toast('Огноо алга'); return; }
@@ -3461,15 +3481,8 @@ async function addToCalendar(id){
         end:{ dateTime:remindDate+'T09:30:00', timeZone:'Asia/Ulaanbaatar' },
         reminders:{ useDefault:false, overrides:[{method:'popup',minutes:0}] }
       };
-      const res=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
-        method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-        body:JSON.stringify(body)});
-      if(res.status===401||res.status===403){
-        toast('Календарийн зөвшөөрөл хэрэгтэй — дахин нэвтэрнэ үү');
-        requestToken();
-        return;
-      }
-      const ev=await res.json();
+      const ev=await (await calApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
       if(ev.id)newIds.push(ev.id);
     }
     // Болох өдөр өөрөө
@@ -3479,14 +3492,18 @@ async function addToCalendar(id){
       start:{ date:r.date }, end:{ date:r.date },
       reminders:{ useDefault:false, overrides:[{method:'popup',minutes:540}] }
     };
-    const res2=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
-      method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify(body2)});
-    const ev2=await res2.json(); if(ev2.id)newIds.push(ev2.id);
+    const ev2=await (await calApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body2)})).json();
+    if(ev2.id)newIds.push(ev2.id);
     r.calEvents=newIds; r.updatedAt=Date.now();
     persist(); renderReminders();
     toast('Календарьт нэмэгдлээ','ok');
-  }catch(e){ console.error('Calendar алдаа:',e); toast('Календарьт нэмэхэд алдаа гарлаа','err'); }
+  }catch(e){
+    // Хэсэгчлэн үүссэн event-үүдийг хадгална — дараагийн оролдлогод устгаж давхардуулахгүй
+    r.calEvents=newIds; r.updatedAt=Date.now(); persist(); renderReminders();
+    if(e&&e.calAuth){ toast('Календарийн зөвшөөрөл хэрэгтэй — дахин нэвтэрнэ үү'); requestToken(); }
+    else{ console.error('Calendar алдаа:',e); toast('Календарьт нэмэхэд алдаа гарлаа'+(newIds.length?' ('+newIds.length+' нь нэмэгдсэн)':''),'err'); }
+  }
 }
 
 /* ═══ Санхүү: зээл + хуримтлал ═══ */
@@ -4570,7 +4587,7 @@ function renderIncome(){
     rows=list.map(i=>`<div class="inc-row">
       <div class="inc-icon"><i class="ti ti-${i.type==='Цалин'?'cash':'plus'}"></i></div>
       <button type="button" class="inc-main" onclick="openIncomeModal('${i.id}')" aria-label="Орлого засах">
-        <div class="inc-name">${i.type}${i.note?' — '+escapeHtml(i.note):''}${i.recurringId?'<span class="rc-auto"><i class="ti ti-repeat"></i>авто</span>':''}</div>
+        <div class="inc-name">${escapeHtml(i.type||'')}${i.note?' — '+escapeHtml(i.note):''}${i.recurringId?'<span class="rc-auto"><i class="ti ti-repeat"></i>авто</span>':''}</div>
         <div class="inc-sub num">${i.date}</div>
       </button>
       <span class="inc-amt">+${fmt(i.amount)}₮</span>
@@ -5135,8 +5152,8 @@ function exportReport(){
       ${row('<b>Нийт зардал</b>','<b>'+fmt(t.expense)+'₮</b>',true)}
       <tr style="background:#e8f5f2"><td style="padding:8px 12px;border-top:2px solid #0d9488;font-weight:bold;font-size:11.5pt">${balance>=0?'Хэмнэлт':'Хэтрэлт'}</td><td style="padding:8px 12px;border-top:2px solid #0d9488;text-align:right;font-weight:bold;font-size:11.5pt;color:${balance>=0?'#15803d':'#b91c1c'}">${fmt(balance)}₮</td></tr>
     </table>`;
-  if(incList.length){ html+='<h3>Орлого</h3><table style="border-collapse:collapse;width:100%">'+incList.map(i=>row(i.date+' · '+i.type+(i.note?' · '+i.note:''),fmt(i.amount)+'₮')).join('')+'</table>'; }
-  if(varList.length){ html+='<h3>Хувьсах зардал</h3><table style="border-collapse:collapse;width:100%">'+varList.map(v=>row(v.date+' · '+catName(v.categoryId)+(v.note?' · '+v.note:''),fmt(v.amount)+'₮')).join('')+'</table>'; }
+  if(incList.length){ html+='<h3>Орлого</h3><table style="border-collapse:collapse;width:100%">'+incList.map(i=>row(escapeHtml(i.date+' · '+(i.type||'')+(i.note?' · '+i.note:'')),fmt(i.amount)+'₮')).join('')+'</table>'; }
+  if(varList.length){ html+='<h3>Хувьсах зардал</h3><table style="border-collapse:collapse;width:100%">'+varList.map(v=>row(escapeHtml(v.date+' · '+catName(v.categoryId)+(v.note?' · '+v.note:'')),fmt(v.amount)+'₮')).join('')+'</table>'; }
   html+='</body></html>';
   const blob=new Blob(['\ufeff'+html],{type:'application/msword'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
@@ -5514,16 +5531,18 @@ async function loadArchiveYear(){
     const folderId=await getOrCreateFolder();
     /* backups хавтаснаас тухайн оны файл хайх */
     const bfRes=await apiFetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and name='backups' and trashed=false`,
+      `https://www.googleapis.com/drive/v3/files?q='${driveEsc(folderId)}' in parents and mimeType='application/vnd.google-apps.folder' and name='backups' and trashed=false`,
       {headers:{Authorization:'Bearer '+accessToken}});
     let target=null;
-    if(bfRes.ok){
+    if(!bfRes.ok)throw driveHttpError('archive-folder',bfRes);
+    {
       const bfD=await bfRes.json();
       if(bfD.files&&bfD.files[0]){
         const blRes=await apiFetch(
-          `https://www.googleapis.com/drive/v3/files?q='${bfD.files[0].id}' in parents and name contains '${year}' and trashed=false&orderBy=createdTime desc&fields=files(id,name)`,
+          `https://www.googleapis.com/drive/v3/files?q='${driveEsc(bfD.files[0].id)}' in parents and name contains '${driveEsc(year)}' and trashed=false&orderBy=createdTime desc&fields=files(id,name)`,
           {headers:{Authorization:'Bearer '+accessToken}});
-        if(blRes.ok){const bd=await blRes.json();if(bd.files&&bd.files[0])target=bd.files[0];}
+        if(!blRes.ok)throw driveHttpError('archive-list',blRes);
+        {const bd=await blRes.json();if(bd.files&&bd.files[0])target=bd.files[0];}
       }
     }
     if(!target){st.textContent=year+' оны өгөгдөл олдсонгүй';st.style.color='var(--danger-fg)';return;}
