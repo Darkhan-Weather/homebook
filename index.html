@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.7.1';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.8.0';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -1463,7 +1463,8 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
     <div class="field"><label>Дүн (₮)</label><input type="number" min="0" id="ob-amount" inputmode="decimal" placeholder="0"></div>
     <div class="field"><label>Дуусах / төлөх огноо</label><input type="date" id="ob-due"></div>
     <div class="field"><label>Тэмдэглэл</label><input type="text" id="ob-note" placeholder="Сонголтоор"></div>
-    <label class="ob-check"><input type="checkbox" id="ob-paid"> Төлсөн / сунгасан</label>
+    <label class="ob-check"><input type="checkbox" id="ob-paid" onchange="document.getElementById('ob-paiddate-wrap').style.display=this.checked?'':'none'"> Төлсөн / сунгасан</label>
+    <div class="field" id="ob-paiddate-wrap" style="display:none"><label>Төлсөн огноо (зардал энэ сард орно)</label><input type="date" id="ob-paiddate"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('oblig-modal')">Болих</button>
       <button class="btn acc" onclick="saveOblig()">Хадгалах</button>
@@ -1475,7 +1476,8 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
     <h3 id="fn-modal-title">Торгууль нэмэх</h3>
     <div class="field"><label>Дүн (₮)</label><input type="number" min="0" id="fn-amount" inputmode="decimal" placeholder="0"></div>
     <div class="field"><label>Огноо</label><input type="date" id="fn-date"></div>
-    <label class="ob-check"><input type="checkbox" id="fn-paid"> Төлсөн</label>
+    <label class="ob-check"><input type="checkbox" id="fn-paid" onchange="document.getElementById('fn-paiddate-wrap').style.display=this.checked?'':'none'"> Төлсөн</label>
+    <div class="field" id="fn-paiddate-wrap" style="display:none"><label>Төлсөн огноо</label><input type="date" id="fn-paiddate"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('fine-modal')">Болих</button>
       <button class="btn acc" onclick="saveFine()">Хадгалах</button>
@@ -2789,7 +2791,7 @@ function renderRecurList(){
 /* ── Өмнөх сарын дүнг хуулах (хэлбэлзэх зардалд) ── */
 function copyPrevAmounts(){
   const prev=prevMonth(fixedMonth);
-  const targets=data.fixedItems.filter(i=>i.type==='helbelzeh');
+  const targets=data.fixedItems.filter(i=>i.type==='helbelzeh' && !i.archived);
   if(targets.length===0){ toast('Хэлбэлзэх зардал алга (ус, дулаан, цахилгаан)'); return; }
   const empty=[], filled=[];
   targets.forEach(it=>{
@@ -2973,6 +2975,7 @@ function confirmPaid(){
   }
   const patch={ paid:true };
   if(!isNaN(amt) && it && it.type==='helbelzeh') patch.amount=amt;
+  if(it && patch.amount==null){ const p0=getPayment(it.id, askPaidCtx.month); if(!p0 || p0.amount==null) patch.amount=monthAmount(it, askPaidCtx.month); }
   setPayment(askPaidCtx.itemId, askPaidCtx.month, patch);
   askPaidCtx=null;
   persist(); closeModal('paid-modal'); render();
@@ -3560,7 +3563,7 @@ function renderFinance(){
             <button type="button" class="ic" onclick="deleteLoan('${l.id}')" aria-label="Зээл устгах"><i class="ti ti-trash"></i></button></span></div>
           <div class="fin-line">${_lpaid?'<span style="color:var(--success)">✓ Төлсөн</span> · ':''}Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
           ${!_lpaid&&l.next?`<div class="fin-line" style="color:var(--warn-fg,#b45309)"><i class="ti ti-calendar-due"></i> Дараагийн төлөлт: <b class="num">${l.next}</b>${l.monthly?' ('+fmt(l.monthly)+'₮)':''}</div>`:''}
-          ${_lpaid&&l.next?`<div class="fin-line" style="color:var(--text-muted)">Сүүлийн төлсөн: ${l.next}</div>`:''}
+          ${l.lastPaid?`<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${l.lastPaid}</div>`:''}
           ${l.due?`<div class="fin-line">Дуусах: <b class="num">${l.due}</b></div>`:''}
         </div>`;
       }
@@ -3648,20 +3651,16 @@ function addMonthsClamped(y, m, d, add){
 }
 function toggleLoanPaid(id){
   const l=data.loans.find(x=>x.id===id); if(!l)return;
-  l.paid=!l.paid;
-  /* Төлсөн болгоход дараагийн төлбөрийн огноог +1 сар шилжүүлнэ */
-  if(l.paid && l.next){
+  if(!l.next){                                   // огноогүй зээл — энгийн төлсөн/төлөөгүй
+    l.paid=!l.paid; toast(l.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
+  }else{
+    /* Санамсаргүй 2 дарахад 2 сар урагшилдаг байсан → баталгаажуулалт асууна */
+    if(!confirm(l.next+'-ны '+(l.monthly?fmt(l.monthly)+'₮ ':'')+'төлбөрийг төлсөн гэж тэмдэглэх үү?\n\nДараагийн төлбөрийн огноо 1 сараар шилжинэ.'))return;
     const [y,m,d]=l.next.split('-').map(Number);
-    const nd=addMonthsClamped(y,m,d,1);
-    l._prevNext=l.next;           /* буцаахад сэргээх */
-    l.next=fmtDateLocal(nd);
-    l.paid=false;                 /* шинэ хугацаа эхэлсэн тул дахин "төлөөгүй" */
+    l.lastPaid=l.next;
+    l.next=fmtDateLocal(addMonthsClamped(y,m,d,1));
+    l.paid=false; delete l._prevNext;
     toast('Төлөгдлөө · дараагийн төлбөр: '+l.next);
-  } else if(!l.paid && l._prevNext){
-    l.next=l._prevNext; delete l._prevNext;  /* буцаах */
-    toast('Буцаагдлаа');
-  } else {
-    toast(l.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
   }
   l.updatedAt=Date.now();
   persist(); render();
@@ -3715,7 +3714,8 @@ function deleteLoan(id){
 function payPart(id){
   const l=data.loans.find(x=>x.id===id);
   if(!l)return;
-  if(l.paidParts<l.parts){
+  if((l.paidParts||0)<(l.parts||0)){
+    if(!confirm('"'+l.name+'" — '+((l.paidParts||0)+1)+'/'+l.parts+' дахь хэсгийг төлсөн гэж тэмдэглэх үү?'))return;
     l.paidParts=(l.paidParts||0)+1;
     if(l.next){
       const [y,m,d]=l.next.split('-').map(Number);
@@ -3960,9 +3960,14 @@ function saveMember(){
 }
 function deleteMember(id){
   const mb=data.members.find(x=>x.id===id);
-  if(!confirm('"'+mb.name+'"-г устгах уу? Эмчилгээний түүх нь бас устана.'))return;
+  if(!confirm('"'+mb.name+'"-г устгах уу? Эмчилгээ, эмийн түүх нь бас устана.'))return;
   tombstone(id);
   tombstoneAll(data.treatments.filter(t=>t.memberId===id).map(t=>t.id));
+  const _mdIds=data.meds.filter(m=>m.memberId===id).map(m=>m.id);
+  const _mrIds=_mdIds.map(x=>'rm_med_'+x).filter(rid=>data.reminders.some(r=>r.id===rid));
+  tombstoneAll(_mdIds); tombstoneAll(_mrIds);
+  data.meds=data.meds.filter(m=>m.memberId!==id);
+  data.reminders=data.reminders.filter(r=>!_mrIds.includes(r.id));
   data.members=data.members.filter(x=>x.id!==id);
   data.treatments=data.treatments.filter(t=>t.memberId!==id);
   closeIfOpen('treats-modal'); closeIfOpen('member-modal');
@@ -4075,6 +4080,7 @@ function buildVehObligBlock(vid){
     finesHtml='<div class="med-grp">Торгууль</div>'+fines.map(f=>`<div class="med-row"><div class="med-info"><span class="med-name num">${fmt(f.amount)}₮</span><span class="med-sub num">${f.date||''}</span></div>`+
       `<span class="med-stat ${f.paid?'md-green':'md-red'}">${f.paid?'төлсөн':'төлөөгүй'}</span>`+
       `<span class="card-actions"><button type="button" class="ic" onclick="toggleFinePaid('${f.id}')" aria-label="Төлсөн"><i class="ti ti-${f.paid?'circle-check':'circle'}"></i></button>`+
+      `<button type="button" class="ic" onclick="openFineModal('${vid}','${f.id}')" aria-label="Засах"><i class="ti ti-pencil"></i></button>`+
       `<button type="button" class="ic" onclick="deleteFine('${f.id}')" aria-label="Устгах"><i class="ti ti-trash"></i></button></span></div>`).join('');
   }
   const body=(grp('Даатгал')+grp('Улсын')+finesHtml) || '<div class="veh-empty">Үүрэг бүртгээгүй</div>';
@@ -4088,20 +4094,23 @@ function openObligModal(vid, oid){
   if(oid){ const o=data.vehObligations.find(x=>x.id===oid);
     g('ob-modal-title').textContent='Үүрэг засах';
     g('ob-type').value=o.type; g('ob-amount').value=o.amount||''; g('ob-due').value=o.dueDate||''; g('ob-note').value=o.note||''; g('ob-paid').checked=!!o.paid;
+    g('ob-paiddate').value=o.paidDate||todayLocal();
   }else{ g('ob-modal-title').textContent='Үүрэг нэмэх';
-    g('ob-type').value='Татвар'; g('ob-amount').value=''; g('ob-due').value=''; g('ob-note').value=''; g('ob-paid').checked=false; }
+    g('ob-type').value='Татвар'; g('ob-amount').value=''; g('ob-due').value=''; g('ob-note').value=''; g('ob-paid').checked=false;
+    g('ob-paiddate').value=todayLocal(); }
+  g('ob-paiddate-wrap').style.display=g('ob-paid').checked?'':'none';
   openModal('oblig-modal');
 }
 function saveOblig(){
   const g=id=>document.getElementById(id);
   const type=g('ob-type').value, amount=parseFloat(g('ob-amount').value)||0, dueDate=g('ob-due').value, note=g('ob-note').value.trim(), paid=g('ob-paid').checked;
   if(!dueDate){ formErr('Дуусах / төлөх огноо оруулна уу'); return; }
+  const paidDate=paid?(g('ob-paiddate').value||todayLocal()):null;
+  if(paidDate && paidDate>todayLocal()){ formErr('Төлсөн огноо ирээдүйд байж болохгүй'); return; }
   let o;
   if(editingObligId){ o=data.vehObligations.find(x=>x.id===editingObligId);
-    const wasPaid=o.paid; Object.assign(o,{type,amount,dueDate,note,paid,updatedAt:Date.now()});
-    if(paid && (!wasPaid || !o.paidDate)) o.paidDate=todayLocal();
-    if(!paid) o.paidDate=null; toast('Засагдлаа');
-  }else{ o={ id:'ob'+Date.now(), vehicleId:obligVehicleId, type, amount, dueDate, note, paid, paidDate:paid?todayLocal():null, updatedAt:Date.now() };
+    Object.assign(o,{type,amount,dueDate,note,paid,paidDate,updatedAt:Date.now()}); toast('Засагдлаа');
+  }else{ o={ id:'ob'+Date.now(), vehicleId:obligVehicleId, type, amount, dueDate, note, paid, paidDate, updatedAt:Date.now() };
     data.vehObligations.push(o); toast('Үүрэг нэмэгдлээ'); }
   syncObligReminder(o);
   persist(); closeModal('oblig-modal'); render();
@@ -4132,8 +4141,9 @@ function syncObligReminder(o){
 function openFineModal(vid, fid){
   editingFineId=fid||null; fineVehicleId=vid;
   const g=id=>document.getElementById(id);
-  if(fid){ const f=data.vehFines.find(x=>x.id===fid); g('fn-modal-title').textContent='Торгууль засах'; g('fn-amount').value=f.amount||''; g('fn-date').value=f.date||''; g('fn-paid').checked=!!f.paid; }
-  else { g('fn-modal-title').textContent='Торгууль нэмэх'; g('fn-amount').value=''; g('fn-date').value=todayLocal(); g('fn-paid').checked=false; }
+  if(fid){ const f=data.vehFines.find(x=>x.id===fid); g('fn-modal-title').textContent='Торгууль засах'; g('fn-amount').value=f.amount||''; g('fn-date').value=f.date||''; g('fn-paid').checked=!!f.paid; g('fn-paiddate').value=f.paidDate||todayLocal(); }
+  else { g('fn-modal-title').textContent='Торгууль нэмэх'; g('fn-amount').value=''; g('fn-date').value=todayLocal(); g('fn-paid').checked=false; g('fn-paiddate').value=todayLocal(); }
+  g('fn-paiddate-wrap').style.display=g('fn-paid').checked?'':'none';
   openModal('fine-modal');
 }
 function saveFine(){
@@ -4141,8 +4151,10 @@ function saveFine(){
   const amount=parseFloat(g('fn-amount').value)||0, date=g('fn-date').value, paid=g('fn-paid').checked;
   if(!(amount>0)){ formErr('Дүн оруулна уу'); return; }
   if(!date){ formErr('Огноо оруулна уу'); return; }
-  if(editingFineId){ const f=data.vehFines.find(x=>x.id===editingFineId); Object.assign(f,{amount,date,paid,paidDate:paid?(f.paidDate||todayLocal()):null,updatedAt:Date.now()}); toast('Засагдлаа'); }
-  else { data.vehFines.push({ id:'fn'+Date.now(), vehicleId:fineVehicleId, amount, date, paid, paidDate:paid?todayLocal():null, updatedAt:Date.now() }); toast('Торгууль нэмэгдлээ'); }
+  const paidDate=paid?(g('fn-paiddate').value||todayLocal()):null;
+  if(paidDate && paidDate>todayLocal()){ formErr('Төлсөн огноо ирээдүйд байж болохгүй'); return; }
+  if(editingFineId){ const f=data.vehFines.find(x=>x.id===editingFineId); Object.assign(f,{amount,date,paid,paidDate,updatedAt:Date.now()}); toast('Засагдлаа'); }
+  else { data.vehFines.push({ id:'fn'+Date.now(), vehicleId:fineVehicleId, amount, date, paid, paidDate, updatedAt:Date.now() }); toast('Торгууль нэмэгдлээ'); }
   persist(); closeModal('fine-modal'); render();
 }
 function toggleFinePaid(id){
@@ -4228,9 +4240,16 @@ function saveVehicle(){
 }
 function deleteVehicle(id){
   const v=data.vehicles.find(x=>x.id===id);
-  if(!confirm('"'+v.name+'"-г устгах уу? Засварын түүх нь бас устана.'))return;
+  if(!confirm('"'+v.name+'"-г устгах уу? Засвар, даатгал, татвар, торгуулийн түүх нь бас устана.'))return;
   tombstone(id);
   tombstoneAll(data.repairs.filter(r=>r.vehicleId===id).map(r=>r.id));
+  const _obIds=data.vehObligations.filter(o=>o.vehicleId===id).map(o=>o.id);
+  tombstoneAll(_obIds); tombstoneAll(data.vehFines.filter(f=>f.vehicleId===id).map(f=>f.id));
+  const _rmIds=_obIds.map(x=>'rm_oblig_'+x).filter(rid=>data.reminders.some(r=>r.id===rid));
+  tombstoneAll(_rmIds);
+  data.vehObligations=data.vehObligations.filter(o=>o.vehicleId!==id);
+  data.vehFines=data.vehFines.filter(f=>f.vehicleId!==id);
+  data.reminders=data.reminders.filter(r=>!_rmIds.includes(r.id));
   data.vehicles=data.vehicles.filter(x=>x.id!==id);
   data.repairs=data.repairs.filter(r=>r.vehicleId!==id);
   closeIfOpen('repairs-modal'); closeIfOpen('vehicle-modal');
@@ -4658,10 +4677,14 @@ function hasMonthOverride(item, month){
   return !!(p && p.amount!=null && item.type!=='helbelzeh' && p.amount!==(item.amount||0));
 }
 function isPaid(item, month){ const p=getPayment(item.id, month); return p?!!p.paid:false; }
+/* Тухайн сард харагдах тогтмол зүйлс: зогсоосон (archived) зүйл зөвхөн төлсөн сардаа гарна */
+function fixedItemsFor(month){ return data.fixedItems.filter(it=>!it.archived || isPaid(it, month)); }
 function togglePaid(itemId){
   const item=data.fixedItems.find(x=>x.id===itemId);
   const cur=isPaid(item, fixedMonth);
-  setPayment(itemId, fixedMonth, {paid:!cur});
+  const patch={paid:!cur};
+  if(!cur){ const p=getPayment(itemId, fixedMonth); if(!p || p.amount==null) patch.amount=monthAmount(item, fixedMonth); }   // төлсөн дүнг царцаана
+  setPayment(itemId, fixedMonth, patch);
   persist(); renderFixed(); renderHome();
 }
 function setMonthAmount(itemId, val){
@@ -4669,7 +4692,7 @@ function setMonthAmount(itemId, val){
   let amount=parseFloat(val);
   if(isNaN(amount))amount=0;
   if(amount<0){ toast('Сөрөг дүн оруулах боломжгүй','warn'); renderFixed(); return; }
-  if(it.type!=='helbelzeh' && amount===(it.amount||0)){
+  if(it.type!=='helbelzeh' && amount===(it.amount||0) && !isPaid(it, fixedMonth)){
     // Анхдагчтай ижил — сарын тусгай дүнг цэвэрлэнэ
     const p=getPayment(itemId, fixedMonth);
     if(p && p.amount!=null){ p.amount=null; p.updatedAt=Date.now(); }
@@ -4682,7 +4705,7 @@ function setMonthAmount(itemId, val){
 function setHelbelzehAmount(itemId, val){ setMonthAmount(itemId, val); }
 function renderFixed(){
   const wrap=document.getElementById('view-fixed');
-  const items=data.fixedItems;
+  const items=fixedItemsFor(fixedMonth);
   let rows='';
   if(items.length===0){
     rows=`<div class="empty-state" style="padding:2rem 1rem">
@@ -4715,7 +4738,7 @@ function renderFixed(){
           <div class="fx-icon"><i class="ti ti-${it.type==='helbelzeh'?'droplet':'file-invoice'}"></i></div>
           <button type="button" class="fx-main" onclick="openFixedModal('${it.id}')" aria-label="Зардлын зүйл засах: ${escapeHtml(it.name)}">
             <div class="fx-name">${escapeHtml(it.name)}</div>
-            <div class="fx-type">${it.type==='helbelzeh'?'хэлбэлзэх':(ovr?'тогтмол · энэ сар өөр':'тогтмол '+fmt(it.amount||0)+'₮')}</div>
+            <div class="fx-type">${it.archived?'зогсоосон · ':''}${it.type==='helbelzeh'?'хэлбэлзэх':(ovr?'тогтмол · энэ сар өөр':'тогтмол '+fmt(it.amount||0)+'₮')}</div>
           </button>
           <div class="fx-actions">
             ${amtCell}
@@ -4739,7 +4762,7 @@ function renderFixed(){
 function renderFixedTotals(){
   const el=document.getElementById('fx-totals');
   if(!el)return;
-  const items=data.fixedItems;
+  const items=fixedItemsFor(fixedMonth);
   if(items.length===0){ el.innerHTML=''; return; }
   let total=0, paidSum=0;
   items.forEach(it=>{ const a=monthAmount(it, fixedMonth); total+=a; if(isPaid(it, fixedMonth))paidSum+=a; });
@@ -4826,7 +4849,16 @@ function saveFixedItem(){
 }
 function deleteFixedItem(id){
   const it=data.fixedItems.find(x=>x.id===id);
-  if(!confirm('"'+it.name+'"-г устгах уу? Төлбөрийн түүх нь бас устана.'))return;
+  if(!it)return;
+  const hasPaidHistory=data.payments.some(p=>p.itemId===id && p.paid);
+  if(hasPaidHistory){
+    // Өнгөрсөн сарын нийт дүн, дансны тааруулга хойноос өөрчлөгдөхгүйн тулд устгахгүй, зогсооно
+    if(!confirm('"'+it.name+'" төлсөн түүхтэй байна.\n\nЗогсоох уу? Цаашид жагсаалтад гарахгүй, харин өнгөрсөн сарын төлсөн дүн нь тайланд хадгалагдана.'))return;
+    it.archived=true; it.archivedMonth=monthLocal(); it.updatedAt=Date.now();
+    persist(); closeModal('fixed-modal'); renderFixed(); renderHome(); toast('Зогсоогдлоо');
+    return;
+  }
+  if(!confirm('"'+it.name+'"-г устгах уу?'))return;
   tombstone(id);
   tombstoneAll(data.payments.filter(p=>p.itemId===id).map(p=>p.id));
   data.fixedItems=data.fixedItems.filter(x=>x.id!==id);
@@ -4838,7 +4870,7 @@ function deleteFixedItem(id){
 /* ═══ Дашбоард — сарын тооцоо, график, экспорт ═══ */
 function monthlyTotals(ym){
   const income=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
-  let fixed=0; data.fixedItems.forEach(it=>fixed+=monthAmount(it,ym));
+  let fixed=0; data.fixedItems.forEach(it=>{ if(isPaid(it,ym))fixed+=monthAmount(it,ym); });   // A: зөвхөн "Төлсөн" тэмдэглэсэн тогтмол зардал
   const variable=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
   const repairs=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0)
     + data.vehObligations.filter(o=>o.paid&&o.paidDate&&o.paidDate.slice(0,7)===ym).reduce((s,o)=>s+(o.amount||0),0)
@@ -4978,10 +5010,11 @@ function buildPrintReport(ym){
 
   // ── Тогтмол зардал (бүлгээр) ──
   const GO=['Ашиглалт','Холбоо/ТВ','Орон сууц','Хүүхэд','Бусад'];
-  const grp={}; data.fixedItems.forEach(it=>{ const g=it.group||'Бусад'; (grp[g]=grp[g]||[]).push(it); });
+  const _fxL=fixedItemsFor(ym); let _fxPlan=0; _fxL.forEach(it=>_fxPlan+=monthAmount(it,ym));
+  const grp={}; _fxL.forEach(it=>{ const g=it.group||'Бусад'; (grp[g]=grp[g]||[]).push(it); });
   const gNames=Object.keys(grp).sort((a,b)=>(GO.indexOf(a)<0?99:GO.indexOf(a))-(GO.indexOf(b)<0?99:GO.indexOf(b)));
   h+=`<div class="pr-sect"><h2>Тогтмол зардал</h2>`;
-  if(data.fixedItems.length){
+  if(_fxL.length){
     h+=`<table><thead><tr><th>Зүйл</th><th>Бүлэг</th><th class="r">Дүн</th><th class="r">Төлөв</th></tr></thead><tbody>`;
     gNames.forEach(g=>{
       grp[g].forEach(it=>{
@@ -4990,7 +5023,8 @@ function buildPrintReport(ym){
             <td class="r ${p?'pr-ok':'pr-no'}">${p?'төлсөн':'төлөөгүй'}</td></tr>`;
       });
     });
-    h+=`</tbody><tfoot><tr><td colspan="2">Нийт</td><td class="r">${fmt(t.fixed)}₮</td><td></td></tr></tfoot></table>`;
+    h+=`</tbody><tfoot><tr><td colspan="2">Төлсөн (зардалд орсон)</td><td class="r">${fmt(t.fixed)}₮</td><td></td></tr>
+      <tr><td colspan="2">Төлөвлөсөн нийт</td><td class="r">${fmt(_fxPlan)}₮</td><td></td></tr></tfoot></table>`;
   }else h+=`<div class="pr-none">Бүртгэл алга</div>`;
   h+=`</div>`;
 
@@ -5011,13 +5045,18 @@ function buildPrintReport(ym){
   h+=`</div>`;
 
   // ── Машин ба эрүүл мэнд ──
-  const rep=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym);
-  if(rep.length){
-    h+=`<div class="pr-sect"><h2>Машины засвар</h2><table>
-      <thead><tr><th>Огноо</th><th>Машин</th><th>Засвар</th><th class="r">Дүн</th></tr></thead><tbody>`+
-      rep.map(r=>{ const v=data.vehicles.find(x=>x.id===r.vehicleId);
-        return `<tr><td>${r.date}</td><td>${esc(v?v.name:'')}</td><td>${esc(r.desc||'')}</td><td class="r">${fmt(r.amount)}₮</td></tr>`;
-      }).join('')+`</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.repairs)}₮</td></tr></tfoot></table></div>`;
+  // Машин: засвар + тухайн сард төлсөн даатгал/татвар + торгууль (monthlyTotals-тэй ижил)
+  const _vn=id=>{ const v=data.vehicles.find(x=>x.id===id); return v?(v.name||v.plate||''):''; };
+  const vrows=[
+    ...data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).map(r=>({d:r.date,v:_vn(r.vehicleId),w:r.desc||'Засвар',a:r.amount||0})),
+    ...data.vehObligations.filter(o=>o.paid&&o.paidDate&&o.paidDate.slice(0,7)===ym).map(o=>({d:o.paidDate,v:_vn(o.vehicleId),w:o.type,a:o.amount||0})),
+    ...data.vehFines.filter(f=>f.paid&&f.paidDate&&f.paidDate.slice(0,7)===ym).map(f=>({d:f.paidDate,v:_vn(f.vehicleId),w:'Торгууль',a:f.amount||0}))
+  ].sort((a,b)=>a.d.localeCompare(b.d));
+  if(vrows.length){
+    h+=`<div class="pr-sect"><h2>Машин</h2><table>
+      <thead><tr><th>Огноо</th><th>Машин</th><th>Зардал</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      vrows.map(r=>`<tr><td>${r.d}</td><td>${esc(r.v)}</td><td>${esc(r.w)}</td><td class="r">${fmt(r.a)}₮</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.repairs)}₮</td></tr></tfoot></table></div>`;
   }
   const trt=data.treatments.filter(x=>x.date&&x.date.slice(0,7)===ym);
   if(trt.length){
@@ -5089,9 +5128,9 @@ function exportReport(){
     <table>
       ${th2('Санхүүгийн хураангуй','')}
       ${row('<b>Нийт орлого</b>','<b>'+fmt(t.income)+'₮</b>',true)}
-      ${row('Тогтмол зардал',fmt(t.fixed)+'₮')}
+      ${row('Тогтмол зардал (төлсөн)',fmt(t.fixed)+'₮')}
       ${row('Хувьсах зардал',fmt(t.variable)+'₮')}
-      ${row('Машины засвар',fmt(t.repairs)+'₮')}
+      ${row('Машин (засвар, даатгал, татвар, торгууль)',fmt(t.repairs)+'₮')}
       ${row('Эрүүл мэнд',fmt(t.treats)+'₮')}
       ${row('<b>Нийт зардал</b>','<b>'+fmt(t.expense)+'₮</b>',true)}
       <tr style="background:#e8f5f2"><td style="padding:8px 12px;border-top:2px solid #0d9488;font-weight:bold;font-size:11.5pt">${balance>=0?'Хэмнэлт':'Хэтрэлт'}</td><td style="padding:8px 12px;border-top:2px solid #0d9488;text-align:right;font-weight:bold;font-size:11.5pt;color:${balance>=0?'#15803d':'#b91c1c'}">${fmt(balance)}₮</td></tr>
@@ -5130,20 +5169,21 @@ function renderHome(){
     }).join('');
   }
   // Энэ сарын мөнгөний нэгтгэл
-  let fxTotal=0, fxPaid=0;
-  data.fixedItems.forEach(it=>{ const a=monthAmount(it, ym); fxTotal+=a; if(isPaid(it, ym))fxPaid+=a; });
-  const incomeTotal=data.income.filter(i=>i.date&&i.date.slice(0,7)===ym).reduce((s,i)=>s+(i.amount||0),0);
-  const varTotal=data.variable.filter(v=>v.date&&v.date.slice(0,7)===ym).reduce((s,v)=>s+(v.amount||0),0);
-  const repairTotal=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym).reduce((s,r)=>s+(r.amount||0),0);
-  const treatTotal=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
-  const expenseTotal=fxTotal+varTotal+repairTotal+treatTotal;   // тогтмол + хувьсах + машин + эрүүл мэнд
+  // График, задаргаа, тайлан, дансны тааруулгатай ЯГ ижил тооцоо (машины даатгал/татвар/торгууль орно)
+  const _mt=monthlyTotals(ym);
+  const incomeTotal=_mt.income;
+  const expenseTotal=_mt.expense;
   const balance=incomeTotal-expenseTotal;
   const noIncomeYet=incomeTotal===0&&expenseTotal>0;   // сар эхэнд орлого ороогүй үед "хэтрэлт" гэж улаанаар харуулахгүй
   // Өнгөрсөн сартай харьцуулах
   const prevYm=(()=>{ const d=new Date(); return monthLocal(new Date(d.getFullYear(),d.getMonth()-1,1)); })();
   const prevExp=monthlyTotals(prevYm).expense;
   const chips=[];
-  if(prevExp>0){
+  const _dayNow=new Date().getDate();
+  if(prevExp>0 && _dayNow<25){
+    // Сар дуусаагүй байхад хагас сарыг бүтэн сартай харьцуулбал буруу (жишээ: "30.7 дахин бага")
+    chips.push(`<span class="chip"><i class="ti ti-calendar-stats"></i>өнгөрсөн сар нийт ${fmt(prevExp)}₮</span>`);
+  }else if(prevExp>0){
     const pct=Math.round((expenseTotal-prevExp)/prevExp*100);
     // ±3%-иас бага өөрчлөлтийг харуулахгүй — чимээ болно
     if(Math.abs(pct)>=3){
@@ -5165,7 +5205,7 @@ function renderHome(){
   const topCat=Object.entries(catTot).sort((a,b)=>b[1]-a[1])[0];
   if(topCat)chips.push(`<span class="chip top"><i class="ti ti-flame"></i>хамгийн их: ${escapeHtml(catName(topCat[0]))} ${fmt(topCat[1])}₮</span>`);
   // Төлөгдөөгүй тогтмол зардал
-  const unpaid=data.fixedItems.filter(it=>monthAmount(it,ym)>0&&!isPaid(it,ym));
+  const unpaid=fixedItemsFor(ym).filter(it=>monthAmount(it,ym)>0&&!isPaid(it,ym));
   if(unpaid.length)chips.push(`<span class="chip"><i class="ti ti-clock"></i>${unpaid.length} төлбөр хүлээгдэж буй</span>`);
 
   const hasMoney=data.income.length>0||data.fixedItems.length>0||data.variable.length>0||data.repairs.length>0||data.treatments.length>0;
@@ -5418,7 +5458,7 @@ function runSearch(){
   if(is('income')) data.income.forEach(i=>{
     if(matchText(q,[i.type||'',i.note||'']) && matchDate(i.date,dFrom,dTo))
       res.push({icon:'ti-coin',bg:'var(--m-income-bg)',ic:'var(--m-income)',label:i.type||'Орлого',sub:i.note||'',meta:i.date,badge:'',ac:'var(--success)',amt:'+'+fmt(i.amount)+'₮',click:`openIncomeModal('${i.id}')`,tl:'Орлого',sd:i.date}); });
-  if(is('fixed')) data.fixedItems.forEach(f=>{
+  if(is('fixed')) data.fixedItems.filter(f=>!f.archived).forEach(f=>{
     if(matchText(q,[f.name||'',f.note||'']))
       res.push({icon:'ti-receipt',bg:'var(--m-fixed-bg)',ic:'var(--m-fixed)',label:f.name,sub:f.note||'',meta:'',badge:'',ac:'var(--text)',amt:fmt(f.amount)+'₮',click:`openFixedModal('${f.id}')`,tl:'Тогтмол',sd:''}); });
   if(is('vehicle')){
@@ -5796,7 +5836,7 @@ async function generateAIReport(){
     .map(([cat,amt])=>`- ${cat}: ${fmt(amt)}₮`).join('\n');
 
   // Тогтмол зардал
-  const fixedTotal=data.fixedItems?data.fixedItems.reduce((s,f)=>s+(f.amount||0),0):0;
+  const fixedTotal=t.fixed;   // тухайн сард төлсөн тогтмол (бусад тооцоотой ижил)
 
   // Засварын зардал (тухайн сар)
   const repairItems=data.repairs.filter(r=>r.date&&r.date.slice(0,7)===ym);
