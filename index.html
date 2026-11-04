@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.8.3';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.8.4';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -1564,22 +1564,22 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
       </select>
     </div>
     <div class="field">
-      <label>Нийт дүн (₮)</label>
-      <input type="number" min="0" id="ln-total" inputmode="decimal" placeholder="Нийт зээлийн дүн">
+      <label>Олгосон зээлийн дүн (₮)</label>
+      <input type="number" min="0" id="ln-total" inputmode="decimal" placeholder="Анх авсан дүн">
     </div>
     <!-- зээл -->
     <div id="ln-zeel-fields">
-      <div class="field"><label>Сарын төлбөр (₮)</label><input type="number" min="0" id="ln-monthly" inputmode="decimal"></div>
-      <div class="field"><label>Дуусах огноо</label><input type="date" id="ln-due"></div>
-      <div class="ln-bank">
-        <div class="ln-bank-h">Үлдэгдлийг банк шиг тооцох (заавал биш)</div>
-        <div class="field"><label>Үндсэн зээлийн үлдэгдэл (₮)</label><input type="number" min="0" id="ln-principal" inputmode="decimal" placeholder="Банкны апп → «Үндсэн зээлийн үлдэгдэл»"></div>
+      <div class="ln-bank" id="ln-bank">
+        <div class="ln-bank-h">Банкны апп → «Дансны дэлгэрэнгүй»-ээс хуулж бичнэ</div>
+        <div class="field"><label>Үндсэн зээлийн үлдэгдэл (₮)</label><input type="number" min="0" step="0.01" id="ln-principal" inputmode="decimal" placeholder="Жишээ: 9186932.24"></div>
         <div class="ln-row2">
-          <div class="field"><label>Хүү (%)</label><input type="number" min="0" step="0.01" id="ln-rate" inputmode="decimal" placeholder="Жишээ: 1.5"></div>
-          <div class="field"><label>Хүүгийн нэгж</label><select id="ln-rateunit"><option value="month">Сарын</option><option value="year">Жилийн</option></select></div>
+          <div class="field"><label>Хүү (%)</label><input type="number" min="0" step="0.01" id="ln-rate" inputmode="decimal" placeholder="Жишээ: 17.4"></div>
+          <div class="field"><label>Хүүгийн нэгж</label><select id="ln-rateunit"><option value="year">Жилийн</option><option value="month">Сарын</option></select></div>
         </div>
-        <div class="field"><label>Үлдэгдлийг харсан огноо</label><input type="date" id="ln-baldate"></div>
+        <div class="field"><label>Төлөгдөх дүн (₮)</label><input type="number" min="0" id="ln-monthly" inputmode="decimal"></div>
+        <div class="field"><label>Сүүлд хийсэн гүйлгээний огноо</label><input type="date" id="ln-baldate"></div>
       </div>
+      <div class="field"><label>Дуусах огноо (заавал биш)</label><input type="date" id="ln-due"></div>
     </div>
     <!-- хэсэгчлэн -->
     <div id="ln-hes-fields" style="display:none">
@@ -1589,7 +1589,7 @@ input[type=date]::-webkit-calendar-picker-indicator{ margin-left:auto }
       <div class="field"><label>Дараагийн төлөлт хэдэн хугацаагаар сунгах</label>
         <select id="ln-freq"><option value="15d">15 хоногоор</option><option value="month">Сараар</option></select></div>
     </div>
-    <div class="field"><label>Дараагийн төлөх огноо</label><input type="date" id="ln-next"></div>
+    <div class="field"><label>Дараагийн төлбөрийн огноо</label><input type="date" id="ln-next"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('loan-modal')">Болих</button>
       <button class="btn acc" onclick="saveLoan()">Хадгалах</button>
@@ -3616,9 +3616,10 @@ function renderFinance(){
               return `${tot>0?`<div class="progress"><div class="fill" style="width:${pct}%"></div></div>`:''}
               <div class="fin-line">Үндсэн үлдэгдэл: <b class="num">${fmt(l.principal)}₮</b>${tot>0?` / ${fmt(tot)}₮ (${pct}% төлөгдсөн)`:''}
                 <button type="button" class="ic" style="vertical-align:middle" onclick="syncLoanPrincipal('${l.id}')" aria-label="Банкны дүнгээр шинэчлэх" title="Банкны дүнгээр шинэчлэх"><i class="ti ti-refresh"></i></button></div>
-              <div class="fin-line ln-split">${l.monthly?'Сарын төлбөр: '+fmt(l.monthly)+'₮ · ':''}${l.rate?'Хүү '+l.rate+'% ('+(l.rateUnit==='year'?'жилийн':'сарын')+')':'Хүү оруулаагүй'} · банкнаас ${l.balDate||''}-нд оруулсан${(l.pays||[]).some(p=>p.principalPart!=null&&p.date>=(l.balDate||''))?', дараа нь тооцоолсон':''}</div>`; })()
+              <div class="fin-line ln-split">${l.monthly?'Сарын төлбөр: '+fmt(l.monthly)+'₮ · ':''}${l.rate?'Хүү '+l.rate+'% ('+(l.rateUnit==='year'?'жилийн':'сарын')+')':'Хүү оруулаагүй'} · сүүлийн гүйлгээ ${l.balDate||''}${(l.pays||[]).some(p=>p.principalPart!=null&&p.date>=(l.balDate||''))?', дараа нь тооцоолсон':''}</div>`; })()
             :`<div class="fin-line">${_lpaid?'<span style="color:var(--success)">✓ Төлсөн</span> · ':''}Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
-              <div class="fin-line ln-split">Төлөх бүрт үлдэгдэл буурдаг болгох бол ✏ дарж банкны «Үндсэн зээлийн үлдэгдэл», хүүг оруулна уу.</div>`}
+              <div class="fin-actions"><button class="btn" onclick="openLoanBank('${l.id}')"><i class="ti ti-building-bank"></i> Банкны мэдээлэл оруулах</button></div>
+              <div class="fin-line ln-split">Оруулсны дараа төлөх бүрт үндсэн үлдэгдэл банк шиг буурна.</div>`}
           ${!_lpaid&&l.next?`<div class="fin-line" style="color:var(--warn-fg,#b45309)"><i class="ti ti-calendar-due"></i> Дараагийн төлөлт: <b class="num">${l.next}</b>${l.monthly?' ('+fmt(l.monthly)+'₮)':''}</div>`:''}
           ${(l.pays&&l.pays.length)?(()=>{ const lp=l.pays[l.pays.length-1]; return `<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${lp.date} · ${fmt(lp.amount||0)}₮${lp.principalPart!=null?' (үндсэн '+fmt(lp.principalPart)+' + хүү '+fmt(lp.interest||0)+')':''} <button type="button" class="ic" style="vertical-align:middle" onclick="undoLoanPay('${l.id}')" aria-label="Сүүлийн төлөлтийг буцаах" title="Буцаах"><i class="ti ti-arrow-back-up"></i></button></div>`; })()
             :(l.lastPaid?`<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${l.lastPaid}</div>`:'')}
@@ -3721,7 +3722,8 @@ function askLoanAmount(l, def, label){
    Хүү = үлдэгдэл × жилийн хүү × хоног / 365. Үлдсэн хэсэг нь үндсэн зээлийг бууруулна. */
 function loanSplit(l, amount, date){
   if(l.type==='heseglen' || l.principal==null || !(l.principal>=0))return null;
-  const last=(l.pays&&l.pays.length)?l.pays[l.pays.length-1].date:'';
+  const sp=(l.pays||[]).filter(p=>p.principalPart!=null);   // банкны үлдэгдэл оруулахаас өмнөх төлөлтийг тооцохгүй
+  const last=sp.length?sp[sp.length-1].date:'';
   const from=[last, l.balDate||''].sort().pop()||date;
   const days=Math.max(0,Math.round((new Date(date+'T00:00:00')-new Date(from+'T00:00:00'))/86400000));
   const annual=(l.rate>0)?(l.rateUnit==='year'?l.rate:l.rate*12):0;
@@ -3737,13 +3739,20 @@ function applyLoanPay(l, pay){
 }
 function splitTxt(sp){ return sp?(' · үндсэн −'+fmt(sp.principalPart)+'₮'+(sp.interest?', хүү '+fmt(sp.interest)+'₮':'')):''; }
 /* Банкны апп-аас үлдэгдлийг шинэчлэх (тооцооны зөрүүг засна) */
+function openLoanBank(id){
+  openLoanModal(id);
+  setTimeout(()=>{ const b=document.getElementById('ln-bank'); if(b){ b.scrollIntoView({block:'center'}); document.getElementById('ln-principal').focus(); } },120);
+}
 function syncLoanPrincipal(id){
   const l=data.loans.find(x=>x.id===id); if(!l)return;
   const raw=prompt('"'+l.name+'"\n\nБанкны апп дахь «Үндсэн зээлийн үлдэгдэл» (₮):', l.principal!=null?String(l.principal):'');
   if(raw===null)return;
   const a=parseFloat(String(raw).replace(/[\s,]/g,''));
   if(isNaN(a)||a<0){ toast('Дүн буруу','warn'); return; }
-  l.principal=a; l.balDate=todayLocal(); l.updatedAt=Date.now();
+  const d=prompt('Банкны апп дахь «Сүүлд хийсэн гүйлгээний огноо» (ЖЖЖЖ-СС-ӨӨ):', l.balDate||todayLocal());
+  if(d===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d.trim())){ toast('Огноо ЖЖЖЖ-СС-ӨӨ хэлбэртэй байна','warn'); return; }
+  l.principal=a; l.balDate=d.trim(); l.updatedAt=Date.now();
   persist(); render(); toast('Үлдэгдэл шинэчлэгдлээ: '+fmt(a)+'₮');
 }
 function loanPaysIn(ym){
@@ -3802,12 +3811,12 @@ function openLoanModal(editId){
     if(g('ln-freq'))g('ln-freq').value=l.freq||'month';
     g('ln-next').value=l.next||'';
     g('ln-principal').value=(l.principal!=null)?l.principal:''; g('ln-rate').value=l.rate||'';
-    g('ln-rateunit').value=l.rateUnit||'month'; g('ln-baldate').value=l.balDate||todayLocal();
+    g('ln-rateunit').value=l.rateUnit||'year'; g('ln-baldate').value=l.balDate||'';
     delWrap.innerHTML=`<button class="btn danger" style="width:100%;justify-content:center" onclick="deleteLoan('${l.id}')"><i class="ti ti-trash"></i> Устгах</button>`;
   }else{
     g('ln-modal-title').textContent='Зээл нэмэх';
     ['ln-name','ln-total','ln-monthly','ln-due','ln-parts','ln-partamt','ln-next','ln-principal','ln-rate'].forEach(i=>g(i).value='');
-    g('ln-rateunit').value='month'; g('ln-baldate').value=todayLocal();
+    g('ln-rateunit').value='year'; g('ln-baldate').value='';
     g('ln-type').value='zeel'; g('ln-paid').value='0';
     delWrap.innerHTML='';
   }
@@ -3832,8 +3841,11 @@ function saveLoan(){
     const pr=parseFloat(g('ln-principal').value), rt=parseFloat(g('ln-rate').value);
     if(!isNaN(pr)&&pr<0){ formErr('Үлдэгдэл сөрөг байж болохгүй'); return; }
     if(!isNaN(rt)&&(rt<0||rt>100)){ formErr('Хүү 0–100% хооронд байна'); return; }
+    const ru=g('ln-rateunit').value||'year';
+    if(ru==='month'&&rt>5){ formErr('Сарын хүү '+rt+'% хэт өндөр байна. Банкны апп ихэвчлэн жилийн хүү харуулдаг — «Жилийн» сонгоно уу'); return; }
+    if(!isNaN(pr)&&!g('ln-baldate').value){ formErr('«Сүүлд хийсэн гүйлгээний огноо»-г оруулна уу — хүүг тэр өдрөөс тооцно'); return; }
     obj.principal=isNaN(pr)?null:pr; obj.rate=isNaN(rt)?0:rt;
-    obj.rateUnit=g('ln-rateunit').value||'month'; obj.balDate=g('ln-baldate').value||todayLocal();
+    obj.rateUnit=ru; obj.balDate=g('ln-baldate').value||todayLocal();
   }
   if(editingLoanId){ Object.assign(data.loans.find(x=>x.id===editingLoanId), obj); toast('Засагдлаа'); }
   else{ obj.id='ln'+Date.now(); data.loans.push(obj); toast('Зээл нэмэгдлээ'); }
