@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.8.1';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.8.2';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -2357,7 +2357,20 @@ function migrate(){
   (data.fixedItems||[]).forEach(it=>{ if(!it.group)it.group='Бусад'; });
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
+  freezePaidAmounts();
   purgeTombstones();
+}
+/* v1.8.0-аас өмнө "Төлсөн" тэмдэглэсэн тогтмол төлбөрт дүн хадгалагдаагүй байсан —
+   одоогийн дүнгээр нэг удаа тогтооно. Үүний дараа үнэ өөрчилсөн ч хуучин сарууд хөдлөхгүй. */
+function freezePaidAmounts(){
+  const items={}; (data.fixedItems||[]).forEach(it=>items[it.id]=it);
+  let n=0;
+  (data.payments||[]).forEach(p=>{
+    if(!p.paid || p.amount!=null)return;
+    const it=items[p.itemId]; if(!it || it.type==='helbelzeh')return;
+    p.amount=it.amount||0; p.updatedAt=Date.now(); n++;
+  });
+  return n;
 }
 /* Хуучин санамсаргүй id-тай төлбөрүүдийг композит id рүү шилжүүлж,
    ижил зүйл+сарын давхардлыг нэгтгэнэ (сүүлд өөрчилсөн нь давамгайлна). */
@@ -2623,14 +2636,20 @@ function balanceDiff(month){
   if(!e)return { expected:null, actual:b.actual, diff:null, from:null };
   return { expected:e.expected, actual:b.actual, diff:b.actual-e.expected, from:e.from };
 }
+/* Үлдэгдэл = САРЫН ЭЦСИЙН үлдэгдэл. Сарын эхний 7 хоногт бичвэл өмнөх сарын эцсийнх гэж бүртгэнэ
+   (11-р сарын 2-нд бичсэн дүн нь 10-р сарын эцсийн үлдэгдэл). */
+const BAL_GRACE_DAYS=7;
+function balTargetMonth(){ return new Date().getDate()<=BAL_GRACE_DAYS ? prevMonth(monthLocal()) : monthLocal(); }
 function saveDashBalance(val){
+  const tm=balTargetMonth();
   let a=parseFloat(val);
   if(val===''||isNaN(a)){                       // хоосон болговол бүртгэлийг арилгана
-    const b=getBalance(monthLocal());
+    const b=getBalance(tm);
     if(b){ tombstone(b.id); data.balances=data.balances.filter(x=>x.id!==b.id); }
   }else{
     const va=validAmount(a); if(!va.ok){ toast(va.msg,'warn'); renderHome(); return; }
-    setBalance(monthLocal(), a);
+    setBalance(tm, a);
+    toast(fxMonthLabel(tm)+'ын эцсийн үлдэгдэл хадгалагдлаа');
   }
   persist(); renderHome(); renderFinance();
 }
@@ -3568,7 +3587,8 @@ function renderFinance(){
           <div class="fin-line"><b class="num">${paid}/${parts}</b> хэсэг төлөгдсөн · Үлдсэн: <b class="num">${fmt(remain)}₮</b></div>
           ${l.next&&!done?`<div class="fin-line">Дараагийн төлөлт: <b class="num">${l.next}</b> (${fmt(l.partAmount)}₮)</div>`:''}
           ${done?'<div class="fin-line" style="color:var(--success)">✓ Төлж дууссан</div>':
-            `<div class="fin-actions"><button class="btn acc" onclick="payPart('${l.id}')"><i class="ti ti-check"></i> Хэсэг төлсөн</button></div>`}
+            `<div class="fin-actions"><button class="btn acc" onclick="payPart('${l.id}')"><i class="ti ti-check"></i> Хэсэг төлсөн</button>${(l.pays&&l.pays.length)?`<button class="btn" onclick="undoLoanPay('${l.id}')"><i class="ti ti-arrow-back-up"></i> Буцаах</button>`:''}</div>`}
+          ${done&&l.pays&&l.pays.length?`<div class="fin-actions"><button class="btn" onclick="undoLoanPay('${l.id}')"><i class="ti ti-arrow-back-up"></i> Сүүлийн төлөлтийг буцаах</button></div>`:''}
         </div>`;
       }else{
         const _lpaid=l.paid||false;
@@ -3580,7 +3600,8 @@ function renderFinance(){
             <button type="button" class="ic" onclick="deleteLoan('${l.id}')" aria-label="Зээл устгах"><i class="ti ti-trash"></i></button></span></div>
           <div class="fin-line">${_lpaid?'<span style="color:var(--success)">✓ Төлсөн</span> · ':''}Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
           ${!_lpaid&&l.next?`<div class="fin-line" style="color:var(--warn-fg,#b45309)"><i class="ti ti-calendar-due"></i> Дараагийн төлөлт: <b class="num">${l.next}</b>${l.monthly?' ('+fmt(l.monthly)+'₮)':''}</div>`:''}
-          ${l.lastPaid?`<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${l.lastPaid}</div>`:''}
+          ${(l.pays&&l.pays.length)?(()=>{ const lp=l.pays[l.pays.length-1]; return `<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${lp.date} · ${fmt(lp.amount||0)}₮ <button type="button" class="ic" style="vertical-align:middle" onclick="undoLoanPay('${l.id}')" aria-label="Сүүлийн төлөлтийг буцаах" title="Буцаах"><i class="ti ti-arrow-back-up"></i></button></div>`; })()
+            :(l.lastPaid?`<div class="fin-line" style="color:var(--text-muted)">Сүүлд төлсөн: ${l.lastPaid}</div>`:'')}
           ${l.due?`<div class="fin-line">Дуусах: <b class="num">${l.due}</b></div>`:''}
         </div>`;
       }
@@ -3666,21 +3687,57 @@ function addMonthsClamped(y, m, d, add){
   const dim=new Date(ny, nm+1, 0).getDate();
   return new Date(ny, nm, Math.min(d, dim));
 }
+/* ═══ Зээлийн төлөлт ═══
+   Төлөлт бүр l.pays[]-д {date: төлсөн өдөр, amount, due: тухайн үеийн төлөх огноо} хэлбэрээр
+   хадгалагдаж, төлсөн сарын зардалд (monthlyTotals.loans) орно. Сүүлийн төлөлтийг буцааж болно. */
+function askLoanAmount(l, def, label){
+  const raw=prompt(label+'\n\nТөлсөн дүн (₮):', def?String(def):'');
+  if(raw===null)return null;                      // болиулсан
+  const a=parseFloat(String(raw).replace(/[\s,]/g,''));
+  const va=validAmount(a); if(isNaN(a)||!va.ok){ toast(va.ok?'Дүн буруу':va.msg,'warn'); return null; }
+  return a;
+}
+function loanPaysIn(ym){
+  let s=0; (data.loans||[]).forEach(l=>(l.pays||[]).forEach(p=>{ if(p.date&&p.date.slice(0,7)===ym)s+=(p.amount||0); })); return s;
+}
 function toggleLoanPaid(id){
   const l=data.loans.find(x=>x.id===id); if(!l)return;
-  if(!l.next){                                   // огноогүй зээл — энгийн төлсөн/төлөөгүй
-    l.paid=!l.paid; toast(l.paid?'Төлсөн гэж тэмдэглэв':'Төлөөгүй болгов');
+  if(!l.next){                                   // огноогүй зээл — төлсөн/төлөөгүй
+    if(!l.paid){
+      const a=askLoanAmount(l, l.monthly||l.total||0, '"'+l.name+'" — төлсөн гэж тэмдэглэх'); if(a==null)return;
+      l.pays=(l.pays||[]).concat([{date:todayLocal(), amount:a, due:''}]);
+      l.paid=true; toast('Төлсөн гэж тэмдэглэв · '+fmt(a)+'₮ энэ сарын зардалд орлоо');
+    }else{
+      if(!confirm('"'+l.name+'" — төлөөгүй болгох уу? Сүүлийн төлөлт зардлаас хасагдана.'))return;
+      if(l.pays&&l.pays.length)l.pays=l.pays.slice(0,-1);
+      l.paid=false; toast('Төлөөгүй болгов');
+    }
   }else{
-    /* Санамсаргүй 2 дарахад 2 сар урагшилдаг байсан → баталгаажуулалт асууна */
-    if(!confirm(l.next+'-ны '+(l.monthly?fmt(l.monthly)+'₮ ':'')+'төлбөрийг төлсөн гэж тэмдэглэх үү?\n\nДараагийн төлбөрийн огноо 1 сараар шилжинэ.'))return;
+    /* Санамсаргүй 2 дарахад 2 сар урагшилдаг байсан → дүн асууж баталгаажуулна */
+    const a=askLoanAmount(l, l.monthly, '"'+l.name+'" — '+l.next+'-ны төлбөр.\nДараагийн төлбөрийн огноо 1 сараар шилжинэ.');
+    if(a==null)return;
     const [y,m,d]=l.next.split('-').map(Number);
+    l.pays=(l.pays||[]).concat([{date:todayLocal(), amount:a, due:l.next}]);
     l.lastPaid=l.next;
     l.next=fmtDateLocal(addMonthsClamped(y,m,d,1));
     l.paid=false; delete l._prevNext;
-    toast('Төлөгдлөө · дараагийн төлбөр: '+l.next);
+    toast('Төлөгдлөө · '+fmt(a)+'₮ зардалд орлоо · дараагийн: '+l.next);
   }
   l.updatedAt=Date.now();
   persist(); render();
+}
+/* Сүүлийн төлөлтийг буцаах (огноо, хэсгийн тоо сэргэнэ, зардлаас хасагдана) */
+function undoLoanPay(id){
+  const l=data.loans.find(x=>x.id===id); if(!l||!l.pays||!l.pays.length)return;
+  const last=l.pays[l.pays.length-1];
+  if(!confirm('"'+l.name+'" — '+last.date+'-нд бүртгэсэн '+fmt(last.amount||0)+'₮ төлөлтийг буцаах уу?'))return;
+  l.pays=l.pays.slice(0,-1);
+  if(last.due){ l.next=last.due; }
+  if(l.type==='heseglen'){ l.paidParts=Math.max(0,(l.paidParts||0)-1); }
+  else if(!last.due){ l.paid=false; }
+  const prev=l.pays[l.pays.length-1];
+  if(prev&&prev.due)l.lastPaid=prev.due; else delete l.lastPaid;
+  l.updatedAt=Date.now(); persist(); render(); toast('Буцаагдлаа');
 }
 function openLoanModal(editId){
   editingLoanId=editId||null;
@@ -3732,7 +3789,9 @@ function payPart(id){
   const l=data.loans.find(x=>x.id===id);
   if(!l)return;
   if((l.paidParts||0)<(l.parts||0)){
-    if(!confirm('"'+l.name+'" — '+((l.paidParts||0)+1)+'/'+l.parts+' дахь хэсгийг төлсөн гэж тэмдэглэх үү?'))return;
+    const a=askLoanAmount(l, l.partAmount, '"'+l.name+'" — '+((l.paidParts||0)+1)+'/'+l.parts+' дахь хэсэг');
+    if(a==null)return;
+    l.pays=(l.pays||[]).concat([{date:todayLocal(), amount:a, due:l.next||''}]);
     l.paidParts=(l.paidParts||0)+1;
     if(l.next){
       const [y,m,d]=l.next.split('-').map(Number);
@@ -3741,7 +3800,7 @@ function payPart(id){
       else nd=addMonthsClamped(y,m,d,1);
       l.next=fmtDateLocal(nd);
     }
-    l.updatedAt=Date.now(); persist(); renderFinance(); toast('Хэсэг төлөгдлөө');
+    l.updatedAt=Date.now(); persist(); render(); toast('Хэсэг төлөгдлөө · '+fmt(a)+'₮ зардалд орлоо');
   }
 }
 
@@ -4893,7 +4952,8 @@ function monthlyTotals(ym){
     + data.vehObligations.filter(o=>o.paid&&o.paidDate&&o.paidDate.slice(0,7)===ym).reduce((s,o)=>s+(o.amount||0),0)
     + data.vehFines.filter(f=>f.paid&&f.paidDate&&f.paidDate.slice(0,7)===ym).reduce((s,f)=>s+(f.amount||0),0);
   const treats=data.treatments.filter(t=>t.date&&t.date.slice(0,7)===ym).reduce((s,t)=>s+(t.amount||0),0);
-  return { income, fixed, variable, repairs, treats, expense:fixed+variable+repairs+treats };
+  const loans=loanPaysIn(ym);                       // тухайн сард төлсөн зээлийн төлөлт
+  return { income, fixed, variable, repairs, treats, loans, expense:fixed+variable+repairs+treats+loans };
 }
 function lastNMonths(n){
   const arr=[]; const d=new Date(); d.setDate(1);
@@ -4929,7 +4989,7 @@ function buildMonthChart(){
 function buildBreakdown(ym){
   const t=monthlyTotals(ym);
   const items=[['Тогтмол',t.fixed,'var(--m-fixed)'],['Хувьсах',t.variable,'var(--m-variable)'],
-               ['Машин',t.repairs,'var(--m-vehicle)'],['Эрүүл мэнд',t.treats,'var(--m-health)']].filter(x=>x[1]>0);
+               ['Машин',t.repairs,'var(--m-vehicle)'],['Эрүүл мэнд',t.treats,'var(--m-health)'],['Зээл',t.loans,'var(--m-finance)']].filter(x=>x[1]>0);
   if(items.length===0)return '';
   const mx=Math.max(...items.map(x=>x[1]));
   return `<div class="chart-panel"><h4>Зардлын задаргаа (энэ сар)</h4>`+
@@ -4967,6 +5027,8 @@ function exportExcel(){
   add('Эрүүл мэнд', data.treatments.map(t=>({Огноо:t.date,Гишүүн:(data.members.find(x=>x.id===t.memberId)||{}).name||'',Эмчилгээ:t.desc||'',Дүн:t.amount})));
   add('Тоолуур заалт', data.readings.map(r=>({Огноо:r.date,Тоолуур:(data.meters.find(x=>x.id===r.meterId)||{}).name||'',Заалт:r.value})));
   add('Зээл', data.loans.map(l=>({'Нэр':l.name,'Төрөл':l.type||'','Нийт дүн':l.total||0,'Сарын төлбөр':l.monthly||0,'Дараагийн огноо':l.next||l.due||'','Нийт хэсэг':l.parts||0,'Төлсөн хэсэг':l.paidParts||0})));
+  const _lp=[]; data.loans.forEach(l=>(l.pays||[]).forEach(p=>_lp.push({'Огноо':p.date,'Зээл':l.name,'Дүн':p.amount||0,'Төлөх огноо':p.due||''})));
+  add('Зээлийн төлөлт', _lp.sort((a,b)=>String(a['Огноо']).localeCompare(String(b['Огноо']))));
   add('Хуримтлал', data.savings.map(s=>({'Нэр':s.name,'Зорилтот дүн':s.target||0,'Одоогийн дүн':s.current||0,'Огноо':s.date||''})));
   add('Сануулга', data.reminders.map(r=>({'Гарчиг':r.title,'Огноо':r.date,'Тэмдэглэл':r.note||''})));
   add('Дансны тааруулга', data.balances.filter(b=>b.actual!=null).map(b=>({'Сар':b.month,'Бодит үлдэгдэл':b.actual,'Тэмдэглэл':b.note||''})));
@@ -5083,6 +5145,16 @@ function buildPrintReport(ym){
       `</tbody><tfoot><tr><td colspan="3">Нийт</td><td class="r">${fmt(t.treats)}₮</td></tr></tfoot></table></div>`;
   }
 
+  // ── Зээлийн төлөлт ──
+  const lrows=[]; (data.loans||[]).forEach(l=>(l.pays||[]).forEach(p=>{ if(p.date&&p.date.slice(0,7)===ym)lrows.push({d:p.date,n:l.name,a:p.amount||0}); }));
+  if(lrows.length){
+    lrows.sort((a,b)=>a.d.localeCompare(b.d));
+    h+=`<div class="pr-sect"><h2>Зээлийн төлөлт</h2><table>
+      <thead><tr><th>Огноо</th><th>Зээл</th><th class="r">Дүн</th></tr></thead><tbody>`+
+      lrows.map(r=>`<tr><td>${r.d}</td><td>${esc(r.n)}</td><td class="r">${fmt(r.a)}₮</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td colspan="2">Нийт</td><td class="r">${fmt(t.loans)}₮</td></tr></tfoot></table></div>`;
+  }
+
   // ── Тоолуурын хэрэглээ ──
   const mrows=[];
   data.meters.forEach(m=>{
@@ -5149,6 +5221,7 @@ function exportReport(){
       ${row('Хувьсах зардал',fmt(t.variable)+'₮')}
       ${row('Машин (засвар, даатгал, татвар, торгууль)',fmt(t.repairs)+'₮')}
       ${row('Эрүүл мэнд',fmt(t.treats)+'₮')}
+      ${row('Зээлийн төлөлт',fmt(t.loans)+'₮')}
       ${row('<b>Нийт зардал</b>','<b>'+fmt(t.expense)+'₮</b>',true)}
       <tr style="background:#e8f5f2"><td style="padding:8px 12px;border-top:2px solid #0d9488;font-weight:bold;font-size:11.5pt">${balance>=0?'Хэмнэлт':'Хэтрэлт'}</td><td style="padding:8px 12px;border-top:2px solid #0d9488;text-align:right;font-weight:bold;font-size:11.5pt;color:${balance>=0?'#15803d':'#b91c1c'}">${fmt(balance)}₮</td></tr>
     </table>`;
@@ -5269,15 +5342,16 @@ function renderHome(){
       </div>`).join('')+`</div>`;
   }
   // Дансны тааруулга
-  const balNow=getBalance(ym), diffNow=balanceDiff(ym), expNow=expectedBalance(ym);
+  const balM=balTargetMonth();
+  const balNow=getBalance(balM), diffNow=balanceDiff(balM), expNow=expectedBalance(balM);
   let recPanel='';
   if(hasMoney){
     const d=diffNow&&diffNow.diff!=null?diffNow.diff:null;
     recPanel=`<div class="panel">
-      <h4><i class="ti ti-scale" style="color:var(--m-finance)"></i> Дансны тааруулга</h4>
-      ${expNow?`<div class="rec-row"><span class="rl">Хүлээгдэж буй үлдэгдэл</span><span class="rv num">${fmt(expNow.expected)}₮</span></div>`
+      <h4><i class="ti ti-scale" style="color:var(--m-finance)"></i> Дансны тааруулга <span style="font-weight:400;font-size:12px;color:var(--text-muted)">· ${fxMonthLabel(balM)}ын эцэс</span></h4>
+      ${expNow?`<div class="rec-row"><span class="rl">Хүлээгдэж буй үлдэгдэл (${parseInt(balM.slice(5))}-р сарын эцэст)</span><span class="rv num">${fmt(expNow.expected)}₮</span></div>`
               :`<div class="rec-note">Өмнөх сарын бодит үлдэгдэл бүртгэгдээгүй тул хүлээгдэж буй дүн бодогдохгүй байна.</div>`}
-      <div class="rec-row"><span class="rl">Дансны бодит үлдэгдэл</span>
+      <div class="rec-row"><span class="rl">Дансны бодит үлдэгдэл (${parseInt(balM.slice(5))}-р сарын эцэст)</span>
         <input class="rec-input" type="number" min="0" inputmode="decimal" placeholder="бичих"
           value="${balNow&&balNow.actual!=null?balNow.actual:''}"
           aria-label="Дансны бодит үлдэгдэл" onchange="saveDashBalance(this.value)"></div>
@@ -5887,7 +5961,7 @@ async function generateAIReport(){
 Нийт зардал: ${fmt(t.expense)}₮
 ${bal>=0?'Хэмнэлт':'Хэтрэлт'}: ${fmt(Math.abs(bal))}₮
 Тогтмол зардал: ${fmt(fixedTotal)}₮
-
+${t.loans>0?'Зээлийн төлөлт: '+fmt(t.loans)+'₮\n':''}
 Хувьсах зардлын ангилал:
 ${expList||'- Мэдээлэл алга'}
 
