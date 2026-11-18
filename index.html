@@ -20,7 +20,7 @@
   form-action 'none'">
 <!-- Sentry — алдааны хяналт (бусад script-ийн өмнө) -->
 <script>
-window.HB_VERSION='v1.8.4';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
+window.HB_VERSION='v1.8.5';   // sw.js VERSION-тэй ижил байх ёстой; Sentry release-д ашиглагдана
 window.sentryOnLoad = function () {
   Sentry.init({
     environment: (location.hostname === 'localhost') ? 'development' : 'production',
@@ -2371,6 +2371,13 @@ function migrate(){
   (data.meters||[]).forEach(m=>{ if(!m.unit)m.unit=(METER_TYPES[m.type]||METER_TYPES.huiten).unit; if(m.inWaterReport===undefined)m.inWaterReport=(m.type==='huiten'||m.type==='haluun'); });
   migratePayments();
   freezePaidAmounts();
+  (data.loans||[]).forEach(l=>{
+    if(l.syncIdx!=null || l.principal==null || !(l.pays&&l.pays.length))return;
+    const sp=l.pays.filter(p=>p.principalPart!=null), last=sp[sp.length-1];
+    if(!last){ l.syncIdx=l.pays.length; return; }               // бүх төлөлт банкны дүн оруулахаас өмнө
+    const after=Math.max(0,(last.prevPrincipal||0)-(last.principalPart||0));
+    if(Math.abs(after-l.principal)>1) l.syncIdx=l.pays.length;   // дараа нь банкны дүнгээр шинэчилсэн
+  });
   purgeTombstones();
 }
 /* v1.8.0-аас өмнө "Төлсөн" тэмдэглэсэн тогтмол төлбөрт дүн хадгалагдаагүй байсан —
@@ -3616,7 +3623,7 @@ function renderFinance(){
               return `${tot>0?`<div class="progress"><div class="fill" style="width:${pct}%"></div></div>`:''}
               <div class="fin-line">Үндсэн үлдэгдэл: <b class="num">${fmt(l.principal)}₮</b>${tot>0?` / ${fmt(tot)}₮ (${pct}% төлөгдсөн)`:''}
                 <button type="button" class="ic" style="vertical-align:middle" onclick="syncLoanPrincipal('${l.id}')" aria-label="Банкны дүнгээр шинэчлэх" title="Банкны дүнгээр шинэчлэх"><i class="ti ti-refresh"></i></button></div>
-              <div class="fin-line ln-split">${l.monthly?'Сарын төлбөр: '+fmt(l.monthly)+'₮ · ':''}${l.rate?'Хүү '+l.rate+'% ('+(l.rateUnit==='year'?'жилийн':'сарын')+')':'Хүү оруулаагүй'} · сүүлийн гүйлгээ ${l.balDate||''}${(l.pays||[]).some(p=>p.principalPart!=null&&p.date>=(l.balDate||''))?', дараа нь тооцоолсон':''}</div>`; })()
+              <div class="fin-line ln-split">${l.monthly?'Сарын төлбөр: '+fmt(l.monthly)+'₮ · ':''}${l.rate?'Хүү '+l.rate+'% ('+(l.rateUnit==='year'?'жилийн':'сарын')+')':'Хүү оруулаагүй'} · сүүлийн гүйлгээ ${l.balDate||''}${(l.pays||[]).slice(loanSyncIdx(l)).some(p=>p.principalPart!=null)?', дараа нь тооцоолсон':''}</div>`; })()
             :`<div class="fin-line">${_lpaid?'<span style="color:var(--success)">✓ Төлсөн</span> · ':''}Нийт: <b class="num">${fmt(l.total||0)}₮</b>${l.monthly?' · Сарын төлбөр: <b class="num">'+fmt(l.monthly)+'₮</b>':''}</div>
               <div class="fin-actions"><button class="btn" onclick="openLoanBank('${l.id}')"><i class="ti ti-building-bank"></i> Банкны мэдээлэл оруулах</button></div>
               <div class="fin-line ln-split">Оруулсны дараа төлөх бүрт үндсэн үлдэгдэл банк шиг буурна.</div>`}
@@ -3720,19 +3727,24 @@ function askLoanAmount(l, def, label){
 }
 /* Төлөлтийг хүү + үндсэн төлбөр болгон хуваана (банк шиг өдрөөр хуримтлагдах хүү).
    Хүү = үлдэгдэл × жилийн хүү × хоног / 365. Үлдсэн хэсэг нь үндсэн зээлийг бууруулна. */
+/* l.syncIdx = банкны үлдэгдэл хамгийн сүүлд оруулах үед байсан төлөлтийн тоо.
+   Түүнээс өмнөх төлөлтүүд үлдэгдлийн тооцоонд оролцохгүй (банкны дүн тэднийг аль хэдийн агуулсан). */
+function loanSyncIdx(l){ return Math.min(l.syncIdx||0,(l.pays||[]).length); }
+function payIDate(p){ return p.idate||p.due||p.date; }   // хүү тоолсон эцсийн өдөр
+/* date = хүүг хүртэл нь тоолох өдөр: хуваарийн төлбөрийн өдөр (банк тэр өдөр хасдаг) */
 function loanSplit(l, amount, date){
   if(l.type==='heseglen' || l.principal==null || !(l.principal>=0))return null;
-  const sp=(l.pays||[]).filter(p=>p.principalPart!=null);   // банкны үлдэгдэл оруулахаас өмнөх төлөлтийг тооцохгүй
-  const last=sp.length?sp[sp.length-1].date:'';
+  const sp=(l.pays||[]).slice(loanSyncIdx(l)).filter(p=>p.principalPart!=null);
+  const last=sp.length?payIDate(sp[sp.length-1]):'';
   const from=[last, l.balDate||''].sort().pop()||date;
   const days=Math.max(0,Math.round((new Date(date+'T00:00:00')-new Date(from+'T00:00:00'))/86400000));
   const annual=(l.rate>0)?(l.rateUnit==='year'?l.rate:l.rate*12):0;
   const interest=Math.min(amount, Math.round(l.principal*annual/100*days/365));
   const principalPart=Math.min(l.principal, Math.max(0, amount-interest));
-  return { interest, principalPart, prevPrincipal:l.principal, days };
+  return { interest, principalPart, prevPrincipal:l.principal, days, idate:date };
 }
 function applyLoanPay(l, pay){
-  const sp=loanSplit(l, pay.amount, pay.date);
+  const sp=loanSplit(l, pay.amount, pay.due||pay.date);   // ✓ хэзээ дарснаас үл хамааран хуваарийн өдрөөр
   if(sp){ Object.assign(pay, sp); l.principal=Math.max(0, l.principal-sp.principalPart); }
   l.pays=(l.pays||[]).concat([pay]);
   return sp;
@@ -3752,7 +3764,7 @@ function syncLoanPrincipal(id){
   const d=prompt('Банкны апп дахь «Сүүлд хийсэн гүйлгээний огноо» (ЖЖЖЖ-СС-ӨӨ):', l.balDate||todayLocal());
   if(d===null)return;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.trim())){ toast('Огноо ЖЖЖЖ-СС-ӨӨ хэлбэртэй байна','warn'); return; }
-  l.principal=a; l.balDate=d.trim(); l.updatedAt=Date.now();
+  l.principal=a; l.balDate=d.trim(); l.syncIdx=(l.pays||[]).length; l.updatedAt=Date.now();
   persist(); render(); toast('Үлдэгдэл шинэчлэгдлээ: '+fmt(a)+'₮');
 }
 function loanPaysIn(ym){
@@ -3789,8 +3801,10 @@ function undoLoanPay(id){
   const l=data.loans.find(x=>x.id===id); if(!l||!l.pays||!l.pays.length)return;
   const last=l.pays[l.pays.length-1];
   if(!confirm('"'+l.name+'" — '+last.date+'-нд бүртгэсэн '+fmt(last.amount||0)+'₮ төлөлтийг буцаах уу?'))return;
+  const preSync=l.pays.length<=loanSyncIdx(l);     // банкны дүнгээр шинэчлэхээс өмнөх төлөлт
   l.pays=l.pays.slice(0,-1);
-  if(last.prevPrincipal!=null){ l.principal=last.prevPrincipal; }
+  if(preSync){ l.syncIdx=l.pays.length; }          // банкны үлдэгдэл хөдлөхгүй, зөвхөн зардлаас хасагдана
+  else if(last.prevPrincipal!=null){ l.principal=last.prevPrincipal; }
   if(last.due){ l.next=last.due; }
   if(l.type==='heseglen'){ l.paidParts=Math.max(0,(l.paidParts||0)-1); }
   else if(!last.due){ l.paid=false; }
@@ -3846,6 +3860,8 @@ function saveLoan(){
     if(!isNaN(pr)&&!g('ln-baldate').value){ formErr('«Сүүлд хийсэн гүйлгээний огноо»-г оруулна уу — хүүг тэр өдрөөс тооцно'); return; }
     obj.principal=isNaN(pr)?null:pr; obj.rate=isNaN(rt)?0:rt;
     obj.rateUnit=ru; obj.balDate=g('ln-baldate').value||todayLocal();
+    const old=editingLoanId?data.loans.find(x=>x.id===editingLoanId):null;
+    if(!old || old.principal!==obj.principal || old.balDate!==obj.balDate) obj.syncIdx=old?(old.pays||[]).length:0;
   }
   if(editingLoanId){ Object.assign(data.loans.find(x=>x.id===editingLoanId), obj); toast('Засагдлаа'); }
   else{ obj.id='ln'+Date.now(); data.loans.push(obj); toast('Зээл нэмэгдлээ'); }
